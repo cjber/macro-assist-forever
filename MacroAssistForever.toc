@@ -1,0 +1,24 @@
+## Interface: 16001
+## Title: Macro Assist Forever
+## Notes: Autocomplete, line numbers and live checks in the macro window.
+## Author: cjber
+## Version: @project-version@
+## Category: Interface Enhancements
+## X-License: GPL-3.0-or-later
+## X-Website: https://github.com/cjber/macro-assist-forever
+## SavedVariables: MacroAssistForeverDB
+## IconTexture: Interface\AddOns\MacroAssistForever\media\Icon
+
+Locales\enUS.lua
+Core\SafeCall.lua
+Core\Log.lua
+Data\Commands.lua
+Data\Conditions.lua
+Core\Lexer.lua
+Core\Parser.lua
+Core\Length.lua
+Core\Complete.lua
+Core\Check.lua
+UI\ForeverFamily.lua
+UI\Report.lua
+Core\Core.lua

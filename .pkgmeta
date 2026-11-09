@@ -1,0 +1,30 @@
+package-as: MacroAssistForever
+
+manual-changelog:
+  filename: .release-notes.md
+  markup-type: markdown
+
+ignore:
+  - .agents
+  - .bugpatrol
+  - .editorconfig
+  - .github
+  - .gitattributes
+  - .gitignore
+  - .gitleaks.toml
+  - .luacheckrc
+  - .luarc.json
+  - .sloppatrol
+  - .speedpatrol
+  - .styluaignore
+  - AGENTS.md
+  - CHANGELOG.md
+  - docs
+  - media/icon.svg
+  - media/icon-400.png
+  - reference
+  - ruff.toml
+  - stylua.toml
+  - tests
+  - tools
+  - types

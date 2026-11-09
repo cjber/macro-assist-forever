@@ -1,0 +1,143 @@
+"""Print one version's section of CHANGELOG.md, or check that every release has one.
+
+The release workflow hands what this prints to the packager, so GitHub, CurseForge and Wago show the same
+words as the changelog in the repository. A tag with no entry, or an empty one, fails here rather than
+publishing notes nobody wrote. CI runs `--check`, so a released version the changelog forgot fails on the
+next push instead of going unnoticed, and so does a newest release whose section no longer reads as it did at its
+tag (a merge that moved new bullets under it), since those words already shipped as that release's notes.
+
+    python3 tools/changelog.py 0.2.0           # that version's entry (a leading v is fine)
+    python3 tools/changelog.py --check         # every v* tag has an entry, the newest as at its tag
+    python3 tools/changelog.py --check 0.3.0   # that version has an entry, and its hero when it is a feature
+"""
+
+import argparse
+import re
+import subprocess
+from collections.abc import Callable
+from pathlib import Path
+
+HEADING = re.compile(r"^## \[?(?P<version>\d+\.\d+\.\d+)\]? - \d{4}-\d{2}-\d{2}\s*$", re.MULTILINE)
+UNRELEASED = re.compile(r"^## \[Unreleased\]\s*$", re.MULTILINE)
+VERSION = re.compile(r"^v?(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)$")
+IMAGE = re.compile(r"<!--\s*discord-image:\s*(\S+)\s*-->")
+
+
+def find(text: str, version: str) -> str | None:
+    """`version`'s section body, stripped, or None when the text has no heading for it."""
+    matches = list(HEADING.finditer(text))
+    for index, match in enumerate(matches):
+        if match["version"] == version:
+            end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+            return text[match.end() : end].strip()
+    return None
+
+
+def section(text: str, version: str) -> str:
+    body = find(text, version)
+    if body is None:
+        known = ", ".join(m["version"] for m in HEADING.finditer(text)) or "none"
+        raise SystemExit(f"CHANGELOG.md has no section for {version} (has: {known})")
+    if not body:
+        raise SystemExit(f"CHANGELOG.md's section for {version} is empty")
+    return body
+
+
+def at_tag(root: Path, version: str) -> str | None:
+    """CHANGELOG.md as it was at the `v<version>` tag, or None when the tag or the file is missing there."""
+    shown = subprocess.run(
+        ["git", "show", f"v{version}:CHANGELOG.md"], cwd=root, capture_output=True, text=True, check=False
+    )
+    return shown.stdout if shown.returncode == 0 else None
+
+
+def released(root: Path) -> list[str]:
+    """Every released version, from the repository's v* tags (CI checks out with fetch-depth 0)."""
+    tags = subprocess.run(
+        ["git", "tag", "--list", "v*"], cwd=root, capture_output=True, text=True, check=True
+    ).stdout.split()
+    versions = [tag.removeprefix("v") for tag in tags if re.fullmatch(r"v\d+\.\d+\.\d+", tag)]
+    return sorted(versions, key=lambda version: tuple(map(int, version.split("."))))
+
+
+def _version_key(version: str) -> tuple[int, int, int]:
+    match = VERSION.match(version)
+    return (int(match["major"]), int(match["minor"]), int(match["patch"])) if match else (0, 0, 0)
+
+
+def is_feature(version: str, versions: list[str]) -> bool:
+    """Whether `version` raises the major or minor over the newest of `versions` (oldest first).
+
+    With no released version yet, the first release is a feature when it starts a patch line (patch 0),
+    the same rule `classify_releases` uses in `tools/discord_digest.py`.
+    """
+    key = _version_key(version)
+    if not versions:
+        return key[2] == 0
+    previous = _version_key(versions[-1])
+    return key[0] > previous[0] or (key[0] == previous[0] and key[1] > previous[1])
+
+
+def check_image(root: Path, text: str, version: str, versions: list[str]) -> None:
+    """A feature release names a hero image, and every named image is a PNG in this repository."""
+    images = IMAGE.findall(section(text, version))
+    for path in images:
+        target = (root / path.removeprefix("./").lstrip("/")).resolve()
+        try:
+            target.relative_to(root.resolve())
+        except ValueError:
+            raise SystemExit(
+                f"CHANGELOG.md's section for {version} names {path}, which is outside this repository"
+            ) from None
+        if target.suffix.lower() != ".png" or not target.is_file():
+            raise SystemExit(
+                f"CHANGELOG.md's section for {version} names {path}, which is not a PNG in this repository"
+            )
+    if not images and is_feature(version, versions):
+        raise SystemExit(
+            f"CHANGELOG.md's section for {version} is a feature release with no hero image; add"
+            " `<!-- discord-image: docs/screenshots/<file>.png -->` naming a screenshot in this repository"
+        )
+
+
+def check(text: str, versions: list[str], tagged: Callable[[str], str | None] | None = None) -> None:
+    """Every version in `versions` (oldest first) has a section. With `tagged` (a version's changelog at its tag),
+    the newest one must also read as it did at its tag: a branch that merges main after a release lands its
+    Unreleased bullets under that newest heading. Older sections are left alone, since a few were reworded on
+    purpose, and a tag whose file has no section for it is skipped."""
+    if not UNRELEASED.search(text):
+        raise SystemExit("CHANGELOG.md has no ## [Unreleased] heading")
+    for version in versions:
+        section(text, version)
+    if tagged is not None and versions:
+        version = versions[-1]
+        before = find(tagged(version) or "", version)
+        if before is not None and before != find(text, version):
+            raise SystemExit(
+                f"CHANGELOG.md's section for {version} differs from its v{version} tag, whose notes already shipped;"
+                f" move new bullets under ## [Unreleased] (`git diff v{version} -- CHANGELOG.md` shows the change)"
+            )
+    print(f"CHANGELOG.md documents {', '.join(versions) or 'no releases yet'}")
+
+
+def main(root: Path, argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Print one version's changelog entry.")
+    parser.add_argument("version", nargs="?", help="the version to print, e.g. 0.2.0")
+    parser.add_argument(
+        "--check", nargs="?", const="", metavar="VERSION", help="fail unless every tag (or VERSION) has an entry"
+    )
+    args = parser.parse_args(argv)
+    text = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    if args.check is not None:
+        if args.check:
+            version = args.check.removeprefix("v")
+            check(text, [version])
+            # Only versions before this one: once it is tagged, it is not its own predecessor.
+            before = [v for v in released(root) if _version_key(v) < _version_key(version)]
+            check_image(root, text, version, before)
+        else:
+            check(text, released(root), lambda version: at_tag(root, version))
+        return
+    if not args.version:
+        parser.error("give a version or --check")
+    print(section(text, args.version.removeprefix("v")))

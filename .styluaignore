@@ -1,0 +1,4 @@
+.agents/
+.release/
+.release-notes.md
+tools/.cache/
