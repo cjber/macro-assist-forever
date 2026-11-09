@@ -18,13 +18,28 @@ local function equal(actual, expected, label)
 	check(actual == expected, ("%s: expected %s, got %s"):format(label, tostring(expected), tostring(actual)))
 end
 
-local function open(sim)
-	-- This is the function Blizzard's /macro handler calls (Blizzard_ChatFrameBase/Shared/SlashCommands.lua). The
-	-- simulator does not register the client's chat command table, so calling it is the same path from our side.
+-- This is the function Blizzard's /macro and /m handlers call (Blizzard_ChatFrameBase/Shared/SlashCommands.lua), and
+-- the game menu's Macros button and the chat menu too. The simulator does not register the client's chat command
+-- table and boots no game menu, so calling ShowMacroFrame is the same path from our side.
+local function pressMacroCommand(sim)
 	sim:input(function()
 		sim.G.ShowMacroFrame()
 	end)
 	sim:advance(0.3)
+end
+
+local function panelOpen(sim)
+	local window = sim.G[PLAYER]
+	return sim.G.MacroFrame ~= nil and sim.G.MacroFrame:IsShown() and window ~= nil and window:IsShown()
+end
+
+local function panelClosed(sim)
+	local window = sim.G[PLAYER]
+	return sim.G.MacroFrame ~= nil and not sim.G.MacroFrame:IsShown() and (window == nil or not window:IsShown())
+end
+
+local function open(sim)
+	pressMacroCommand(sim)
 	local window = sim.G[PLAYER]
 	check(window, "the addon did not build its window")
 	check(sim.G.MacroFrame:IsShown(), "Blizzard's MacroFrame is not shown")
@@ -476,6 +491,68 @@ scenario("/ma, /macroassist and the addon compartment toggle the window in comba
 	sim:gamepadNavigate()
 	sim:slash("/ma")
 	check(isClosed(), "the mouse path stopped working after the gamepad")
+	sim:expectNoErrors(ADDON)
+	sim:expectNoGamepadTaint(ADDON)
+end)
+
+scenario("/macro and /m open, close and reopen the window, and combat keeps it open", function(sim)
+	world.install(sim)
+	sim:login()
+
+	-- /macro stays Blizzard's command (WFA-38): the addon hooks ShowMacroFrame instead of writing its handler.
+	local handler = sim.taint.slotInfo(sim.G.SlashCmdList, "MACRO")
+	check(handler == nil or handler.addon ~= ADDON, "the addon wrote Blizzard's /macro handler")
+
+	-- /macro and /m run the same handler, which calls ShowMacroFrame.
+	pressMacroCommand(sim)
+	check(panelOpen(sim), "/m did not open the macro window")
+	pressMacroCommand(sim)
+	check(panelClosed(sim), "/m did not close the macro window")
+	pressMacroCommand(sim)
+	check(panelOpen(sim), "/m did not reopen the macro window")
+	pressMacroCommand(sim)
+	check(panelClosed(sim), "/m did not close the macro window again")
+
+	-- In combat the panel manager refuses an addon's hide, so /m leaves the pair open and raises no error.
+	pressMacroCommand(sim)
+	check(panelOpen(sim), "/macro did not open the macro window before combat")
+	sim:enterCombat()
+	pressMacroCommand(sim)
+	check(panelOpen(sim), "/m closed the macro window in combat")
+	sim:expectNoErrors(ADDON)
+	sim:leaveCombat()
+	pressMacroCommand(sim)
+	check(panelClosed(sim), "/m did not close the macro window after combat")
+	sim:expectNoErrors(ADDON)
+	sim:expectNoGamepadTaint(ADDON)
+end)
+
+scenario("/ma then /m closes the window /ma opened", function(sim)
+	world.install(sim)
+	sim:login()
+	pressMacroCommand(sim)
+	pressMacroCommand(sim)
+	sim:slash("/ma")
+	check(panelOpen(sim), "/ma did not open the macro window")
+	pressMacroCommand(sim)
+	check(panelClosed(sim), "/m did not close the window /ma opened")
+	sim:expectNoErrors(ADDON)
+	sim:expectNoGamepadTaint(ADDON)
+end)
+
+scenario("/m opens the window with the gamepad on and then leaves it open", function(sim)
+	world.install(sim)
+	sim:login()
+	sim:setGamepad(true)
+	pressMacroCommand(sim)
+	check(panelOpen(sim), "/m did not open the macro window with the gamepad")
+	pressMacroCommand(sim)
+	check(panelOpen(sim), "/m closed the macro window with the gamepad")
+	sim:gamepadNavigate()
+	sim:expectNoGamepadTaint(ADDON)
+	sim:setGamepad(false)
+	pressMacroCommand(sim)
+	check(panelClosed(sim), "/m did not close the macro window after the gamepad")
 	sim:expectNoErrors(ADDON)
 	sim:expectNoGamepadTaint(ADDON)
 end)

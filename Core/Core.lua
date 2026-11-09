@@ -9,6 +9,9 @@ local addon = CreateFrame("Frame")
 addon:RegisterEvent("ADDON_LOADED")
 
 local attached = false
+-- True when the MacroFrame OnShow hook has just run inside the ShowMacroFrame call that is still on the stack.
+-- The post-hook reads it to tell "this call opened the panel" from "the panel was already open", then clears it.
+local panelJustShowed = false
 
 local function Attach()
 	if not MacroFrame then
@@ -19,10 +22,12 @@ local function Attach()
 	if not attached then
 		attached = true
 		MacroFrame:HookScript("OnShow", function(frame)
+			panelJustShowed = true
 			frame:SetAlpha(0)
 			ns.MacroWindow.frame:Show()
 		end)
 		MacroFrame:HookScript("OnHide", function(frame)
+			panelJustShowed = false
 			if ns.MacroWindow.frame then
 				ns.MacroWindow.frame:Hide()
 			end
@@ -45,6 +50,20 @@ local function PanelManagerAvailable()
 		and api.GetCurrentStyle ~= nil
 		and api.GetCurrentStyle() == styles.Gamepad
 	return not InCombatLockdown() and not gamepad
+end
+
+-- ShowMacroFrame is what /macro, /m, the game menu's Macros button and the chat menu all call. Our OnShow hook
+-- runs first in the call that actually opens the panel; when it did not run, the panel was already open, so this
+-- second press of the same command closes the pair. Combat and the gamepad interface refuse an addon's hide, as
+-- ns.Toggle already knows, so there the pair stays open.
+local function AfterShowMacroFrame()
+	if panelJustShowed then
+		panelJustShowed = false
+		return
+	end
+	if MacroFrame and MacroFrame:IsShown() and PanelManagerAvailable() then
+		ns.MacroWindow.ClosePanel()
+	end
 end
 
 -- Every way in (/ma, /macroassist and the addon compartment) toggles the same window. ShowMacroFrame is called only
@@ -79,6 +98,8 @@ addon:SetScript("OnEvent", function(_, event, name)
 		SlashCmdList.MACROASSISTFOREVER = function()
 			ns.Toggle()
 		end
+		-- Blizzard_MacroUI_Bootstrap.lua defines ShowMacroFrame at startup, before the load-on-demand UI itself.
+		hooksecurefunc("ShowMacroFrame", AfterShowMacroFrame)
 		Attach() -- Blizzard_MacroUI may already be loaded by another addon
 	elseif event == "ADDON_LOADED" and name == "Blizzard_MacroUI" then
 		Attach()

@@ -19,6 +19,8 @@ _G.geterrorhandler = function()
 	return function() end
 end
 _G.seterrorhandler = function() end
+_G.hooksecurefunc = function() end
+_G.ShowMacroFrame = function() end
 _G.SlashCmdList = {}
 
 local ns = {}
