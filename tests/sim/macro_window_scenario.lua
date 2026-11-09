@@ -1,7 +1,7 @@
--- The macro window (WFA-35): the player's way in through /macro (ShowMacroFrame, which the slash handler calls), /ma,
--- /macroassist and the addon compartment, a cold /ma that never loads Blizzard_MacroUI, the list and both tabs,
--- editing and saving, completion and a fix, New, Change Name/Icon and Delete, closing by our X and the editor's Escape,
--- reopening, combat with the window open, the gamepad interface on and off, and an old saved file.
+-- The macro window (WFA-35): the player's way in through /macro (ShowMacroFrame, which the slash handler calls),
+-- /macroassist and the addon compartment, a cold /macroassist that never loads Blizzard_MacroUI, the list and both
+-- tabs, editing and saving, completion and a fix, New, Change Name/Icon and Delete, closing by our X and the editor's
+-- Escape, reopening, combat with the window open, the gamepad interface on and off, and an old saved file.
 -- luacheck: read globals scenario ADDON
 
 local world = assert(loadfile("tests/sim/macro_world.lua"))()
@@ -354,11 +354,12 @@ scenario("an old saved file still opens the window", function(sim)
 	sim:advance(0.2)
 end)
 
-scenario("/ma, /macroassist and the addon compartment toggle the window in combat and on the gamepad", function(sim)
+scenario("/macroassist and the addon compartment toggle the window in combat and on the gamepad", function(sim)
 	world.install(sim)
 	sim:login()
 	equal(#sim:slashCommands(ADDON), 1, "the addon registers one slash command key")
-	equal(sim:slashCommands(ADDON)[1], "/ma", "the command's short form is /ma")
+	equal(sim:slashCommands(ADDON)[1], "/macroassist", "the command is /macroassist")
+	check(sim.G.SLASH_MACROASSISTFOREVER2 == nil, "the client's /ma is not registered by the addon")
 	check(not sim.G[PLAYER], "the macro window was built at login")
 
 	local function isWindowShown()
@@ -372,19 +373,19 @@ scenario("/ma, /macroassist and the addon compartment toggle the window in comba
 		return sim.G.MacroFrame and not sim.G.MacroFrame:IsShown() and not isWindowShown()
 	end
 
-	-- A cold /ma builds our window by itself and never loads Blizzard_MacroUI, so nothing that addon defines is
-	-- tainted. The X and the editor's own Escape both close it while it stands alone; the game's Escape is not ours
+	-- A cold /macroassist builds our window by itself and never loads Blizzard_MacroUI, so nothing that addon defines
+	-- is tainted. The X and the editor's own Escape both close it while it stands alone; the game's Escape is not ours
 	-- to register.
-	sim:slash("/ma")
-	check(isWindowShown(), "a cold /ma did not open our window")
-	check(sim.G.MacroFrame == nil, "a cold /ma created Blizzard's MacroFrame")
-	check(sim.loader.loaded.Blizzard_MacroUI == nil, "a cold /ma loaded Blizzard_MacroUI")
+	sim:slash("/macroassist")
+	check(isWindowShown(), "a cold /macroassist did not open our window")
+	check(sim.G.MacroFrame == nil, "a cold /macroassist created Blizzard's MacroFrame")
+	check(sim.loader.loaded.Blizzard_MacroUI == nil, "a cold /macroassist loaded Blizzard_MacroUI")
 	local standalone = sim.G[PLAYER]
 	sim:click(standalone.CloseButton)
 	sim:advance(0.2)
 	check(not isWindowShown(), "our X did not close the standalone window")
-	sim:slash("/ma")
-	check(isWindowShown(), "a second cold /ma did not reopen our window")
+	sim:slash("/macroassist")
+	check(isWindowShown(), "a second cold /macroassist did not reopen our window")
 	local standaloneEscape = standalone.editor.edit:GetScript("OnEscapePressed")
 	check(standaloneEscape(standalone.editor.edit), "the editor's Escape was not consumed")
 	sim:advance(0.2)
@@ -394,7 +395,6 @@ scenario("/ma, /macroassist and the addon compartment toggle the window in comba
 
 	-- /macro (ShowMacroFrame, the function its slash handler calls) loads Blizzard_MacroUI; our window re-anchors
 	-- over the panel and stays above it.
-	sim:slash("/ma")
 	sim:input(function()
 		sim.G.ShowMacroFrame()
 	end)
@@ -412,9 +412,9 @@ scenario("/ma, /macroassist and the addon compartment toggle the window in comba
 	-- The gamepad interface cannot take a Blizzard panel from addon code without tainting its frame controls, so
 	-- each way in opens and closes our own window instead, and the game's own macro path still opens the panel.
 	sim:setGamepad(true)
-	sim:slash("/ma")
-	check(isWindowShown(), "/ma did not open our window with the gamepad")
-	check(not sim.G.MacroFrame:IsShown(), "/ma opened Blizzard's panel with the gamepad")
+	sim:slash("/macroassist")
+	check(isWindowShown(), "/macroassist did not open our window with the gamepad")
+	check(not sim.G.MacroFrame:IsShown(), "/macroassist opened Blizzard's panel with the gamepad")
 	sim:gamepadNavigate()
 	sim:input(function()
 		sim.G.ShowMacroFrame() -- the game's own macro path, as its keybind calls it
@@ -437,12 +437,11 @@ scenario("/ma, /macroassist and the addon compartment toggle the window in comba
 	check(isClosed(), "the addon compartment did not close our window with the gamepad")
 	sim:setGamepad(false)
 
-	for _, command in ipairs({ "/ma", "/macroassist" }) do
-		sim:slash(command)
-		check(isOpen(), command .. " did not open the macro window")
-		sim:slash(command)
-		check(isClosed(), command .. " did not close the macro window")
-	end
+	-- One command key, /macroassist, toggles the pair.
+	sim:slash("/macroassist")
+	check(isOpen(), "/macroassist did not open the macro window")
+	sim:slash("/macroassist")
+	check(isClosed(), "/macroassist did not close the macro window")
 
 	sim:input(function()
 		sim.G.MacroAssistForever_OnAddonCompartmentClick("MacroAssistForever")
@@ -457,11 +456,11 @@ scenario("/ma, /macroassist and the addon compartment toggle the window in comba
 
 	-- Combat: the panel manager refuses addon calls, so our own window opens and closes by itself as well.
 	sim:enterCombat()
-	sim:slash("/ma")
-	check(isWindowShown(), "/ma did not open our window in combat")
-	check(not sim.G.MacroFrame:IsShown(), "/ma opened Blizzard's panel in combat")
-	sim:slash("/ma")
-	check(isClosed(), "/ma did not close our window in combat")
+	sim:slash("/macroassist")
+	check(isWindowShown(), "/macroassist did not open our window in combat")
+	check(not sim.G.MacroFrame:IsShown(), "/macroassist opened Blizzard's panel in combat")
+	sim:slash("/macroassist")
+	check(isClosed(), "/macroassist did not close our window in combat")
 	sim:slash("/macroassist")
 	check(isWindowShown(), "/macroassist did not open our window in combat")
 	local combatEscape = sim.G[PLAYER].editor.edit:GetScript("OnEscapePressed")
@@ -478,18 +477,18 @@ scenario("/ma, /macroassist and the addon compartment toggle the window in comba
 	sim:leaveCombat()
 
 	-- A pair opened before combat stays together: the panel manager refuses the hide until combat ends.
-	sim:slash("/ma")
-	check(isOpen(), "/ma did not open the macro window after combat")
+	sim:slash("/macroassist")
+	check(isOpen(), "/macroassist did not open the macro window after combat")
 	sim:enterCombat()
-	sim:slash("/ma")
-	check(isOpen(), "/ma closed the pair in combat")
+	sim:slash("/macroassist")
+	check(isOpen(), "/macroassist closed the pair in combat")
 	sim:leaveCombat()
-	sim:slash("/ma")
-	check(isClosed(), "/ma did not close the macro window after combat")
+	sim:slash("/macroassist")
+	check(isClosed(), "/macroassist did not close the macro window after combat")
 
-	sim:slash("/ma")
+	sim:slash("/macroassist")
 	sim:gamepadNavigate()
-	sim:slash("/ma")
+	sim:slash("/macroassist")
 	check(isClosed(), "the mouse path stopped working after the gamepad")
 	sim:expectNoErrors(ADDON)
 	sim:expectNoGamepadTaint(ADDON)
@@ -527,15 +526,31 @@ scenario("/macro and /m open, close and reopen the window, and combat keeps it o
 	sim:expectNoGamepadTaint(ADDON)
 end)
 
-scenario("/ma then /m closes the window /ma opened", function(sim)
+scenario("/macroassist then /m closes the window /macroassist opened", function(sim)
 	world.install(sim)
 	sim:login()
 	pressMacroCommand(sim)
 	pressMacroCommand(sim)
-	sim:slash("/ma")
-	check(panelOpen(sim), "/ma did not open the macro window")
+	sim:slash("/macroassist")
+	check(panelOpen(sim), "/macroassist did not open the macro window")
 	pressMacroCommand(sim)
-	check(panelClosed(sim), "/m did not close the window /ma opened")
+	check(panelClosed(sim), "/m did not close the window /macroassist opened")
+	sim:expectNoErrors(ADDON)
+	sim:expectNoGamepadTaint(ADDON)
+end)
+
+scenario("a cold /macroassist is closed by the first /m", function(sim)
+	world.install(sim)
+	sim:login()
+	sim:slash("/macroassist")
+	check(sim.G[PLAYER] ~= nil and sim.G[PLAYER]:IsShown(), "/macroassist did not open our window")
+	check(sim.G.MacroFrame == nil, "/macroassist created Blizzard's MacroFrame")
+	check(sim.loader.loaded.Blizzard_MacroUI == nil, "/macroassist loaded Blizzard_MacroUI")
+
+	pressMacroCommand(sim)
+	check(panelClosed(sim), "/m did not close the window /macroassist opened")
+	pressMacroCommand(sim)
+	check(panelOpen(sim), "/m did not reopen the macro window")
 	sim:expectNoErrors(ADDON)
 	sim:expectNoGamepadTaint(ADDON)
 end)
