@@ -16,7 +16,14 @@ local TEXT_INSET_TOP = 2
 local SQUIGGLE_HEIGHT = 4
 local POPUP_ROWS = 8
 local POPUP_ROW_HEIGHT = 22
-local POPUP_PADDING = 4
+-- common-dropdown-bg keeps its corners at their native size: UiTextureAtlasElementSliceData gives it a
+-- 16 / 13 / 16 / 19 unit border (left, top, right, bottom) in UI units. Blizzard's own menus put their content
+-- inside that border too (MenuStyle1Mixin:GetInset is 8/8/8/15 around a background that extends 10 more out),
+-- so rows are inset by the border itself and label, detail and highlight all stay inside it.
+local POPUP_INSET_LEFT = 16
+local POPUP_INSET_TOP = 13
+local POPUP_INSET_RIGHT = 16
+local POPUP_INSET_BOTTOM = 19
 
 local COLOUR_CLOSE = "|r"
 local COLOUR_GREEN = "|cff33ff99"
@@ -206,10 +213,10 @@ function Editor.Create(parent)
 	for index = 1, POPUP_ROWS do
 		local row = CreateFrame("Button", nil, self.popup) --[[@as MacroAssistCompletionRow]]
 		row:SetHeight(POPUP_ROW_HEIGHT)
-		row:SetPoint("LEFT", self.popup, "LEFT", POPUP_PADDING, 0)
-		row:SetPoint("RIGHT", self.popup, "RIGHT", -POPUP_PADDING, 0)
+		row:SetPoint("LEFT", self.popup, "LEFT", POPUP_INSET_LEFT, 0)
+		row:SetPoint("RIGHT", self.popup, "RIGHT", -POPUP_INSET_RIGHT, 0)
 		if index == 1 then
-			row:SetPoint("TOP", self.popup, "TOP", 0, -POPUP_PADDING)
+			row:SetPoint("TOP", self.popup, "TOP", 0, -POPUP_INSET_TOP)
 		else
 			row:SetPoint("TOP", self.popup.rows[index - 1], "BOTTOM", 0, 0)
 		end
@@ -743,7 +750,7 @@ function Editor:RenderCompletion()
 			row:Hide()
 		end
 	end
-	self.popup:SetHeight(math.max(1, last - first + 1) * POPUP_ROW_HEIGHT + POPUP_PADDING * 2)
+	self.popup:SetHeight(math.max(1, last - first + 1) * POPUP_ROW_HEIGHT + POPUP_INSET_TOP + POPUP_INSET_BOTTOM)
 end
 
 function Editor:PositionPopup()

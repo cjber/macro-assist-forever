@@ -48,6 +48,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: 2.5.2
           args: --check .
+      # A screenshot older than the code it is drawn from (docs/screenshots/scenes.sha256).
+      - run: python3 tools/check_screenshots.py
+      - run: python3 tools/visual_audit.py
 
   python:
     runs-on: ubuntu-24.04

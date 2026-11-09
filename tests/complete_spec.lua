@@ -95,6 +95,18 @@ yes(harm.detail:find("false", 1, true) ~= nil, "evaluate supplies the live harm 
 local help = find(result.items, "help")
 yes(help.detail:find("true", 1, true) ~= nil, "evaluate supplies the live help value")
 
+-- The condition's `no` field says the engine reads a no prefix; it does not make the plain item the no form.
+local precise = {
+	evaluate = function(condition)
+		return condition.no and "no" or "yes"
+	end,
+}
+result = ns.Complete("/cast [", 8, precise)
+yes(find(result.items, "harm").detail:find("yes", 1, true) ~= nil, "a plain condition is read as itself")
+yes(find(result.items, "help").detail:find("yes", 1, true) ~= nil, "accepting a no prefix is not the no form")
+result = ns.Complete("/cast [no", 10, precise)
+yes(find(result.items, "noharm").detail:find("no", 1, true) ~= nil, "a no variant is read as the no form")
+
 -- no variants are offered once the player types no.
 result = ns.Complete("/cast [no", 10, ctx)
 yes(find(result.items, "nodead") ~= nil, "nodead is offered")

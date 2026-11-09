@@ -6,6 +6,8 @@
 ## Category: Interface Enhancements
 ## X-License: GPL-3.0-or-later
 ## X-Website: https://github.com/cjber/macro-assist-forever
+## X-Curse-Project-ID: 1795141
+## X-Wago-ID: O67bypN3
 ## SavedVariables: MacroAssistForeverDB
 ## IconTexture: Interface\AddOns\MacroAssistForever\media\Icon
 ## AddonCompartmentFunc: MacroAssistForever_OnAddonCompartmentClick

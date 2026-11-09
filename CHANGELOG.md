@@ -5,6 +5,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+<!-- discord-image: docs/screenshots/window.png -->
+
 - **The macro window now has a list and an editor of its own.** General and character tabs show every macro with its
   icon, name and a one-line summary, and the selected macro opens in a mono-font editor with line numbers, colour and a
   current-line highlight.
@@ -15,3 +17,5 @@ All notable changes to Macro Assist Forever are documented here. The format is b
   asks for a second click, and every macro write is refused in combat with a line saying why.
 - **`/ma`, `/macroassist` and the addon compartment now open the macro window.** Each one closes it again when it is
   already open, and they work in combat like `/macro` does.
+- **`/macro`, `/m` and the game menu's Macros button now close the macro window when it is already open.** Each one
+  still opens it when it is closed, so the same command toggles.
