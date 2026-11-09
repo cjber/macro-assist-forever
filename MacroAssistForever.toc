@@ -12,6 +12,13 @@
 Locales\enUS.lua
 Core\SafeCall.lua
 Core\Log.lua
+Data\Commands.lua
+Data\Conditions.lua
+Core\Lexer.lua
+Core\Parser.lua
+Core\Length.lua
+Core\Complete.lua
+Core\Check.lua
 UI\ForeverFamily.lua
 UI\Report.lua
 Core\Core.lua

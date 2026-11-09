@@ -5,3 +5,5 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- Parse macro text, complete commands, conditions, units and spells, and check it for unknown or unreachable pieces.
+

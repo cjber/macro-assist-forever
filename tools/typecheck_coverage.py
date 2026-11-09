@@ -9,7 +9,7 @@ except ModuleNotFoundError:
     from forever_tools import toc
 
 # Folders of shipped runtime Lua: nothing here may be missing from the TOC/XML load graph.
-RUNTIME_DIRS = ("Core", "Locales", "UI")
+RUNTIME_DIRS = ("Core", "Data", "Locales", "UI")
 
 
 def runtime_files(root):
