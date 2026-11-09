@@ -63,8 +63,8 @@ equal(MacroAssistForeverDB, nil, "another addon's load does not initialise this 
 addon.OnEvent(addon, "ADDON_LOADED", addonName)
 assert(type(MacroAssistForeverDB) == "table", "ADDON_LOADED creates the saved table")
 
-equal(SLASH_MACROASSISTFOREVER1, "/ma", "the short command is registered")
-equal(SLASH_MACROASSISTFOREVER2, "/macroassist", "the full command is registered")
+equal(SLASH_MACROASSISTFOREVER1, "/macroassist", "the full command is registered")
+equal(SLASH_MACROASSISTFOREVER2, nil, "the client's /ma is not registered")
 equal(type(SlashCmdList.MACROASSISTFOREVER), "function", "the command has a handler")
 
 MacroAssistForeverDB.kept = true

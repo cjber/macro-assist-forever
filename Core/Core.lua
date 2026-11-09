@@ -12,6 +12,9 @@ local attached = false
 -- True when the MacroFrame OnShow hook has just run inside the ShowMacroFrame call that is still on the stack.
 -- The post-hook reads it to tell "this call opened the panel" from "the panel was already open", then clears it.
 local panelJustShowed = false
+-- True when the OnShow hook found our own window already shown, as a cold /macroassist leaves it. The post-hook
+-- then closes the pair, because that /m press found the window open.
+local windowWasShown = false
 
 local function Attach()
 	if not MacroFrame then
@@ -22,12 +25,15 @@ local function Attach()
 	if not attached then
 		attached = true
 		MacroFrame:HookScript("OnShow", function(frame)
+			local window = ns.MacroWindow.frame
+			windowWasShown = window ~= nil and window:IsShown()
 			panelJustShowed = true
 			frame:SetAlpha(0)
-			ns.MacroWindow.frame:Show()
+			window:Show()
 		end)
 		MacroFrame:HookScript("OnHide", function(frame)
 			panelJustShowed = false
+			windowWasShown = false
 			if ns.MacroWindow.frame then
 				ns.MacroWindow.frame:Hide()
 			end
@@ -54,11 +60,17 @@ end
 
 -- ShowMacroFrame is what /macro, /m, the game menu's Macros button and the chat menu all call. Our OnShow hook
 -- runs first in the call that actually opens the panel; when it did not run, the panel was already open, so this
--- second press of the same command closes the pair. Combat and the gamepad interface refuse an addon's hide, as
--- ns.Toggle already knows, so there the pair stays open.
+-- second press of the same command closes the pair. When it did run but found our window already shown, a cold
+-- /macroassist left it there, so this /m press closes the pair as well. Combat and the gamepad interface refuse an
+-- addon's hide, as ns.Toggle already knows, so there the pair stays open.
 local function AfterShowMacroFrame()
 	if panelJustShowed then
 		panelJustShowed = false
+		local foundOpen = windowWasShown
+		windowWasShown = false
+		if foundOpen and PanelManagerAvailable() then
+			ns.MacroWindow.ClosePanel()
+		end
 		return
 	end
 	if MacroFrame and MacroFrame:IsShown() and PanelManagerAvailable() then
@@ -66,7 +78,7 @@ local function AfterShowMacroFrame()
 	end
 end
 
--- Every way in (/ma, /macroassist and the addon compartment) toggles the same window. ShowMacroFrame is called only
+-- Every way in (/macroassist and the addon compartment) toggles the same window. ShowMacroFrame is called only
 -- once Blizzard_MacroUI is loaded and the panel manager can take it: that is the function Blizzard's own /macro
 -- handler calls (Blizzard_ChatFrameBase/Shared/SlashCommands.lua), so Blizzard's panel sits at alpha 0 underneath.
 -- Every other case opens or closes our own window by itself, and nothing here loads Blizzard_MacroUI.
@@ -93,8 +105,7 @@ end
 addon:SetScript("OnEvent", function(_, event, name)
 	if event == "ADDON_LOADED" and name == addonName then
 		MacroAssistForeverDB = type(MacroAssistForeverDB) == "table" and MacroAssistForeverDB or {}
-		_G.SLASH_MACROASSISTFOREVER1 = "/ma"
-		_G.SLASH_MACROASSISTFOREVER2 = "/macroassist"
+		_G.SLASH_MACROASSISTFOREVER1 = "/macroassist"
 		SlashCmdList.MACROASSISTFOREVER = function()
 			ns.Toggle()
 		end
