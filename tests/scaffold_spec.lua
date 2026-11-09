@@ -19,6 +19,7 @@ _G.geterrorhandler = function()
 	return function() end
 end
 _G.seterrorhandler = function() end
+_G.SlashCmdList = {}
 
 local ns = {}
 local addonName = "MacroAssistForever"
@@ -59,6 +60,10 @@ equal(MacroAssistForeverDB, nil, "another addon's load does not initialise this 
 
 addon.OnEvent(addon, "ADDON_LOADED", addonName)
 assert(type(MacroAssistForeverDB) == "table", "ADDON_LOADED creates the saved table")
+
+equal(SLASH_MACROASSISTFOREVER1, "/ma", "the short command is registered")
+equal(SLASH_MACROASSISTFOREVER2, "/macroassist", "the full command is registered")
+equal(type(SlashCmdList.MACROASSISTFOREVER), "function", "the command has a handler")
 
 MacroAssistForeverDB.kept = true
 addon.OnEvent(addon, "ADDON_LOADED", addonName)

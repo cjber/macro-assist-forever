@@ -21,7 +21,7 @@ Nothing else is needed. The addon works with no other addon installed.
 
 ## Usage
 
-Open the macro window as you always do: `/macro`, the game menu, or your keybind. The General tab holds account macros and the character tab holds this character's macros.
+Open the macro window with `/ma`, `/macroassist`, the addon compartment, `/macro`, the game menu, or your keybind. The General tab holds account macros and the character tab holds this character's macros.
 
 Click a macro to edit it. New creates a macro after you choose its name and icon. Change Name/Icon renames the selected macro. Cancel puts the editor back to the saved text, and Save writes it immediately. Closing the window also saves your text when you are out of combat.
 

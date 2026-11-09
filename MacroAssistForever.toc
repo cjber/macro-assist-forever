@@ -8,6 +8,7 @@
 ## X-Website: https://github.com/cjber/macro-assist-forever
 ## SavedVariables: MacroAssistForeverDB
 ## IconTexture: Interface\AddOns\MacroAssistForever\media\Icon
+## AddonCompartmentFunc: MacroAssistForever_OnAddonCompartmentClick
 
 Locales\enUS.lua
 Core\SafeCall.lua
