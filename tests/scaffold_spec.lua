@@ -29,8 +29,10 @@ for line in toc:lines() do
 	local entry = line:match("^%s*([^#%s].*)$")
 	if entry then
 		entry = entry:gsub("\\", "/"):gsub("%s+$", "")
-		local chunk = assert(loadfile(entry))
-		chunk(addonName, ns)
+		if entry:match("%.lua$") then
+			local chunk = assert(loadfile(entry))
+			chunk(addonName, ns)
+		end
 		loaded[#loaded + 1] = entry
 	end
 end
