@@ -1,0 +1,15 @@
+# Sloppatrol profile for Macro Assist Forever, a WoW: Forever addon in Lua 5.1 with Python tooling.
+# The checks are the fast ones from AGENTS.md, set by hand: the repo has no package.json to infer them from.
+agent: claude
+prepare: []
+cleanup: [stylua .]
+checks:
+  - { name: format, run: "stylua --check ." }
+  - { name: lint, run: "luacheck ." }
+  - { name: typecheck, run: "bash tools/typecheck.sh" }
+  - { name: specs, run: "for s in tests/*_spec.lua; do luajit \"$s\" || exit 1; done", tests: true }
+  - { name: assets, run: "python3 -m tools.forever_tools.assets" }
+  - { name: tools, run: "ruff format --check tools && ruff check tools" }
+focus: [Core/**, UI/**, Locales/**]
+ignore: [tools/forever_tools/**]
+guards: { maxFiles: 8, maxLines: 400 }
