@@ -36,6 +36,13 @@ jobs:
       - run: luacheck .
       - run: python3 -m tools.forever_tools.assets
       - run: for spec in tests/*_spec.lua; do luajit "$spec" || exit 1; done
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: tools/.cache/forever_sim
+          key: forever-sim-${{ hashFiles('tools/forever_sim/fetch.py') }}
+      - run: python3 tools/forever_sim/sync.py check
+      - run: python3 tools/forever_sim/fetch.py
+      - run: luajit tools/forever_sim/run.lua
       - uses: JohnnyMorganz/stylua-action@76fd70c03e6340ceaf673366712db9b20560b402 # v5.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

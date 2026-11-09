@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: Macro Assist Forever
-## Notes: Autocomplete, line numbers and live checks in the macro window.
+## Notes: A macro list and editor with completions, live checks and a bundled mono font.
 ## Author: cjber
 ## Version: @project-version@
 ## Category: Interface Enhancements
@@ -17,8 +17,16 @@ Data\Conditions.lua
 Core\Lexer.lua
 Core\Parser.lua
 Core\Length.lua
+Core\Highlight.lua
+Core\Explain.lua
 Core\Complete.lua
 Core\Check.lua
+Core\Secret.lua
 UI\ForeverFamily.lua
 UI\Report.lua
+UI\Context.lua
+UI\Editor.lua
+UI\IconSelector.lua
+UI\MacroWindow.xml
+UI\MacroWindow.lua
 Core\Core.lua
