@@ -1,9 +1,10 @@
 local _, ns = ...
 
--- Our macro window. Blizzard's MacroFrame still opens and closes through every path the game has; its OnShow and
--- OnHide hooks show and hide this frame, and MacroFrame is drawn at alpha 0 underneath. Nothing here calls a Lua
--- method on MacroFrame, writes one of its fields or hooks one of its methods: the only contact is the engine's own
--- reads and calls (shown, alpha, frame level) and the two HookScripts in Core/Core.lua.
+-- Our macro window. Blizzard's MacroFrame still opens and closes through every path the game has; once
+-- Blizzard_MacroUI loads, its OnShow and OnHide hooks show and hide this frame and MacroFrame is drawn at alpha 0
+-- underneath. Until then the window stands on its own at the panel manager's left-panel spot. Nothing here calls a
+-- Lua method on MacroFrame, writes one of its fields or hooks one of its methods: the only contact is the engine's
+-- own reads and calls (shown, alpha, frame level, points) and the two HookScripts in Core/Core.lua.
 
 local L = ns.L
 
@@ -29,6 +30,10 @@ local HEADER_ICON_FRAME = 44
 local ROW_HEIGHT = 46
 local SCROLL_GAP = 4
 local SCROLL_WIDTH = 18
+-- Where Blizzard's panel manager puts a left-area panel, from UIParent's TOPLEFT
+-- (Blizzard_UIParentPanelManager/Shared/UIPanelLayoutFrame.lua: LEFT_OFFSET and TOP_OFFSET).
+local LEFT_PANEL_X = 16
+local LEFT_PANEL_Y = -116
 
 local PORTRAIT = "Interface\\Icons\\inv_misc_note_01"
 local WHITE_ICON_FRAME = "Interface\\Common\\WhiteIconFrame"
@@ -111,9 +116,9 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 local Window = {}
 ns.MacroWindow = Window
 
--- The close button and the editor's Escape both close Blizzard's panel, so the whole window (and its alpha-0
--- MacroFrame) goes away through the client's own path. HideUIPanel is the client's public panel API, not a method
--- on a Blizzard object; tests/sim/macro_window_scenario.lua proves the call leaves no taint in Blizzard's panel code.
+-- The close button and the editor's Escape close the window through here: Blizzard's panel when it is shown,
+-- otherwise our own frame. HideUIPanel is the client's public panel API, not a method on a Blizzard object;
+-- tests/sim/macro_window_scenario.lua proves the call leaves no taint in Blizzard's panel code.
 function Window.ClosePanel()
 	if MacroFrame and MacroFrame:IsShown() then
 		HideUIPanel(MacroFrame)
@@ -174,20 +179,19 @@ local function BuildHeader(frame)
 	return header
 end
 
----@param parent Frame
 ---@return table
-function Window.Create(parent)
+function Window.Create()
 	if Window.frame then
 		return Window
 	end
 	local template = "ButtonFrameTemplate"
-	local frame = CreateFrame("Frame", "MacroAssistForeverFrame", parent or UIParent, template) --[[@as MacroAssistFrame]]
+	local frame = CreateFrame("Frame", "MacroAssistForeverFrame", UIParent, template) --[[@as MacroAssistFrame]]
 	frame:Hide()
 	Window.frame = frame
 	frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
-	frame:SetPoint("TOPLEFT", MacroFrame, "TOPLEFT", 0, 0)
 	frame:SetFrameStrata("HIGH")
-	frame:SetFrameLevel(MacroFrame:GetFrameLevel() + 10)
+	frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", LEFT_PANEL_X, LEFT_PANEL_Y)
+	frame:SetFrameLevel(10)
 	frame:EnableMouse(true)
 	frame:SetToplevel(true)
 	frame:SetClampedToScreen(true)
@@ -338,6 +342,18 @@ function Window.Create(parent)
 	SelectTabArt(tabs[2], false)
 	Window:RefreshList()
 	return Window
+end
+
+-- Once Blizzard_MacroUI loads, sit exactly over MacroFrame and above it. Engine calls only: points, strata and level.
+function Window.AttachToMacroFrame()
+	local frame = Window.frame
+	if not frame or not MacroFrame then
+		return
+	end
+	frame:ClearAllPoints()
+	frame:SetPoint("TOPLEFT", MacroFrame, "TOPLEFT", 0, 0)
+	frame:SetFrameStrata("HIGH")
+	frame:SetFrameLevel(MacroFrame:GetFrameLevel() + 10)
 end
 
 ---@param row MacroAssistRow

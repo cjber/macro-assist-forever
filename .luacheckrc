@@ -3,7 +3,7 @@ max_line_length = 120
 exclude_files = { "tools/.cache/**", "tools/forever_tools/**", ".release/**", ".types/**", "types/**", ".claude/**", ".agents/**", ".bugpatrol/runs/**", ".speedpatrol/runs/**", ".sloppatrol/runs/**" }
 ignore = { "212/_.*" } -- unused args prefixed with _
 
-globals = { "ForeverFamily", "MacroAssistForeverDB" }
+globals = { "ForeverFamily", "MacroAssistForeverDB", "SlashCmdList" }
 
 read_globals = {
 	"C_AddOns", "C_Map", "ChatFontNormal", "CreateFrame", "CreateSettingsButtonInitializer",
@@ -17,6 +17,9 @@ read_globals = {
 	"IconDataProviderExtraType", "IconDataProviderMixin", "IconSelectorPopupFrameIconFilterTypes",
 	"IconSelectorPopupFrameTemplateMixin", "MacroFrame", "NORMAL_FONT_COLOR", "PickupMacro",
 	"ScrollBoxConstants", "ScrollUtil", "SecureCmdOptionParse", "UnitName",
+	-- The slash command, the addon compartment and the gamepad input style.
+	"C_InputInterfaceStyle", "ShowMacroFrame",
+	"SLASH_MACROASSISTFOREVER1", "SLASH_MACROASSISTFOREVER2",
 }
 
 files["Locales/"] = { max_line_length = false } -- one phrase per line, however long

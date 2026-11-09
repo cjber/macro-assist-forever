@@ -5,6 +5,9 @@
 ---@type string[]
 UISpecialFrames = {}
 
+-- The input style API that tells us whether the gamepad interface is up.
+C_InputInterfaceStyle = nil
+
 -- The saved table Core/Core.lua fills from ns.DEFAULTS.
 ---@class MacroAssistSaved
 ---@field font string

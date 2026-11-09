@@ -1,6 +1,7 @@
--- The macro window (WFA-35): the player's way in through /macro (ShowMacroFrame, which the slash handler calls), the
--- list and both tabs, editing and saving, completion and a fix, New, Change Name/Icon and Delete, closing by our X and
--- by Escape, reopening, combat with the window open, the gamepad interface on and off, and an old saved file.
+-- The macro window (WFA-35): the player's way in through /macro (ShowMacroFrame, which the slash handler calls), /ma,
+-- /macroassist and the addon compartment, a cold /ma that never loads Blizzard_MacroUI, the list and both tabs,
+-- editing and saving, completion and a fix, New, Change Name/Icon and Delete, closing by our X and the editor's Escape,
+-- reopening, combat with the window open, the gamepad interface on and off, and an old saved file.
 -- luacheck: read globals scenario ADDON
 
 local world = assert(loadfile("tests/sim/macro_world.lua"))()
@@ -236,7 +237,7 @@ scenario("Save, Cancel, New, Change Name/Icon and Delete", function(sim)
 	check(not window.iconSelector:IsShown(), "the icon frame is open after deleting")
 end)
 
-scenario("closing by our X and by Escape, and reopening", function(sim)
+scenario("closing by our X and the editor's Escape, and reopening", function(sim)
 	local window = openNamed(sim)
 	sim:click(window.CloseButton)
 	sim:advance(0.2)
@@ -336,4 +337,145 @@ scenario("an old saved file still opens the window", function(sim)
 	check(#rows(window) == 5, "the old save file broke the character list")
 	sim:click(window.CloseButton)
 	sim:advance(0.2)
+end)
+
+scenario("/ma, /macroassist and the addon compartment toggle the window in combat and on the gamepad", function(sim)
+	world.install(sim)
+	sim:login()
+	equal(#sim:slashCommands(ADDON), 1, "the addon registers one slash command key")
+	equal(sim:slashCommands(ADDON)[1], "/ma", "the command's short form is /ma")
+	check(not sim.G[PLAYER], "the macro window was built at login")
+
+	local function isWindowShown()
+		local window = sim.G[PLAYER]
+		return window and window:IsShown()
+	end
+	local function isOpen()
+		return isWindowShown() and sim.G.MacroFrame ~= nil and sim.G.MacroFrame:IsShown()
+	end
+	local function isClosed()
+		return sim.G.MacroFrame and not sim.G.MacroFrame:IsShown() and not isWindowShown()
+	end
+
+	-- A cold /ma builds our window by itself and never loads Blizzard_MacroUI, so nothing that addon defines is
+	-- tainted. The X and the editor's own Escape both close it while it stands alone; the game's Escape is not ours
+	-- to register.
+	sim:slash("/ma")
+	check(isWindowShown(), "a cold /ma did not open our window")
+	check(sim.G.MacroFrame == nil, "a cold /ma created Blizzard's MacroFrame")
+	check(sim.loader.loaded.Blizzard_MacroUI == nil, "a cold /ma loaded Blizzard_MacroUI")
+	local standalone = sim.G[PLAYER]
+	sim:click(standalone.CloseButton)
+	sim:advance(0.2)
+	check(not isWindowShown(), "our X did not close the standalone window")
+	sim:slash("/ma")
+	check(isWindowShown(), "a second cold /ma did not reopen our window")
+	local standaloneEscape = standalone.editor.edit:GetScript("OnEscapePressed")
+	check(standaloneEscape(standalone.editor.edit), "the editor's Escape was not consumed")
+	sim:advance(0.2)
+	check(not isWindowShown(), "the editor's Escape did not close the standalone window")
+	check(not sim.G.GameMenuFrame or not sim.G.GameMenuFrame:IsShown(), "the editor's Escape opened the game menu")
+	check(sim.loader.loaded.Blizzard_MacroUI == nil, "the editor's Escape loaded Blizzard_MacroUI")
+
+	-- /macro (ShowMacroFrame, the function its slash handler calls) loads Blizzard_MacroUI; our window re-anchors
+	-- over the panel and stays above it.
+	sim:slash("/ma")
+	sim:input(function()
+		sim.G.ShowMacroFrame()
+	end)
+	sim:advance(0.2)
+	check(isOpen(), "the game's own macro path did not open Blizzard's panel")
+	check(sim.loader.loaded.Blizzard_MacroUI ~= nil, "/macro did not load Blizzard_MacroUI")
+	check(sim.G.MacroFrame:GetAlpha() == 0, "MacroFrame is not drawn at alpha 0 under our window")
+	check(sim.G[PLAYER]:GetFrameLevel() > sim.G.MacroFrame:GetFrameLevel(), "our window is not above MacroFrame")
+	sim:input(function()
+		sim.G.CloseAllWindows()
+	end)
+	sim:advance(0.2)
+	check(isClosed(), "Escape's CloseAllWindows path did not close the pair")
+
+	-- The gamepad interface cannot take a Blizzard panel from addon code without tainting its frame controls, so
+	-- each way in opens and closes our own window instead, and the game's own macro path still opens the panel.
+	sim:setGamepad(true)
+	sim:slash("/ma")
+	check(isWindowShown(), "/ma did not open our window with the gamepad")
+	check(not sim.G.MacroFrame:IsShown(), "/ma opened Blizzard's panel with the gamepad")
+	sim:gamepadNavigate()
+	sim:input(function()
+		sim.G.ShowMacroFrame() -- the game's own macro path, as its keybind calls it
+	end)
+	sim:advance(0.2)
+	check(isOpen(), "the game's own macro path did not open Blizzard's panel")
+	sim:gamepadNavigate()
+	sim:input(function()
+		sim.G.CloseAllWindows()
+	end)
+	sim:advance(0.2)
+	check(isClosed(), "the game's own Escape path did not close the macro window")
+	sim:slash("/macroassist")
+	check(isWindowShown(), "/macroassist did not open our window with the gamepad")
+	sim:gamepadNavigate()
+	sim:input(function()
+		sim.G.MacroAssistForever_OnAddonCompartmentClick("MacroAssistForever")
+	end)
+	sim:advance(0.2)
+	check(isClosed(), "the addon compartment did not close our window with the gamepad")
+	sim:setGamepad(false)
+
+	for _, command in ipairs({ "/ma", "/macroassist" }) do
+		sim:slash(command)
+		check(isOpen(), command .. " did not open the macro window")
+		sim:slash(command)
+		check(isClosed(), command .. " did not close the macro window")
+	end
+
+	sim:input(function()
+		sim.G.MacroAssistForever_OnAddonCompartmentClick("MacroAssistForever")
+	end)
+	sim:advance(0.2)
+	check(isOpen(), "the addon compartment did not open the macro window")
+	sim:input(function()
+		sim.G.MacroAssistForever_OnAddonCompartmentClick("MacroAssistForever")
+	end)
+	sim:advance(0.2)
+	check(isClosed(), "the addon compartment did not close the macro window")
+
+	-- Combat: the panel manager refuses addon calls, so our own window opens and closes by itself as well.
+	sim:enterCombat()
+	sim:slash("/ma")
+	check(isWindowShown(), "/ma did not open our window in combat")
+	check(not sim.G.MacroFrame:IsShown(), "/ma opened Blizzard's panel in combat")
+	sim:slash("/ma")
+	check(isClosed(), "/ma did not close our window in combat")
+	sim:slash("/macroassist")
+	check(isWindowShown(), "/macroassist did not open our window in combat")
+	local combatEscape = sim.G[PLAYER].editor.edit:GetScript("OnEscapePressed")
+	check(combatEscape(sim.G[PLAYER].editor.edit), "the editor's Escape was not consumed in combat")
+	sim:advance(0.2)
+	check(isClosed(), "the editor's Escape did not close our window in combat")
+	sim:slash("/macroassist")
+	check(isWindowShown(), "/macroassist did not reopen our window in combat")
+	sim:input(function()
+		sim.G.MacroAssistForever_OnAddonCompartmentClick("MacroAssistForever")
+	end)
+	sim:advance(0.2)
+	check(isClosed(), "the addon compartment did not close our window in combat")
+	sim:leaveCombat()
+
+	-- A pair opened before combat stays together: the panel manager refuses the hide until combat ends.
+	sim:slash("/ma")
+	check(isOpen(), "/ma did not open the macro window after combat")
+	sim:enterCombat()
+	sim:slash("/ma")
+	check(isOpen(), "/ma closed the pair in combat")
+	sim:leaveCombat()
+	sim:slash("/ma")
+	check(isClosed(), "/ma did not close the macro window after combat")
+
+	sim:slash("/ma")
+	sim:gamepadNavigate()
+	sim:slash("/ma")
+	check(isClosed(), "the mouse path stopped working after the gamepad")
+	sim:expectNoErrors(ADDON)
+	sim:expectNoGamepadTaint(ADDON)
 end)

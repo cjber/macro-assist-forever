@@ -1,8 +1,9 @@
 local addonName, ns = ...
 
--- The addon frame loads our window when Blizzard_MacroUI loads, and hooks its show and hide. Nothing in here runs
--- Blizzard's Lua on its frame: HookScript and the engine's own reads and alpha call are the only contact, as WFA-38
--- allows.
+-- Our window builds and opens without Blizzard_MacroUI; this file never loads that addon. When Blizzard_MacroUI
+-- loads, by the player's /macro, the game menu or a keybind, Attach re-anchors our window to MacroFrame and hooks its
+-- show and hide. Nothing in here runs Blizzard's Lua on its frame: HookScript and the engine's own reads and alpha
+-- call are the only contact, as WFA-38 allows.
 
 local addon = CreateFrame("Frame")
 addon:RegisterEvent("ADDON_LOADED")
@@ -10,23 +11,62 @@ addon:RegisterEvent("ADDON_LOADED")
 local attached = false
 
 local function Attach()
-	if attached or not MacroFrame then
+	if not MacroFrame then
 		return
 	end
-	attached = true
 	ns.MacroWindow.Create()
-	MacroFrame:HookScript("OnShow", function(frame)
-		frame:SetAlpha(0)
-		ns.MacroWindow.frame:Show()
-	end)
-	MacroFrame:HookScript("OnHide", function(frame)
-		if ns.MacroWindow.frame then
-			ns.MacroWindow.frame:Hide()
-		end
-		frame:SetAlpha(1)
-	end)
+	ns.MacroWindow.AttachToMacroFrame()
+	if not attached then
+		attached = true
+		MacroFrame:HookScript("OnShow", function(frame)
+			frame:SetAlpha(0)
+			ns.MacroWindow.frame:Show()
+		end)
+		MacroFrame:HookScript("OnHide", function(frame)
+			if ns.MacroWindow.frame then
+				ns.MacroWindow.frame:Hide()
+			end
+			frame:SetAlpha(1)
+		end)
+	end
 	if MacroFrame:IsShown() then
 		MacroFrame:SetAlpha(0)
+		ns.MacroWindow.frame:Show()
+	end
+end
+
+-- The panel manager refuses an addon's ShowUIPanel and HideUIPanel in combat. Under the gamepad interface, Blizzard's
+-- frame controls manager takes every panel that shows into its focus in the same call, so a show or hide an addon
+-- starts taints the protected call that follows (#158). In both cases our own window opens and closes by itself.
+local function PanelManagerAvailable()
+	local styles, api = Enum and Enum.InputDeviceInterfaceType, C_InputInterfaceStyle
+	local gamepad = styles ~= nil
+		and api ~= nil
+		and api.GetCurrentStyle ~= nil
+		and api.GetCurrentStyle() == styles.Gamepad
+	return not InCombatLockdown() and not gamepad
+end
+
+-- Every way in (/ma, /macroassist and the addon compartment) toggles the same window. ShowMacroFrame is called only
+-- once Blizzard_MacroUI is loaded and the panel manager can take it: that is the function Blizzard's own /macro
+-- handler calls (Blizzard_ChatFrameBase/Shared/SlashCommands.lua), so Blizzard's panel sits at alpha 0 underneath.
+-- Every other case opens or closes our own window by itself, and nothing here loads Blizzard_MacroUI.
+function ns.Toggle()
+	local panel = MacroFrame
+	local window = ns.MacroWindow.frame
+	local panelShown = panel ~= nil and panel:IsShown()
+	local windowShown = window ~= nil and window:IsShown()
+	if panelShown or windowShown then
+		-- The panel manager refuses an addon's hide in combat or under the gamepad interface, so a pair opened
+		-- before then stays together until it can close.
+		if panelShown and not PanelManagerAvailable() then
+			return
+		end
+		ns.MacroWindow.ClosePanel()
+	elseif panel and PanelManagerAvailable() and ShowMacroFrame then
+		ShowMacroFrame()
+	else
+		ns.MacroWindow.Create()
 		ns.MacroWindow.frame:Show()
 	end
 end
@@ -34,8 +74,18 @@ end
 addon:SetScript("OnEvent", function(_, event, name)
 	if event == "ADDON_LOADED" and name == addonName then
 		MacroAssistForeverDB = type(MacroAssistForeverDB) == "table" and MacroAssistForeverDB or {}
+		_G.SLASH_MACROASSISTFOREVER1 = "/ma"
+		_G.SLASH_MACROASSISTFOREVER2 = "/macroassist"
+		SlashCmdList.MACROASSISTFOREVER = function()
+			ns.Toggle()
+		end
 		Attach() -- Blizzard_MacroUI may already be loaded by another addon
 	elseif event == "ADDON_LOADED" and name == "Blizzard_MacroUI" then
 		Attach()
 	end
 end)
+
+-- The addon compartment entry (## AddonCompartmentFunc) uses the same toggle.
+_G.MacroAssistForever_OnAddonCompartmentClick = function()
+	ns.Toggle()
+end
