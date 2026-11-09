@@ -225,8 +225,9 @@ local function ResetEnd(text, position)
 	return index - 1
 end
 
--- The live value `ctx.evaluate(cond)` supplies for a condition, as a detail suffix. A no-variant receives a small
--- descriptor so the caller can tell [dead] from [nodead].
+-- The live value `ctx.evaluate(cond)` supplies for a condition, as a detail suffix. Every value is a small
+-- descriptor: the condition's own `no` field says that the engine accepts a no prefix, not that this item is the no
+-- form, so the descriptor carries the actual negation separately (the caller can tell [dead] from [nodead]).
 ---@param ctx table
 ---@param condition MacroAssistCondition
 ---@param no boolean
@@ -235,11 +236,7 @@ local function LiveDetail(ctx, condition, no)
 	if type(ctx.evaluate) ~= "function" then
 		return ""
 	end
-	---@type any
-	local value = condition
-	if no then
-		value = { name = condition.name, no = true, condition = condition }
-	end
+	local value = { name = condition.name, no = no, condition = condition }
 	local ok, live = pcall(ctx.evaluate, value)
 	if not ok or live == nil then
 		return ""

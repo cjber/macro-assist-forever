@@ -15,7 +15,8 @@ read_globals = {
 	"CreateMacro", "CreateScrollBoxListLinearView", "C_Spell", "C_SpellBook", "DeleteMacro", "EditMacro",
 	"Enum", "GameFontHighlightSmall", "GameTooltip", "GetMacroInfo", "GetNumMacros", "HideUIPanel",
 	"IconDataProviderExtraType", "IconDataProviderMixin", "IconSelectorPopupFrameIconFilterTypes",
-	"IconSelectorPopupFrameTemplateMixin", "MacroFrame", "NORMAL_FONT_COLOR", "PickupMacro",
+	"IconSelectorPopupFrameTemplateMixin", "MacroFrame", "NORMAL_FONT_COLOR", "PanelTemplates_DeselectTab",
+	"PanelTemplates_SelectTab", "PickupMacro",
 	"ScrollBoxConstants", "ScrollUtil", "SecureCmdOptionParse", "UnitName",
 	-- The slash command, the addon compartment and the gamepad input style.
 	"C_InputInterfaceStyle", "ShowMacroFrame",
