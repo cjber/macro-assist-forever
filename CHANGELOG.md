@@ -5,6 +5,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-09
+
 <!-- discord-image: docs/screenshots/window.png -->
 
 - **The macro window now has a list and an editor of its own.** General and character tabs show every macro with its
@@ -15,7 +17,6 @@ All notable changes to Macro Assist Forever are documented here. The format is b
   says what would fire now with your current target and how many of the 255 characters the macro uses.
 - **New, Change Name/Icon, Save, Cancel and Delete work in the window.** Edits are saved when the window closes, Delete
   asks for a second click, and every macro write is refused in combat with a line saying why.
-- **`/ma`, `/macroassist` and the addon compartment now open the macro window.** Each one closes it again when it is
-  already open, and they work in combat like `/macro` does.
-- **`/macro`, `/m` and the game menu's Macros button now close the macro window when it is already open.** Each one
-  still opens it when it is closed, so the same command toggles.
+- **Every way in toggles the macro window.** `/macro`, `/m`, the game menu's Macros button, `/macroassist` and the
+  addon compartment each open the window when it is closed and close it when it is open. `/macroassist` and the
+  compartment also work in combat, like `/macro` does.
