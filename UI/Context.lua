@@ -8,31 +8,47 @@ local L = ns.L
 local ctx = { spells = {} }
 ns.Context = { ctx = ctx }
 
+-- The parts of a condition descriptor or parser node that the engine call needs. Completion passes a descriptor
+-- whose `no` is the actual negation; the wrapped condition's own `no` field only says that the engine accepts the no
+-- prefix. A parser node passed directly has no wrapper.
 ---@param condition any
----@return string?
-local function ConditionText(condition)
+---@return string? name
+---@return boolean negated
+---@return string? param
+local function Describe(condition)
 	if type(condition) == "string" then
-		return condition
+		return condition:lower(), false, nil
 	end
 	if type(condition) ~= "table" then
-		return nil
+		return nil, false, nil
 	end
 	local node = condition.condition or condition
 	local name = condition.name or node.name
 	if type(name) ~= "string" or name == "" then
-		return nil
+		return nil, false, nil
 	end
-	-- Completion passes a descriptor whose `no` is the actual negation; the wrapped condition's own `no` field only
-	-- says that the engine accepts the no prefix. A parser node passed directly has no wrapper.
 	local negated
 	if condition.condition ~= nil then
 		negated = condition.no == true
 	else
 		negated = condition.no or node.no
 	end
-	local text = negated and ("no" .. name) or name
 	local param = condition.param or node.param
-	if type(param) == "string" and param ~= "" then
+	if type(param) ~= "string" or param == "" then
+		param = nil
+	end
+	return name:lower(), not not negated, param
+end
+
+---@param condition any
+---@return string?
+local function ConditionText(condition)
+	local name, negated, param = Describe(condition)
+	if not name then
+		return nil
+	end
+	local text = negated and ("no" .. name) or name
+	if param then
 		text = text .. ":" .. param
 	end
 	return text
@@ -43,6 +59,12 @@ end
 local function Evaluate(condition)
 	local text = ConditionText(condition)
 	if not text or type(SecureCmdOptionParse) ~= "function" then
+		return nil
+	end
+	-- Only an entry the parser and ns.Conditions recognise may reach the engine; anything else is a typing mistake
+	-- the checker reports, and the client would print it to chat. A parameter the entry cannot use is refused too.
+	local name, negated, param = Describe(condition)
+	if not ns.ConditionAccepted(name and ns.ConditionAliases[name], negated, param ~= nil, param) then
 		return nil
 	end
 	local ok, value = pcall(SecureCmdOptionParse, "[" .. text .. "] 1")

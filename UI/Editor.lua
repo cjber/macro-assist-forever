@@ -269,6 +269,7 @@ function Editor.Create(parent)
 	end)
 	self.edit:SetScript("OnCursorChanged", function()
 		self:UpdateHighlight()
+		self:UpdateDiagnosticTooltip()
 		if self.popup:IsShown() then
 			self:PositionPopup()
 		end
@@ -348,10 +349,26 @@ function Editor:SetCombat(inCombat)
 	self:UpdateStatus()
 end
 
+-- The bundled mono font may still be resolving when the editor is created, so the probe's first width can be the
+-- fallback font's advance. Measure again on every layout: one GetStringWidth, and the squiggle, popup and wrapping
+-- column all use the advance the overlay and EditBox are actually drawing with.
+function Editor:UpdateAdvance()
+	self.probe:SetText(string.rep("M", 32))
+	local width = self.probe:GetStringWidth()
+	self.probe:SetText("")
+	if type(width) == "number" and width > 0 then
+		local advance = width / 32
+		if advance > 0 then
+			self.advance = advance
+		end
+	end
+end
+
 function Editor:RefreshAll()
 	if not self.textArea:GetWidth() or self.textArea:GetWidth() <= 1 then
 		return
 	end
+	self:UpdateAdvance()
 	self.wrapWidth = math.max(1, self.textArea:GetWidth() - TEXT_INSET_LEFT - TEXT_INSET_RIGHT)
 	self.columns = math.max(1, math.floor(self.wrapWidth / self.advance))
 	local text = self:GetText()
@@ -431,8 +448,50 @@ function Editor:LayoutLines(parsed)
 	self.contentHeight = y
 end
 
--- One squiggle frame per visible diagnostic row. They sit under the overlay FontStrings and take the mouse, so a
--- hover can explain the problem and a click can apply its fix.
+---@param owner Frame
+---@param diagnostic MacroAssistDiagnostic
+---@param anchor string
+local function ShowDiagnosticTooltip(owner, diagnostic, anchor)
+	GameTooltip:SetOwner(owner, anchor)
+	GameTooltip:SetText(diagnostic.message, 1, 1, 1, 1, true)
+	if diagnostic.fix then
+		GameTooltip:AddLine(L["Tab: fix"], 0.2, 1, 0.2, true)
+	end
+	GameTooltip:Show()
+end
+
+-- The EditBox sits above the squiggles and eats their mouse, so the caret is the path that always reaches the
+-- message: moving it into a diagnostic shows the same tooltip, without an OnUpdate poll. The squiggle frames sit
+-- above the EditBox so OnEnter can run; SetPropagateMouseClicks, which would pass a click through that strip, is a
+-- protected function on this client, so it is not called. In game, check that a hover shows the tooltip and that a
+-- click on the 4 px strip still lands in the text.
+---@param position integer
+---@return MacroAssistDiagnostic?
+function Editor:DiagnosticAt(position)
+	for _, diagnostic in ipairs(self.diagnostics or {}) do
+		local from = diagnostic.from or 1
+		local to = diagnostic.to or from
+		if position >= from and position <= to + 1 then
+			return diagnostic
+		end
+	end
+end
+
+function Editor:UpdateDiagnosticTooltip()
+	if self.hoveredDiagnostic then
+		return
+	end
+	local position = (self.edit:GetCursorPosition() or 0) + 1
+	local diagnostic = self:DiagnosticAt(position)
+	if diagnostic then
+		ShowDiagnosticTooltip(self.edit, diagnostic, "ANCHOR_CURSOR")
+	elseif GameTooltip:IsOwned(self.edit) then
+		GameTooltip:Hide()
+	end
+end
+
+-- One squiggle frame per visible diagnostic row. It sits above the EditBox, whose transparent text would otherwise
+-- take the mouse, so OnEnter can show the message and OnMouseUp can apply the fix.
 function Editor:LayoutDiagnostics()
 	local used = 0
 	for _, diagnostic in ipairs(self.diagnostics or {}) do
@@ -459,7 +518,7 @@ function Editor:LayoutDiagnostics()
 						local frame = self.squiggles[used]
 						if not frame then
 							frame = CreateFrame("Frame", nil, self.textArea) --[[@as MacroAssistSquiggle]]
-							frame:SetFrameLevel(self.textArea:GetFrameLevel() + 1)
+							frame:SetFrameLevel(self.textArea:GetFrameLevel() + 4)
 							frame:EnableMouse(true)
 							frame.texture = frame:CreateTexture(nil, "ARTWORK")
 							frame.texture:SetAllPoints(frame)
@@ -471,18 +530,14 @@ function Editor:LayoutDiagnostics()
 									return
 								end
 								self.hoveredDiagnostic = current
-								GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-								GameTooltip:SetText(current.message, 1, 1, 1, 1, true)
-								if current.fix then
-									GameTooltip:AddLine(L["Tab: fix"], 0.2, 1, 0.2, true)
-								end
-								GameTooltip:Show()
+								ShowDiagnosticTooltip(button, current, "ANCHOR_RIGHT")
 							end)
 							frame:SetScript("OnLeave", function(button)
 								self.hoveredDiagnostic = nil
 								if GameTooltip:IsOwned(button) then
 									GameTooltip:Hide()
 								end
+								self:UpdateDiagnosticTooltip()
 							end)
 							frame:SetScript("OnMouseUp", function(button, mouseButton)
 								if mouseButton == "LeftButton" and button.diagnostic and button.diagnostic.fix then
@@ -549,46 +604,27 @@ function Editor:UpdateHighlight()
 	self.cursorRow = row
 end
 
----@return string
+---@return string? now
+---@return boolean hasCommands
 function Editor:NowText()
 	if type(SecureCmdOptionParse) ~= "function" or not self.parsed then
-		return ""
+		return nil, false
 	end
-	for _, line in ipairs(self.parsed.lines) do
-		local entry = line.command and ns.CommandAliases[line.command.nameLower]
-		if line.kind == "command" and entry and line.command.name ~= "" then
-			local args = line.text:sub(line.command.to - line.from + 2):gsub("^%s+", "")
-			if args ~= "" then
-				local ok, result = pcall(SecureCmdOptionParse, args)
-				if ok and type(result) == "string" and result ~= "" then
-					local unit = "target"
-					for _, clause in ipairs(line.clauses) do
-						local clauseText = line.text:sub(clause.from - line.from + 1, clause.to - line.from + 1)
-						local clauseOk, clauseResult = pcall(SecureCmdOptionParse, clauseText)
-						if clauseOk and clauseResult ~= nil then
-							for _, group in ipairs(clause.groups) do
-								local groupText = line.text:sub(group.from - line.from + 1, group.to - line.from + 1)
-								local groupOk, groupResult = pcall(SecureCmdOptionParse, groupText .. " 1")
-								if groupOk and groupResult == "1" then
-									unit = group.unit and group.unit.token ~= "" and group.unit.token or "target"
-									break
-								end
-							end
-							break
-						end
-					end
-					if unit ~= "player" and unit ~= "none" then
-						local name = ns.Readable(UnitName(unit))
-						if name then
-							result = result .. " " .. L["on %s"]:format(name)
-						end
-					end
-					return result
-				end
-			end
+	local function evaluate(text)
+		local ok, result = pcall(SecureCmdOptionParse, text)
+		if ok then
+			return result
+		end
+		return nil
+	end
+	local result, hasCommands, unit = ns.Now(self.parsed, evaluate)
+	if result and unit and unit ~= "" and unit ~= "player" and unit ~= "none" then
+		local name = ns.Readable(UnitName(unit))
+		if name then
+			result = result .. " " .. L["on %s"]:format(name)
 		end
 	end
-	return ""
+	return result, hasCommands
 end
 
 function Editor:UpdateStatus()
@@ -604,12 +640,20 @@ function Editor:UpdateStatus()
 		local phrase = count == 1 and L["%d problem · %s"] or L["%d problems · %s"]
 		problem = colour .. phrase:format(count, self.diagnostics[1].message) .. COLOUR_CLOSE
 	end
-	local now = self:NowText()
+	local now, hasCommands = self:NowText()
+	local nowText
+	if now and now ~= "" then
+		nowText = L["Now: %s"]:format(now)
+	elseif hasCommands then
+		nowText = COLOUR_MUTED .. L["Nothing fires now"] .. COLOUR_CLOSE
+	else
+		nowText = COLOUR_MUTED .. L["No commands in this macro yet."] .. COLOUR_CLOSE
+	end
 	local text = problem
 		.. COLOUR_MUTED
 		.. "  ·  "
 		.. COLOUR_CLOSE
-		.. (now ~= "" and (L["Now: %s"]:format(now)) or COLOUR_MUTED .. L["No commands in this macro yet."] .. COLOUR_CLOSE)
+		.. nowText
 		.. COLOUR_MUTED
 		.. "  ·  "
 		.. COLOUR_CLOSE

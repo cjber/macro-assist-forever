@@ -127,9 +127,14 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(window.header.meta:GetText(), "Character macro · 5 of 30", "the header counts character macros")
 	equal(textOf(window), "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot", "the editor holds the body")
 	equal(
-		window.editor.status:GetText():find("Now: Arcane Shot on Defias Pillager", 1, true) ~= nil,
+		window.editor.status:GetText():find("Now: Arcane Shot on Defias Pillager", 1, true),
+		nil,
+		"the live line names no unit when the matching clause has none"
+	)
+	equal(
+		window.editor.status:GetText():find("Now: Arcane Shot", 1, true) ~= nil,
 		true,
-		"the live line includes the target"
+		"the live line still says what fires"
 	)
 	equal(arcane.Summary:GetText(), "Arcane Shot, mouseover first", "the row summarises the macro")
 
