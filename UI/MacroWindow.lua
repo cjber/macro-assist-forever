@@ -39,6 +39,9 @@ local LEFT_PANEL_Y = -116
 local PORTRAIT = "Interface\\Icons\\inv_misc_note_01"
 local WHITE_ICON_FRAME = "Interface\\Common\\WhiteIconFrame"
 local MUTED = { 0.55, 0.55, 0.55 }
+-- Icon art carries a baked-in border. The client's item buttons crop 8% off every edge, so every spell or item
+-- icon we draw does the same and its frame never shows a second border inside ours.
+local ICON_TEXCOORD = { 0.08, 0.92, 0.08, 0.92 }
 
 -- Blizzard's MacroUI reads the slot limits as Constants.MacroConsts.MAX_* on this build; the client no longer
 -- defines the old MAX_ACCOUNT_MACROS and MAX_CHARACTER_MACROS globals.
@@ -98,8 +101,6 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field saveButton Button
 ---@field cancelButton Button
 ---@field Tabs MacroAssistTab[]
----@field tabPadding number
----@field minTabWidth number
 ---@field maxTabWidth number
 
 ---@class MacroAssistWindow
@@ -131,18 +132,12 @@ end
 ---@param tab MacroAssistTab
 ---@param selected boolean
 local function SelectTabArt(tab, selected)
-	tab.LeftActive:SetShown(selected)
-	tab.MiddleActive:SetShown(selected)
-	tab.RightActive:SetShown(selected)
-	tab.Left:SetShown(not selected)
-	tab.Middle:SetShown(not selected)
-	tab.Right:SetShown(not selected)
-	tab.Text:SetPoint("CENTER", tab, "CENTER", 0, selected and -4 or -8)
+	-- Blizzard's own tab helpers on our own tab frames: they swap the active art, the font and the text's
+	-- offset, and keep both tabs' art anchored to the same bottom line. Never call them on Blizzard's frames.
 	if selected then
-		tab:Disable()
-		tab:SetDisabledFontObject(GameFontHighlightSmall)
+		PanelTemplates_SelectTab(tab)
 	else
-		tab:Enable()
+		PanelTemplates_DeselectTab(tab)
 	end
 end
 
@@ -159,6 +154,7 @@ local function BuildHeader(frame)
 	local icon = header:CreateTexture(nil, "ARTWORK")
 	icon:SetSize(HEADER_ICON, HEADER_ICON)
 	icon:SetPoint("CENTER", border, "CENTER", 0, 0)
+	icon:SetTexCoord(ICON_TEXCOORD[1], ICON_TEXCOORD[2], ICON_TEXCOORD[3], ICON_TEXCOORD[4])
 	header.icon = icon
 	local name = header:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	name:SetPoint("TOPLEFT", border, "TOPRIGHT", 8, -1)
@@ -222,8 +218,9 @@ function Window.Create()
 		tabs[index] = tab
 	end
 	frame.Tabs = tabs
-	frame.tabPadding = 0
-	frame.minTabWidth = 0
+	-- PanelTabButtonMixin sizes each tab from these parent fields (PanelTemplates_TabResize): no extra padding
+	-- and no minimum beyond the side art; 240 is the widest our own longest tab may grow, as Blizzard's own
+	-- MacroFrame sets maxTabWidth in its XML.
 	frame.maxTabWidth = 240
 
 	local listInset = CreateFrame("Frame", nil, frame, "InsetFrameTemplate")
@@ -362,6 +359,7 @@ end
 function Window:InitializeRow(row, data)
 	row.macroIndex = data.index
 	row.Icon:SetTexture(data.icon)
+	row.Icon:SetTexCoord(ICON_TEXCOORD[1], ICON_TEXCOORD[2], ICON_TEXCOORD[3], ICON_TEXCOORD[4])
 	row.Name:SetWidth(ROW_NAME_WIDTH)
 	row.Name:SetText(data.name or "")
 	row.Summary:SetText(data.summary or "")

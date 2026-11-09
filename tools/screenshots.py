@@ -34,6 +34,12 @@ def number(name, text=SOURCE):
     return int(re.search(rf"local {name} = (-?\d+)", text)[1])
 
 
+def texcoord(name, text=SOURCE):
+    """A local texcoord constant from the addon's Lua: the four numbers SetTexCoord receives."""
+    block = re.search(rf"local {name} = \{{([^}}]+)\}}", text)[1]
+    return [float(value) for value in block.split(",")]
+
+
 WINDOW_WIDTH = number("WINDOW_WIDTH")
 WINDOW_HEIGHT = number("WINDOW_HEIGHT")
 INSET_LEFT = number("INSET_LEFT")
@@ -61,6 +67,9 @@ ROW_ICON_GAP = 6
 ROW_TEXT_RIGHT = 6
 SCROLL_GAP = number("SCROLL_GAP")
 SCROLL_WIDTH = number("SCROLL_WIDTH")
+ICON_TEXCOORD = texcoord("ICON_TEXCOORD")
+TOP_TAB_HEIGHT_PERCENT = 0.75  # PanelTopTabButtonMixin:OnLoad keeps the lower 75% of the tab art.
+TOP_TAB_CROP = 1 - TOP_TAB_HEIGHT_PERCENT
 FONT_SIZE = number("FONT_SIZE", EDITOR)
 GUTTER_WIDTH = number("GUTTER_WIDTH", EDITOR)
 TEXT_INSET_LEFT = number("TEXT_INSET_LEFT", EDITOR)
@@ -69,7 +78,10 @@ TEXT_INSET_TOP = number("TEXT_INSET_TOP", EDITOR)
 SQUIGGLE_HEIGHT = number("SQUIGGLE_HEIGHT", EDITOR)
 POPUP_ROWS = number("POPUP_ROWS", EDITOR)
 POPUP_ROW_HEIGHT = number("POPUP_ROW_HEIGHT", EDITOR)
-POPUP_PADDING = number("POPUP_PADDING", EDITOR)
+POPUP_INSET_LEFT = number("POPUP_INSET_LEFT", EDITOR)
+POPUP_INSET_TOP = number("POPUP_INSET_TOP", EDITOR)
+POPUP_INSET_RIGHT = number("POPUP_INSET_RIGHT", EDITOR)
+POPUP_INSET_BOTTOM = number("POPUP_INSET_BOTTOM", EDITOR)
 MAX_ACCOUNT = 120
 MAX_CHARACTER = 30
 
@@ -124,6 +136,8 @@ MACROS = [
 ]
 SELECTED = 0
 CURRENT_LINE = 1
+TAB_NAMES = ["General", "Barry's Macros"]
+TAB_SELECTED = 1
 
 # The completion scene: a short Hunter macro with one mistyped command on a line above the caret, and a new
 # `/cast [` being typed on the last line, so the popup opens below every line of text.
@@ -333,8 +347,11 @@ def inset(canvas, x, y, w, h):
     wowmock.draw_nine_slice(canvas, wowmock.INSET_FRAME_LAYOUT, x, y, w, h)
 
 
-def top_tabs(canvas, x, y, names, selected):
-    """PanelTopTabButtonTemplate: the panel tab art flipped to hang upwards over the frame's top edge."""
+def top_tabs(canvas, x, top, names, selected):
+    """PanelTopTabButtonTemplate: the tab art's lower 75% flipped to hang upwards from the tab's bottom, so both
+    tabs keep their bottoms on one line; the selected tab only swaps to the active art and its text colour, while
+    PanelTemplates_SelectTab/DeselectTab move its text to (0, -4)/(0, -8)."""
+    bottom = top + 32
     for index, name in enumerate(names):
         active = index == selected
         prefix = "uiframe-activetab" if active else "uiframe-tab"
@@ -343,27 +360,64 @@ def top_tabs(canvas, x, y, names, selected):
         middle = canvas.ui.atlas(f"_{prefix}-center")
         font = FONTS["GameFontHighlightSmall" if active else "GameFontNormalSmall"]
         width = max(canvas.text_width(name, font) + 20, 72)
-        top = y + 32 - left.height
+        height = left.height * TOP_TAB_HEIGHT_PERCENT
+        top_y = bottom - height
+        crop = round(left.image.height * TOP_TAB_CROP)
         left_x = x + (-1 if active else -3)
         right_x = x + width + (8 if active else 7) - right.width
-        canvas.draw(left, left_x, top, flip_v=True)
-        canvas.draw(right, right_x, top, flip_v=True)
-        canvas.draw(middle, left_x + left.width, top, right_x - left_x - left.width, middle.height, flip_v=True)
-        canvas.text(x, y + 12 + (-3 if active else 2), name, font, justify="CENTER", width=width, box_height=10)
-        x += width
+        canvas.draw(
+            left.image.crop((0, crop, left.image.width, left.image.height)),
+            left_x,
+            top_y,
+            left.width,
+            height,
+            flip_v=True,
+        )
+        canvas.draw(
+            right.image.crop((0, crop, right.image.width, right.image.height)),
+            right_x,
+            top_y,
+            right.width,
+            height,
+            flip_v=True,
+        )
+        canvas.draw(
+            middle.image.crop((0, crop, middle.image.width, middle.image.height)),
+            left_x + left.width,
+            top_y,
+            right_x - left_x - left.width,
+            height,
+            flip_v=True,
+        )
+        # ButtonText is anchored at the tab's centre; PanelTemplates_(De)SelectTab moves a top tab to -4 / -8.
+        centre = bottom - 16 + (4 if active else 8)
+        canvas.text(x, centre - 5, name, font, justify="CENTER", width=width, box_height=10)
+        x += width + 3
 
 
 def button(canvas, x, y, w, text, h=BUTTON_HEIGHT, state="normal"):
     wowmock.ui_panel_button(canvas, x, y, w, h, text, state=state)
 
 
+def draw_icon(canvas, path, x, y, size):
+    """A spell or item icon as the addon draws it: crop the baked-in border by ICON_TEXCOORD, then scale the
+    remaining picture to `size` at its native aspect, centred, never stretched."""
+    image = canvas.ui.texture(path)
+    left = round(image.width * ICON_TEXCOORD[0])
+    right = round(image.width * ICON_TEXCOORD[1])
+    top = round(image.height * ICON_TEXCOORD[2])
+    bottom = round(image.height * ICON_TEXCOORD[3])
+    inner = image.crop((left, top, right, bottom))
+    scale = min(size / inner.width, size / inner.height)
+    width, height = inner.width * scale, inner.height * scale
+    canvas.draw(inner, x + (size - width) / 2, y + (size - height) / 2, width, height)
+
+
 def draw_row(canvas, x, y, width, icon, name, summary, selected, height=ROW_HEIGHT):
     if selected:
         canvas.draw(canvas.ui.atlas("auctionhouse-ui-row-select"), x, y, width, height, (1, 1, 1, 0.8), blend="ADD")
     icon_y = y + (height - ROW_ICON_SIZE) / 2
-    canvas.draw(
-        canvas.ui.texture(f"interface/icons/{icon}.blp"), x + ROW_ICON_INSET, icon_y, ROW_ICON_SIZE, ROW_ICON_SIZE
-    )
+    draw_icon(canvas, f"interface/icons/{icon}.blp", x + ROW_ICON_INSET, icon_y, ROW_ICON_SIZE)
     text_x = x + ROW_ICON_INSET + ROW_ICON_SIZE + ROW_ICON_GAP
     canvas.text(
         text_x,
@@ -469,36 +523,32 @@ def draw_completion(canvas, completion, caret_column, text_x, text_y, text_w):
     y = text_y + TEXT_INSET_TOP + caret * LINE_HEIGHT + LINE_HEIGHT
     width = max(280, min(text_w, 560))
     rows = min(POPUP_ROWS, len(completion[2]))
-    height = rows * POPUP_ROW_HEIGHT + POPUP_PADDING * 2
+    height = rows * POPUP_ROW_HEIGHT + POPUP_INSET_TOP + POPUP_INSET_BOTTOM
     canvas.draw(canvas.ui.atlas("common-dropdown-bg"), x, y, width, height, (1, 1, 1, 0.94))
     items = completion[2][:rows]
-    badges = [BADGES.get(item["kind"], "?") for item in items]
-    show_badges = len(set(badges)) > 1
     for index, item in enumerate(items):
-        row_y = y + POPUP_PADDING + index * POPUP_ROW_HEIGHT
-        row_x = x + POPUP_PADDING
-        row_width = width - POPUP_PADDING * 2
+        row_y = y + POPUP_INSET_TOP + index * POPUP_ROW_HEIGHT
+        row_x = x + POPUP_INSET_LEFT
+        row_width = width - POPUP_INSET_LEFT - POPUP_INSET_RIGHT
         selected = completion[3] + index + 1 == completion[4]
         if selected:
             canvas.fill(row_x, row_y, row_width, POPUP_ROW_HEIGHT, (1, 0.82, 0.2, 0.18))
-        label_x = row_x + 4
-        if show_badges:
-            canvas.text(
-                row_x + 2,
-                row_y,
-                badges[index],
-                FONTS["GameFontHighlightSmall"],
-                justify="CENTER",
-                width=14,
-                box_height=POPUP_ROW_HEIGHT,
-            )
-            label_x = row_x + 20
+        # Every row has a badge slot, whether or not its neighbour uses the same badge.
+        canvas.text(
+            row_x + 2,
+            row_y,
+            BADGES.get(item["kind"], "?"),
+            FONTS["GameFontHighlightSmall"],
+            justify="CENTER",
+            width=14,
+            box_height=POPUP_ROW_HEIGHT,
+        )
         label_font = (
             MONO
             if item["kind"] in {"secure", "command", "chat", "emote", "directive", "condition", "unit", "value"}
             else FONTS["GameFontHighlight"]
         )
-        canvas.text(label_x, row_y, item["label"], label_font, box_height=POPUP_ROW_HEIGHT)
+        canvas.text(row_x + 20, row_y, item["label"], label_font, box_height=POPUP_ROW_HEIGHT)
         canvas.text(
             row_x + row_width - 4 - 146,
             row_y,
@@ -556,11 +606,11 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         HEADER_ICON_FRAME,
         GOLD,
     )
-    canvas.draw(
-        ui.texture(f"interface/icons/{icon}.blp"),
+    draw_icon(
+        canvas,
+        f"interface/icons/{icon}.blp",
         X + INSET_LEFT + 10 + (HEADER_ICON_FRAME - HEADER_ICON) // 2,
         header_y + 8 + (HEADER_ICON_FRAME - HEADER_ICON) // 2,
-        HEADER_ICON,
         HEADER_ICON,
     )
     canvas.text(X + INSET_LEFT + 10 + HEADER_ICON_FRAME + 8, header_y + 7, name, FONTS["GameFontNormalLarge"])
@@ -604,14 +654,24 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
     wowmock.portrait_frame_art(
         canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT, "interface/icons/inv_misc_note_01.blp", "Macros"
     )
-    top_tabs(canvas, X + TAB_LEFT - 3, Y - TAB_TOP - 4, ["General", "Barry's Macros"], 1)
+    top_tabs(canvas, X + TAB_LEFT, Y - TAB_TOP, TAB_NAMES, TAB_SELECTED)
     # The popup is drawn last, over the editor text, as the editor's popup is in game.
     if completion:
         draw_completion(canvas, completion, caret_column, text_x, text_y, text_w)
     return canvas
 
 
-def layout():
+def tab_extent(ui):
+    """The two tabs' rects side by side: PanelTemplates_TabResize width plus the 3-unit gap the code sets."""
+    measure = ui.canvas(1, 1)
+    total = 3 * (len(TAB_NAMES) - 1)
+    for index, name in enumerate(TAB_NAMES):
+        font = FONTS["GameFontHighlightSmall" if index == TAB_SELECTED else "GameFontNormalSmall"]
+        total += max(measure.text_width(name, font) + 20, 72)
+    return total
+
+
+def layout(ui):
     editor_x, editor_y, editor_w, editor_h, *_ = line_geometry()
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
     widgets = [
@@ -657,7 +717,14 @@ def layout():
             "w": BUTTON_WIDTH,
             "h": BUTTON_HEIGHT,
         },
-        {"name": "tabs", "role": "tabs", "x": X + TAB_LEFT - 3, "y": Y - TAB_TOP - 4, "w": 250, "h": 32},
+        {
+            "name": "tabs",
+            "role": "tabs",
+            "x": X + TAB_LEFT,
+            "y": Y - TAB_TOP,
+            "w": tab_extent(ui),
+            "h": 32,
+        },
     ]
     return {"frame": {"x": X, "y": Y, "w": WINDOW_WIDTH, "h": WINDOW_HEIGHT}, "widgets": widgets}
 
@@ -710,7 +777,7 @@ def main():
     )
     wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "completion.png")
     print(output / "completion.png")
-    (output / "layout.json").write_text(json.dumps(layout(), indent=2) + "\n", encoding="utf-8")
+    (output / "layout.json").write_text(json.dumps(layout(ui), indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
