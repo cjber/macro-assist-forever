@@ -1,0 +1,19 @@
+tools/.cache/
+__pycache__/
+*.zip
+.release/
+.release-notes.md
+.sloppatrol/runs/
+.types/
+.claude/
+reference/
+scratch/
+.ruff_cache/
+
+# Bugpatrol: local data and screenshots of the real app
+.bugpatrol/runs/
+
+# Patrol runs: local data, whole checkouts
+.bugpatrol/runs/
+.speedpatrol/runs/
+.sloppatrol/runs/
