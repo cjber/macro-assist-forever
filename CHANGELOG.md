@@ -17,6 +17,6 @@ All notable changes to Macro Assist Forever are documented here. The format is b
   says what would fire now with your current target and how many of the 255 characters the macro uses.
 - **New, Change Name/Icon, Save, Cancel and Delete work in the window.** Edits are saved when the window closes, Delete
   asks for a second click, and every macro write is refused in combat with a line saying why.
-- **Every way in toggles the macro window.** `/macro`, `/m`, the game menu's Macros button, `/ma`, `/macroassist` and
-  the addon compartment each open the window when it is closed and close it when it is open. `/ma`, `/macroassist` and
-  the compartment also work in combat, like `/macro` does.
+- **Every way in toggles the macro window.** `/macro`, `/m`, the game menu's Macros button, `/macroassist` and the
+  addon compartment each open the window when it is closed and close it when it is open. `/macroassist` and the
+  compartment also work in combat, like `/macro` does.
