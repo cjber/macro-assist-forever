@@ -22,7 +22,15 @@ local function ConditionText(condition)
 	if type(name) ~= "string" or name == "" then
 		return nil
 	end
-	local text = (condition.no or node.no) and ("no" .. name) or name
+	-- Completion passes a descriptor whose `no` is the actual negation; the wrapped condition's own `no` field only
+	-- says that the engine accepts the no prefix. A parser node passed directly has no wrapper.
+	local negated
+	if condition.condition ~= nil then
+		negated = condition.no == true
+	else
+		negated = condition.no or node.no
+	end
+	local text = negated and ("no" .. name) or name
 	local param = condition.param or node.param
 	if type(param) == "string" and param ~= "" then
 		text = text .. ":" .. param

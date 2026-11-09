@@ -5,6 +5,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+<!-- discord-image: docs/screenshots/window.png -->
+
 - **The macro window now has a list and an editor of its own.** General and character tabs show every macro with its
   icon, name and a one-line summary, and the selected macro opens in a mono-font editor with line numbers, colour and a
   current-line highlight.

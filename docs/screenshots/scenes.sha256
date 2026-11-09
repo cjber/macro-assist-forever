@@ -1,0 +1,3 @@
+# image sha256 dump-sha256; written by tools/check_screenshots.py --record, checked in CI
+completion.png 0315a9d36dd43f9ff4c7523d3e9b6aadabf9c9b30fcab208110f11a1733a0d21 75f11f94a2cee4d1b94a3a2602b946bc6e935bfa2492f9ae671434d3932fca6a
+window.png 0a65d76549f0ebcdc5e3ca9d69cf6e958a2a3a549446776e78e69aa635ad5ee9 75f11f94a2cee4d1b94a3a2602b946bc6e935bfa2492f9ae671434d3932fca6a

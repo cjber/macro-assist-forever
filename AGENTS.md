@@ -14,6 +14,9 @@ python3 tools/forever_sim/sync.py check
 python3 tools/forever_sim/fetch.py
 luajit tools/forever_sim/run.lua
 python3 -m tools.forever_tools.assets
+python3 tools/screenshots.py
+python3 tools/check_screenshots.py
+python3 tools/visual_audit.py
 python3 tools/check_client_load.py
 python3 tools/check_menu_scroll.py
 bash tools/typecheck.sh
@@ -37,6 +40,8 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
   how to restyle one by drawing on top, and when a `taint-ok` exception holds.
 - Do not add an idle `OnUpdate` handler or a polling timer. Work starts from an event or a player action.
 - Parser code in `Core/` is pure Lua with no client calls, so the specs can cover it without the game.
+- Render every player-facing UI scene and inspect the PNG at full size. Keep the render reproducible and audit its
+  layout with `tools/visual_audit.py`.
 - Do not save frames, functions, userdata, or client tables.
 - Run `stylua --check .`, `luacheck .`, every `tests/*_spec.lua` under LuaJIT, and `python3 tools/changelog.py --check`
   before proposing changes.

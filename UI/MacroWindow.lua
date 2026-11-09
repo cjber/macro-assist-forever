@@ -27,7 +27,8 @@ local INSET_PADDING = 6
 local SCROLL_RIGHT_PADDING = 4
 local HEADER_ICON = 36
 local HEADER_ICON_FRAME = 44
-local ROW_HEIGHT = 46
+local ROW_HEIGHT = 22
+local ROW_NAME_WIDTH = 100
 local SCROLL_GAP = 4
 local SCROLL_WIDTH = 18
 -- Where Blizzard's panel manager puts a left-area panel, from UIParent's TOPLEFT
@@ -361,6 +362,7 @@ end
 function Window:InitializeRow(row, data)
 	row.macroIndex = data.index
 	row.Icon:SetTexture(data.icon)
+	row.Name:SetWidth(ROW_NAME_WIDTH)
 	row.Name:SetText(data.name or "")
 	row.Summary:SetText(data.summary or "")
 	row.Summary:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
