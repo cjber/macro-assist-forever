@@ -11,15 +11,16 @@
 
 ## Features
 
-- **Every macro in one searchable list.** General and character tabs show each macro with its icon, name and a summary of what it does, the selected row has a soft gold fill and left bar, and the count sits beside the search box, which filters by name or summary as you type.
+- **Every macro in one searchable list.** General and character tabs sit beside the list they filter, and each macro shows its icon, name and a short summary of its main action with a count of the other cases. The selected row has a soft gold fill and left bar, and the count sits beside the search box, which filters by name or summary as you type.
 - **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
 - **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing it can explain.
 - **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through the suggestions, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
 - **Live conditions and spells.** Condition values come from the game right now, and the spellbook supplies your spell names and the ranks you know.
 - **Problems with a fix.** A wavy underline marks text the game cannot run. Hover it for the explanation, then press Tab or click it to apply the suggested fix.
 - **A status bar that says what fires now.** It shows the first problem in full with Tab to fix, the action the first matching line would take with your current target, and the character count out of 255 with a meter.
-- **Rename, New, Save, Cancel and Delete.** Delete asks for a second click. Rename and New use the game's own name and icon picker.
-- **Safe to open in combat.** Every button that writes to your macros is turned off in combat, with a line in the status row saying why. Edits are saved when the window closes out of combat.
+- **Rename, New, Save, Cancel and Delete.** Delete asks for a second click. Rename and New use the game's own name and icon picker. Drag a row or the header icon to an action bar to place the macro there.
+- **History with Restore.** Every save, rename and delete keeps the macro's previous name, icon and text, the newest 20 for each macro. History lists them with their time and what changed, and Restore puts one back. Deleted macros stay in a Deleted section until you restore them.
+- **Safe to open in combat.** Every button that writes to your macros is turned off in combat, Restore included, with a line in the status row saying why. Edits are saved when the window closes out of combat.
 
 <p align="center"><img src="docs/screenshots/window.png" alt="The macro list beside the mono editor"></p>
 
@@ -28,6 +29,10 @@ The searchable macro list on the left, with the selected macro open in the edito
 <p align="center"><img src="docs/screenshots/completion.png" alt="Conditions offered with live values beside a problem in the macro"></p>
 
 Conditions are offered with their live value, and a wavy underline marks a problem on the line above.
+
+<p align="center"><img src="docs/screenshots/history.png" alt="The History window listing saved versions and a deleted macro"></p>
+
+History keeps the previous versions of each macro, with a Deleted section for macros that can be restored.
 
 ## Install
 
@@ -39,7 +44,7 @@ Nothing else is needed. The addon works with no other addon installed.
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. The General tab holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it, or type in the search box to narrow the list by name or summary. New creates a macro after you choose its name and icon. Rename changes the selected macro's name and icon. Cancel puts the editor back to the saved text, and Save writes it immediately. Closing the window also saves your text when you are out of combat.
+Click a macro to edit it, or type in the search box to narrow the list by name or summary. New creates a macro after you choose its name and icon. Rename changes the selected macro's name and icon. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing the window also saves your text when you are out of combat.
 
 ## Works alongside
 

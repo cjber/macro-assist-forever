@@ -5,6 +5,20 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-10
+
+- **The General and character tabs moved beside the list.** Both keep their book and portrait art and their checked
+  ring, and they now sit on the left edge of the window next to the macros they filter.
+- **List rows show the main action and a count of the other cases**, such as "Arcane Shot +2", instead of a long
+  sentence that an ellipsis cut short.
+- **The macro icon in the header can be dragged to an action bar**, and its tooltip says so. Rows still drag the same
+  way.
+- **History keeps the last 20 versions of each macro and can restore one.** Every save, rename and delete stores the
+  macro's previous name, icon and text, a renamed macro keeps its history, and a deleted macro stays restorable from a
+  Deleted section. Each row shows its time and what changed against the next newer version, such as "Line 3 changed",
+  "2 lines changed", "+1 line" or "Renamed to X", and a deleted macro's row keeps its name and summary. Restore goes
+  through the same save path and is off in combat like the other write buttons.
+
 ## [0.1.2] - 2026-11-10
 
 - **The macro window is split into a searchable list and a full-height editor.** Each row shows the macro icon, name

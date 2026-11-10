@@ -8,6 +8,11 @@ local addonName, ns = ...
 local addon = CreateFrame("Frame")
 addon:RegisterEvent("ADDON_LOADED")
 
+-- Every saved key's default. A new option and an old save file agree because the load fills only a missing key.
+ns.DEFAULTS = {
+	history = {},
+}
+
 local attached = false
 -- True when the MacroFrame OnShow hook has just run inside the ShowMacroFrame call that is still on the stack.
 -- The post-hook reads it to tell "this call opened the panel" from "the panel was already open", then clears it.
@@ -105,6 +110,12 @@ end
 addon:SetScript("OnEvent", function(_, event, name)
 	if event == "ADDON_LOADED" and name == addonName then
 		MacroAssistForeverDB = type(MacroAssistForeverDB) == "table" and MacroAssistForeverDB or {}
+		for key, value in pairs(ns.DEFAULTS) do
+			if MacroAssistForeverDB[key] == nil then
+				MacroAssistForeverDB[key] = type(value) == "table" and {} or value
+			end
+		end
+		ns.History.Initialize(MacroAssistForeverDB)
 		_G.SLASH_MACROASSISTFOREVER1 = "/macroassist"
 		SlashCmdList.MACROASSISTFOREVER = function()
 			ns.Toggle()

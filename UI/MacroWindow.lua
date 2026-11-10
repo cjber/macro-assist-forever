@@ -12,13 +12,15 @@ local WINDOW_WIDTH = 860
 local WINDOW_HEIGHT = 500
 local INSET_LEFT = 10
 local INSET_RIGHT = -10
+-- LargeSideTabButtonTemplate's art is 55 wide. The tabs own a rail inside the window's left edge, and the list
+-- starts to the right of that rail, so the tabs sit beside the list they filter.
+local SIDE_TAB_WIDTH = 55
+local LIST_LEFT = INSET_LEFT + SIDE_TAB_WIDTH
 local LIST_TOP = -60
 local LIST_WIDTH = 250
 local LIST_HEIGHT = 398
--- The side rail's tabs sit on the window's outer right edge, as SkillUp and Adventure Guide anchor theirs
--- (docs/ui-composition.md: LargeSideTabButtonTemplate owns the outer right rail).
-local SIDE_TAB_EDGE = 2
-local SIDE_TAB_TOP = 48
+local SIDE_TAB_EDGE = 0
+local SIDE_TAB_TOP = 60
 local SIDE_TAB_GAP = 2
 local HEADER_TOP = -30
 local HEADER_HEIGHT = 34
@@ -30,6 +32,7 @@ local BOTTOM_OFFSET = 42
 local BUTTON_HEIGHT = 24
 local BUTTON_WIDTH = 90
 local DELETE_WIDTH = 90
+local HISTORY_WIDTH = 90
 local FOOTER_GAP = 6
 local RENAME_WIDTH = 110
 local RENAME_HEIGHT = 22
@@ -79,6 +82,7 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field SetFillToInterior fun(self: MacroAssistTab, fillToInterior: boolean, extent?: number)
 
 ---@class MacroAssistHeader : Frame
+---@field iconButton Button
 ---@field icon Texture
 ---@field name FontString
 ---@field meta FontString
@@ -134,10 +138,12 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field explainPanel MacroAssistExplainPanel
 ---@field editor MacroAssistEditor
 ---@field iconSelector MacroAssistIconSelector
+---@field history MacroAssistHistoryFrame
 ---@field scrollBox MacroAssistScrollBox
 ---@field scrollBar Frame
 ---@field empty FontString
 ---@field deleteButton Button
+---@field historyButton Button
 ---@field newButton Button
 ---@field saveButton Button
 ---@field cancelButton Button
@@ -152,6 +158,7 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field scrollOffsets table<integer, number>
 ---@field deleteArmed boolean
 ---@field selected integer?
+---@field historySelected table?
 ---@field combat boolean
 ---@field count integer?
 ---@field base integer?
@@ -183,18 +190,22 @@ end
 local function BuildHeader(frame)
 	local header = CreateFrame("Frame", nil, frame) --[[@as MacroAssistHeader]]
 	header:SetHeight(HEADER_HEIGHT)
-	local border = header:CreateTexture(nil, "ARTWORK")
-	border:SetSize(HEADER_ICON_FRAME, HEADER_ICON_FRAME)
-	border:SetPoint("TOPLEFT", header, "TOPLEFT", 0, 0)
+	local button = CreateFrame("Button", nil, header)
+	button:SetSize(HEADER_ICON_FRAME, HEADER_ICON_FRAME)
+	button:SetPoint("TOPLEFT", header, "TOPLEFT", 0, 0)
+	button:RegisterForDrag("LeftButton")
+	header.iconButton = button
+	local border = button:CreateTexture(nil, "ARTWORK")
+	border:SetAllPoints(button)
 	border:SetTexture(WHITE_ICON_FRAME)
 	border:SetVertexColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
-	local icon = header:CreateTexture(nil, "ARTWORK")
+	local icon = button:CreateTexture(nil, "ARTWORK")
 	icon:SetSize(HEADER_ICON, HEADER_ICON)
-	icon:SetPoint("CENTER", border, "CENTER", 0, 0)
+	icon:SetPoint("CENTER", button, "CENTER", 0, 0)
 	icon:SetTexCoord(ICON_TEXCOORD[1], ICON_TEXCOORD[2], ICON_TEXCOORD[3], ICON_TEXCOORD[4])
 	header.icon = icon
 	local name = header:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-	name:SetPoint("TOPLEFT", border, "TOPRIGHT", 8, -1)
+	name:SetPoint("TOPLEFT", button, "TOPRIGHT", 8, -1)
 	name:SetPoint("RIGHT", header, "RIGHT", -RENAME_WIDTH - GAP, 0)
 	name:SetJustifyH("LEFT")
 	name:SetWordWrap(false)
@@ -210,6 +221,21 @@ local function BuildHeader(frame)
 	rename:SetPoint("RIGHT", header, "RIGHT", 0, 0)
 	rename:SetText(L["Rename"])
 	header.rename = rename
+	button:SetScript("OnDragStart", function()
+		if Window.selected then
+			PickupMacro(Window.selected)
+		end
+	end)
+	button:SetScript("OnEnter", function()
+		GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+		GameTooltip:SetText(L["Drag to your action bars"], 1, 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	button:SetScript("OnLeave", function()
+		if GameTooltip:IsOwned(button) then
+			GameTooltip:Hide()
+		end
+	end)
 	return header
 end
 
@@ -279,11 +305,12 @@ function Window.Create()
 	local tabs = {}
 	for index = 1, 2 do
 		-- A Button, so the gamepad's SmartNavigation scan never reads a Frame's mouse scripts; the template owns
-		-- the square side-tab art, its mask and the checked ring (docs/ui-composition.md: the outer right rail).
+		-- the square side-tab art, its mask and the checked ring. The rail sits inside the window's left edge,
+		-- beside the list the tabs filter.
 		local tab = CreateFrame("Button", nil, frame, "LargeSideTabButtonTemplate") --[[@as MacroAssistTab]]
 		tab:SetID(index)
 		if index == 1 then
-			tab:SetPoint("TOPLEFT", frame, "TOPRIGHT", -SIDE_TAB_EDGE, -SIDE_TAB_TOP)
+			tab:SetPoint("TOPLEFT", frame, "TOPLEFT", SIDE_TAB_EDGE, -SIDE_TAB_TOP)
 			-- art-ok: a square icon in the square LargeSideTabButtonTemplate sizes for it
 			tab.Icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
 			tab.tooltipText = L["General"]
@@ -302,7 +329,7 @@ function Window.Create()
 
 	local searchBox = CreateFrame("EditBox", nil, frame, "SearchBoxTemplate") --[[@as MacroAssistSearchBox]]
 	searchBox:SetSize(SEARCH_WIDTH, SEARCH_HEIGHT)
-	searchBox:SetPoint("TOPLEFT", frame, "TOPLEFT", INSET_LEFT + SEARCH_LEFT, SEARCH_TOP)
+	searchBox:SetPoint("TOPLEFT", frame, "TOPLEFT", LIST_LEFT + SEARCH_LEFT, SEARCH_TOP)
 	searchBox.Instructions:SetText(L["Search macros"])
 	searchBox:HookScript("OnTextChanged", function(edit)
 		Window:SetFilter(edit:GetText() or "")
@@ -311,7 +338,7 @@ function Window.Create()
 
 	-- The count sits at the list column's right edge, right of the search box, as "9/30".
 	local count = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	count:SetPoint("RIGHT", frame, "TOPLEFT", INSET_LEFT + LIST_WIDTH, SEARCH_TOP - SEARCH_HEIGHT / 2)
+	count:SetPoint("RIGHT", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH, SEARCH_TOP - SEARCH_HEIGHT / 2)
 	count:SetSize(COUNT_WIDTH, SEARCH_HEIGHT)
 	count:SetJustifyH("RIGHT")
 	count:SetWordWrap(false)
@@ -319,7 +346,7 @@ function Window.Create()
 	frame.count = count
 
 	local listInset = CreateFrame("Frame", nil, frame, "InsetFrameTemplate")
-	listInset:SetPoint("TOPLEFT", frame, "TOPLEFT", INSET_LEFT, LIST_TOP)
+	listInset:SetPoint("TOPLEFT", frame, "TOPLEFT", LIST_LEFT, LIST_TOP)
 	listInset:SetSize(LIST_WIDTH, LIST_HEIGHT)
 	frame.listInset = listInset
 
@@ -352,11 +379,12 @@ function Window.Create()
 	frame.empty = empty
 
 	local header = BuildHeader(frame)
-	header:SetPoint("TOPLEFT", frame, "TOPLEFT", INSET_LEFT + LIST_WIDTH + COLUMN_GAP, HEADER_TOP)
+	header:SetPoint("TOPLEFT", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH + COLUMN_GAP, HEADER_TOP)
 	header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", INSET_RIGHT, HEADER_TOP)
 	frame.header = header
 
-	-- The code surface is a BackdropTemplate, not an InsetFrameTemplate: a dark panel behind the editor.
+	-- The code surface is a BackdropTemplate, not an InsetFrameTemplate: a dark panel behind the editor, filling the
+	-- right column down to the status line.
 	local editorSurface = CreateFrame("Frame", nil, frame, "BackdropTemplate")
 	editorSurface:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -GAP)
 	editorSurface:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, BOTTOM_OFFSET + STATUS_HEIGHT)
@@ -382,12 +410,16 @@ function Window.Create()
 
 	local new = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	new:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
-	new:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", INSET_LEFT, 8)
+	new:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", LIST_LEFT, 8)
 	new:SetText(L["New"])
 	local delete = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	delete:SetSize(DELETE_WIDTH, BUTTON_HEIGHT)
 	delete:SetPoint("LEFT", new, "RIGHT", FOOTER_GAP, 0)
 	delete:SetText(L["Delete"])
+	local history = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
+	history:SetSize(HISTORY_WIDTH, BUTTON_HEIGHT)
+	history:SetPoint("LEFT", delete, "RIGHT", FOOTER_GAP, 0)
+	history:SetText(L["History"])
 	local save = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	save:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
 	save:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, 8)
@@ -398,6 +430,7 @@ function Window.Create()
 	cancel:SetText(L["Cancel"])
 
 	frame.deleteButton = delete
+	frame.historyButton = history
 	frame.newButton = new
 	frame.saveButton = save
 	frame.cancelButton = cancel
@@ -409,12 +442,16 @@ function Window.Create()
 	Window.scrollOffsets = {}
 	Window.deleteArmed = false
 	Window.selected = nil
+	Window.historySelected = nil
 	Window.combat = false
 
 	frame.explainPanel = BuildExplainPanel(editorSurface)
 	frame.editor = ns.Editor.Create(editorSurface, statusBar)
-	editorSurface:SetScript("OnSizeChanged", function()
-		if editorSurface:GetWidth() > 1 and frame:IsShown() then
+	frame.history = ns.HistoryPanel.Create(frame)
+	local lastWidth
+	editorSurface:SetScript("OnSizeChanged", function(_, width)
+		if width > 1 and width ~= lastWidth and frame:IsShown() then
+			lastWidth = width
 			frame.editor:RefreshAll()
 		end
 	end)
@@ -434,6 +471,9 @@ function Window.Create()
 	end)
 	delete:SetScript("OnClick", function()
 		Window:Delete()
+	end)
+	history:SetScript("OnClick", function()
+		Window:OpenHistory()
 	end)
 	new:SetScript("OnClick", function()
 		Window:New()
@@ -611,7 +651,7 @@ function Window:RefreshList(keepScrollOffset)
 	for index = 1, count do
 		local actual = base + index
 		local name, icon, body = GetMacroInfo(actual)
-		local summary = name and ns.Explain(body or "") or ""
+		local summary = name and ns.ExplainSummary(body or "") or ""
 		if name and (needle == "" or name:lower():find(needle, 1, true) or summary:lower():find(needle, 1, true)) then
 			provider:Insert({
 				index = actual,
@@ -648,6 +688,7 @@ function Window:RefreshList(keepScrollOffset)
 	end
 	self:UpdateHeader()
 	self:UpdateButtons()
+	self:RefreshHistory()
 end
 
 function Window:LoadSelected()
@@ -683,14 +724,102 @@ function Window:LeaveSelected()
 	end
 end
 
+-- The clock a snapshot's time is stamped with: the client's server clock, so the History list's times match the
+-- player's.
+---@param _ MacroAssistWindow
+---@return number
+function Window.Now(_)
+	if type(GetServerTime) == "function" then
+		return GetServerTime()
+	end
+	return 0
+end
+
+---@param _ MacroAssistWindow
+---@param index integer
+---@return integer tab
+function Window.TabForIndex(_, index)
+	return index > MAX_ACCOUNT and 2 or 1
+end
+
+-- Every macro write goes through here, so a snapshot always lands in SavedVariables before the store changes. A
+-- rename moves the macro's whole history to the new name, so it is not lost when the name changes.
+---@param index integer
+---@param name string?
+---@param icon any
+---@param body string?
+---@return boolean
+function Window:WriteMacro(index, name, icon, body)
+	if InCombatLockdown() then
+		return false
+	end
+	local oldName, oldIcon, oldBody = GetMacroInfo(index)
+	if oldName then
+		ns.History.Snapshot(MacroAssistForeverDB, {
+			name = oldName,
+			icon = oldIcon,
+			body = oldBody,
+			tab = self:TabForIndex(index),
+		}, self:Now())
+	end
+	EditMacro(index, name, icon, body)
+	if name and oldName and name ~= oldName then
+		ns.History.Rename(MacroAssistForeverDB, oldName, name)
+	end
+	return true
+end
+
+-- A new macro's starting state is snapshotted before the create; a create the client refuses leaves no record.
+---@param name string
+---@param icon any
+---@param body string?
+---@param character boolean
+---@return integer?
+function Window:WriteCreate(name, icon, body, character)
+	if InCombatLockdown() then
+		return nil
+	end
+	local db = MacroAssistForeverDB
+	local snapshot = ns.History.Snapshot(db, {
+		name = name,
+		icon = icon,
+		body = body or "",
+		tab = character and 2 or 1,
+	}, self:Now())
+	local actual = CreateMacro(name, icon, body, character)
+	if not actual then
+		ns.History.Remove(db, name, snapshot)
+	end
+	return actual
+end
+
+-- A delete writes too, and its snapshot is the macro's last live state, so the Deleted section can restore it.
+---@param index integer
+---@return boolean
+function Window:WriteDelete(index)
+	if InCombatLockdown() then
+		return false
+	end
+	local name, icon, body = GetMacroInfo(index)
+	if name then
+		ns.History.Snapshot(MacroAssistForeverDB, {
+			name = name,
+			icon = icon,
+			body = body,
+			tab = self:TabForIndex(index),
+		}, self:Now())
+	end
+	DeleteMacro(index)
+	return true
+end
+
 function Window:SaveCurrent()
 	if not self.dirty or not self.selected then
 		return true
 	end
-	if InCombatLockdown() then
+	if not self:WriteMacro(self.selected, nil, nil, self.frame.editor:GetText()) then
 		return false
 	end
-	EditMacro(self.selected, nil, nil, self.frame.editor:GetText())
 	self.drafts[self.selected] = nil
 	self.dirty = false
 	self:UpdateButtons()
@@ -724,7 +853,8 @@ function Window:UpdateHeader()
 	header.meta:SetText(self.tab == 1 and L["General macro"] or L["Character macro"])
 end
 
--- Fill the "What it does" panel from the current text. No cases means no panel at all, never an empty one.
+-- Fill the "What it does" panel from the current text. No cases means no panel at all, never an empty one. The panel
+-- is anchored to the bottom of the code surface, which keeps the full height of the right column.
 function Window:UpdateExplain()
 	local frame = self.frame
 	if not frame or not frame.explainPanel or not frame.editor then
@@ -773,10 +903,14 @@ function Window:UpdateButtons()
 	local hasMacro = self.selected ~= nil
 	self.frame.deleteButton:SetEnabled(hasMacro and not combat)
 	self.frame.deleteButton:SetText(self.deleteArmed and L["Click again to delete"] or L["Delete"])
+	self.frame.historyButton:SetEnabled(true)
 	self.frame.newButton:SetEnabled((self.count or 0) < (self.maximum or 0) and not combat)
 	self.frame.saveButton:SetEnabled(self.dirty and not combat)
 	self.frame.cancelButton:SetEnabled(self.dirty)
 	self.frame.header.rename:SetEnabled(hasMacro and not combat)
+	if self.frame.history:IsShown() then
+		self.frame.history:UpdateButtons()
+	end
 end
 
 function Window:OnTextEdited()
@@ -811,7 +945,7 @@ function Window:Delete()
 		return
 	end
 	local oldPosition = self.selected - (self.base or 0)
-	DeleteMacro(self.selected)
+	self:WriteDelete(self.selected)
 	self.drafts[self.selected] = nil
 	self.selected = nil
 	self.dirty = false
@@ -832,7 +966,7 @@ function Window:New()
 		if InCombatLockdown() then
 			return
 		end
-		local actual = CreateMacro(name, icon, nil, self.tab == 2)
+		local actual = self:WriteCreate(name, icon, nil, self.tab == 2)
 		if not actual then
 			return
 		end
@@ -861,9 +995,113 @@ function Window:OpenNameAndIcon()
 		if InCombatLockdown() then
 			return
 		end
-		EditMacro(self.selected, newName, newIcon)
+		self:WriteMacro(self.selected, newName, newIcon)
 		self:RefreshList()
 	end)
+end
+
+---@param _ MacroAssistWindow
+---@param name string?
+---@return integer?
+function Window.FindMacro(_, name)
+	if type(name) ~= "string" then
+		return nil
+	end
+	local account, character = GetNumMacros()
+	account, character = account or 0, character or 0
+	for index = 1, account do
+		if GetMacroInfo(index) == name then
+			return index
+		end
+	end
+	for index = MAX_ACCOUNT + 1, MAX_ACCOUNT + character do
+		if GetMacroInfo(index) == name then
+			return index
+		end
+	end
+end
+
+---@param _ MacroAssistWindow
+---@return table<string, boolean>
+function Window.LiveMacroNames(_)
+	local live = {}
+	local account, character = GetNumMacros()
+	account, character = account or 0, character or 0
+	for index = 1, account do
+		local name = GetMacroInfo(index)
+		if name then
+			live[name] = true
+		end
+	end
+	for index = MAX_ACCOUNT + 1, MAX_ACCOUNT + character do
+		local name = GetMacroInfo(index)
+		if name then
+			live[name] = true
+		end
+	end
+	return live
+end
+
+function Window:OpenHistory()
+	local frame = self.frame
+	if not frame or not frame.history then
+		return
+	end
+	if not frame.history:IsShown() then
+		self.historySelected = nil
+	end
+	frame.history:Refresh(self)
+	frame.history:Show()
+end
+
+function Window:RefreshHistory()
+	local frame = self.frame
+	if frame and frame.history and frame.history:IsShown() then
+		frame.history:Refresh(self)
+	end
+end
+
+-- Restore writes the chosen snapshot through the same path as Save: the macro is edited when its name is live, and
+-- created when the macro was deleted. In combat nothing is written.
+---@param key string
+---@param entry MacroAssistSnapshot
+function Window:RestoreSnapshot(key, entry)
+	if InCombatLockdown() then
+		return
+	end
+	local db = MacroAssistForeverDB
+	local record = db and db.history and db.history[key]
+	local kind, actual = ns.History.Restore(entry, {
+		inCombat = InCombatLockdown(),
+		find = function(name)
+			return self:FindMacro(name)
+		end,
+		edit = function(index, name, icon, body)
+			self:WriteMacro(index, name, icon, body)
+		end,
+		create = function(name, icon, body, character)
+			return self:WriteCreate(name, icon, body, character)
+		end,
+		character = record ~= nil and record.tab == 2,
+	})
+	if not kind or not actual then
+		self:RefreshHistory()
+		return
+	end
+	local tab = record and record.tab or self:TabForIndex(actual)
+	if tab ~= self.tab then
+		self.tab = tab
+		for tabIndex, button in ipairs(self.frame.Tabs) do
+			SelectTabArt(button, tabIndex == tab)
+		end
+	end
+	self.drafts[actual] = nil
+	self.selected = actual
+	self.dirty = false
+	self.deleteArmed = false
+	self.desiredPosition = actual - (tab == 1 and 0 or MAX_ACCOUNT)
+	self:LoadSelected()
+	self:RefreshList()
 end
 
 function Window:OnShow()
@@ -903,6 +1141,9 @@ function Window:OnHide()
 	frame.editor:HideCompletion()
 	if frame.iconSelector then
 		frame.iconSelector:Hide()
+	end
+	if frame.history then
+		frame.history:Hide()
 	end
 end
 

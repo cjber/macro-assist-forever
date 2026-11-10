@@ -453,27 +453,45 @@ end
 
 -- What the macro does, one row per click and modifier branch, then one "Also" row for the commands that run either
 -- way. Built from the parse tree only: a line, clause or condition this file cannot read adds nothing.
+---@class MacroAssistExplainCase
+---@field key string
+---@field text string
+---@field action string
+
+---@class MacroAssistExplainCases
+---@field [integer] MacroAssistExplainCase
+---@field count? integer the number of actions joined into these cases
+
 ---@param body string?
----@return { key: string, text: string }[]
+---@return MacroAssistExplainCases
 local function ExplainCases(body)
 	if type(body) ~= "string" or body == "" then
-		return {}
+		return {} --[[@as MacroAssistExplainCases]]
 	end
 	local parsed = ns.Parser.Parse(body)
 	local cases = {}
 	local byKey = {}
 	local also = {}
+	local total = 0
 
-	local function Add(key, text)
+	-- `action` is the case's first action alone, without its target: the list summary shows it beside a count of
+	-- the other cases, so a macro with several branches reads short instead of repeating the What it does panel.
+	-- The clause with no conditions is the macro's main action, so it wins the case's action even when it is not
+	-- the first clause the parser reads.
+	local function Add(key, text, action, primary)
 		if not key or not text or text == "" then
 			return
 		end
+		total = total + 1
 		local case = byKey[key]
 		if case then
 			case.text = case.text .. ", " .. text
+			if primary and action then
+				case.action = action
+			end
 			return
 		end
-		case = { key = key, text = text }
+		case = { key = key, text = text, action = action or text }
 		byKey[key] = case
 		cases[#cases + 1] = case
 	end
@@ -491,7 +509,7 @@ local function ExplainCases(body)
 					if extra then
 						text = text .. " " .. extra
 					end
-					Add(key, text)
+					Add(key, text, action, clause.unconditional)
 				end
 			end
 		elseif command and ALSO_PHRASES[command] then
@@ -517,7 +535,7 @@ local function ExplainCases(body)
 			end
 			parts[#parts + 1] = text
 		end
-		Add(L["Also"], table.concat(parts, ", then "))
+		Add(L["Also"], table.concat(parts, ", then "), also[1].phrase)
 	end
 
 	local ordered = {}
@@ -526,8 +544,27 @@ local function ExplainCases(body)
 			ordered[#ordered + 1] = byKey[key]
 		end
 	end
-	return ordered
+	ordered.count = total
+	return ordered --[[@as MacroAssistExplainCases]]
+end
+
+-- The list's one-line summary: the first case's action, then a count of the remaining actions. A macro with a single
+-- action reads as just that action, and one the parse cannot branch falls back to the full Explain line.
+---@param body string?
+---@return string
+local function ExplainSummary(body)
+	local cases = ExplainCases(body)
+	if #cases == 0 then
+		return Explain(body)
+	end
+	local main = cases[1].action or cases[1].text
+	local others = (cases.count or #cases) - 1
+	if others <= 0 then
+		return main
+	end
+	return L["%s +%d"]:format(main, others)
 end
 
 ns.Explain = Explain
 ns.ExplainCases = ExplainCases
+ns.ExplainSummary = ExplainSummary

@@ -23,6 +23,7 @@ import wowmock  # noqa: E402
 
 SOURCE = (ROOT / "UI" / "MacroWindow.lua").read_text(encoding="utf-8")
 EDITOR = (ROOT / "UI" / "Editor.lua").read_text(encoding="utf-8")
+HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
 XML = (ROOT / "UI" / "MacroWindow.xml").read_text(encoding="utf-8")
 FONT_FILE = ROOT / "media" / "fonts" / "JetBrainsMono-Regular.ttf"
 SQUIGGLE = Image.open(ROOT / "media" / "squiggle.tga").convert("RGBA")
@@ -44,6 +45,8 @@ WINDOW_WIDTH = number("WINDOW_WIDTH")
 WINDOW_HEIGHT = number("WINDOW_HEIGHT")
 INSET_LEFT = number("INSET_LEFT")
 INSET_RIGHT = number("INSET_RIGHT")
+SIDE_TAB_WIDTH = number("SIDE_TAB_WIDTH")
+LIST_LEFT = INSET_LEFT + SIDE_TAB_WIDTH
 LIST_TOP = number("LIST_TOP")
 LIST_WIDTH = number("LIST_WIDTH")
 LIST_HEIGHT = number("LIST_HEIGHT")
@@ -60,6 +63,7 @@ BOTTOM_OFFSET = number("BOTTOM_OFFSET")
 BUTTON_HEIGHT = number("BUTTON_HEIGHT")
 BUTTON_WIDTH = number("BUTTON_WIDTH")
 DELETE_WIDTH = number("DELETE_WIDTH")
+HISTORY_WIDTH = number("HISTORY_WIDTH")
 FOOTER_GAP = number("FOOTER_GAP")
 RENAME_WIDTH = number("RENAME_WIDTH")
 RENAME_HEIGHT = number("RENAME_HEIGHT")
@@ -79,6 +83,14 @@ SCROLL_RIGHT_PADDING = number("SCROLL_RIGHT_PADDING")
 HEADER_ICON = number("HEADER_ICON")
 HEADER_ICON_FRAME = number("HEADER_ICON_FRAME")
 ROW_HEIGHT = number("ROW_HEIGHT")
+# The History window's own numbers, from UI/History.lua.
+HISTORY_PANEL_WIDTH = number("WIDTH", HISTORY)
+HISTORY_PANEL_HEIGHT = number("HEIGHT", HISTORY)
+HISTORY_PANEL_INSET = number("INSET_PADDING", HISTORY)
+HISTORY_SCROLL_GAP = number("SCROLL_GAP", HISTORY)
+HISTORY_SCROLL_WIDTH = number("SCROLL_WIDTH", HISTORY)
+HISTORY_SCROLL_RIGHT = number("SCROLL_RIGHT_PADDING", HISTORY)
+HISTORY_BOTTOM = number("BOTTOM", HISTORY)
 ROW_ICON_SIZE = 26
 ROW_ICON_INSET = 6
 ROW_TEXT_X = 40
@@ -266,7 +278,7 @@ local macros = {{
 {macros}
 }}
 for index, body in ipairs(macros) do
-    print("SUMMARY\\t" .. index .. "\\t" .. clean(ns.Explain(body)))
+    print("SUMMARY\\t" .. index .. "\\t" .. clean(ns.ExplainSummary(body)))
     for caseIndex, case in ipairs(ns.ExplainCases(body)) do
         print("EXPLAIN\\t" .. index .. "\\t" .. caseIndex .. "\\t" .. clean(case.key) .. "\\t" .. clean(case.text))
     end
@@ -275,7 +287,7 @@ for index, body in ipairs(macros) do
     end
 end
 local completion = {lua_string(COMPLETION_BODY)}
-print("COMPLETION_SUMMARY\\t" .. clean(ns.Explain(completion)))
+print("COMPLETION_SUMMARY\\t" .. clean(ns.ExplainSummary(completion)))
 for index, line in ipairs(ns.Parser.Parse(completion).lines) do
     print("LINE\\t" .. index .. "\\t" .. clean(ns.Highlight.Line(line)))
 end
@@ -470,10 +482,10 @@ def explain_panel(canvas, x, y, w, cases):
 
 def editor_geometry():
     """The code surface rectangle, from the header's bottom and the window's footer."""
-    editor_x = X + INSET_LEFT + LIST_WIDTH + COLUMN_GAP
+    editor_x = X + LIST_LEFT + LIST_WIDTH + COLUMN_GAP
     top = -HEADER_TOP + HEADER_HEIGHT + GAP
     editor_y = Y + top
-    editor_w = WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT - LIST_WIDTH - COLUMN_GAP
+    editor_w = WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP
     editor_h = WINDOW_HEIGHT - BOTTOM_OFFSET - STATUS_HEIGHT - top
     return editor_x, editor_y, editor_w, editor_h
 
@@ -658,14 +670,14 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
     # The search box sits beside the portrait; the list runs from below it down to the footer.
     wowmock.search_box(
         canvas,
-        X + INSET_LEFT + SEARCH_LEFT,
+        X + LIST_LEFT + SEARCH_LEFT,
         Y - SEARCH_TOP,
         SEARCH_WIDTH,
         SEARCH_HEIGHT,
         instructions="Search macros",
     )
     canvas.text(
-        X + INSET_LEFT + LIST_WIDTH - COUNT_WIDTH,
+        X + LIST_LEFT + LIST_WIDTH - COUNT_WIDTH,
         Y - SEARCH_TOP,
         f"{len(MACROS)}/{MAX_CHARACTER}",
         FONTS["GameFontHighlightSmall"],
@@ -674,7 +686,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         width=COUNT_WIDTH,
         box_height=SEARCH_HEIGHT,
     )
-    list_x = X + INSET_LEFT
+    list_x = X + LIST_LEFT
     list_y = Y - LIST_TOP
     inset(canvas, list_x, list_y, LIST_WIDTH, LIST_HEIGHT)
     scroll_x = list_x + INSET_PADDING
@@ -705,9 +717,9 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         visible=0.8,
     )
     # The selected macro's header on one line, beside the list.
-    header_x = X + INSET_LEFT + LIST_WIDTH + COLUMN_GAP
+    header_x = X + LIST_LEFT + LIST_WIDTH + COLUMN_GAP
     header_y = Y - HEADER_TOP
-    header_w = WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT - LIST_WIDTH - COLUMN_GAP
+    header_w = WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP
     name, icon = MACROS[SELECTED][1], MACROS[SELECTED][0]
     canvas.draw(
         ui.texture("interface/common/whiteiconframe.blp"),
@@ -740,7 +752,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         "Rename",
         h=RENAME_HEIGHT,
     )
-    # The code surface, its gutter, the "What it does" panel at its bottom, and the status strip under it.
+    # The full-height code surface, its gutter, the "What it does" panel at its bottom, and the status strip under it.
     text_x, text_y, text_w, _ = draw_editor(canvas, body, current_line, caret_column, data)
     editor_x, editor_y, editor_w, editor_h = editor_geometry()
     cases = data.get("explain", [])
@@ -755,8 +767,16 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
     status_bar(canvas, status_x, status_y, status_w, data["length"], "Arcane Shot on Defias Pillager", data)
     # The window's own buttons, with the edited macro treated as dirty so Save and Cancel are live.
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
-    button(canvas, X + INSET_LEFT, button_y, BUTTON_WIDTH, "New", h=BUTTON_HEIGHT)
-    button(canvas, X + INSET_LEFT + BUTTON_WIDTH + FOOTER_GAP, button_y, DELETE_WIDTH, "Delete", h=BUTTON_HEIGHT)
+    button(canvas, X + LIST_LEFT, button_y, BUTTON_WIDTH, "New", h=BUTTON_HEIGHT)
+    button(canvas, X + LIST_LEFT + BUTTON_WIDTH + FOOTER_GAP, button_y, DELETE_WIDTH, "Delete", h=BUTTON_HEIGHT)
+    button(
+        canvas,
+        X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + FOOTER_GAP * 2,
+        button_y,
+        HISTORY_WIDTH,
+        "History",
+        h=BUTTON_HEIGHT,
+    )
     button(canvas, X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH, button_y, BUTTON_WIDTH, "Save", h=BUTTON_HEIGHT)
     button(
         canvas,
@@ -766,19 +786,16 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         "Cancel",
         h=BUTTON_HEIGHT,
     )
-    # The metal frame, portrait, title and close button sit over the contents; the side tabs join its right rail.
+    # The metal frame, portrait, title and close button sit over the contents; the side tabs join its left rail.
     wowmock.portrait_frame_art(
         canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT, "interface/icons/inv_misc_note_01.blp", "Macros"
     )
-    # The side rail lies outside the window's own frame, so the scene grows to hold it.
-    side = ui.atlas("common-sidetab")
-    wide = ui.canvas(canvas.width + side.width, canvas.height)
-    wide.paste(canvas, 0, 0)
-    side_tabs(wide, X + WINDOW_WIDTH - SIDE_TAB_EDGE, Y + SIDE_TAB_TOP, TAB_SELECTED)
+    # The side rail sits inside the window's left edge, beside the list it filters.
+    side_tabs(canvas, X + SIDE_TAB_EDGE, Y + SIDE_TAB_TOP, TAB_SELECTED)
     # The popup is drawn last, over the editor text, as the editor's popup is in game.
     if completion:
-        draw_completion(wide, completion, caret_column, text_x, text_y, text_w)
-    return wide
+        draw_completion(canvas, completion, caret_column, text_x, text_y, text_w)
+    return canvas
 
 
 def side_tab_extent(ui):
@@ -787,10 +804,10 @@ def side_tab_extent(ui):
     return art.width, 2 * (art.height - 5) + SIDE_TAB_GAP
 
 
-def layout(ui):
+def window_layout(ui):
     editor_x, editor_y, editor_w, editor_h = editor_geometry()
     status_x, status_y, status_w, status_h = status_geometry()
-    header_x = X + INSET_LEFT + LIST_WIDTH + COLUMN_GAP
+    header_x = X + LIST_LEFT + LIST_WIDTH + COLUMN_GAP
     header_y = Y - HEADER_TOP
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
     rail_width, rail_height = side_tab_extent(ui)
@@ -798,7 +815,7 @@ def layout(ui):
         {
             "name": "search",
             "role": "input",
-            "x": X + INSET_LEFT + SEARCH_LEFT,
+            "x": X + LIST_LEFT + SEARCH_LEFT,
             "y": Y - SEARCH_TOP,
             "w": SEARCH_WIDTH,
             "h": SEARCH_HEIGHT,
@@ -806,7 +823,7 @@ def layout(ui):
         {
             "name": "count",
             "role": "text",
-            "x": X + INSET_LEFT + LIST_WIDTH - COUNT_WIDTH,
+            "x": X + LIST_LEFT + LIST_WIDTH - COUNT_WIDTH,
             "y": Y - SEARCH_TOP,
             "w": COUNT_WIDTH,
             "h": SEARCH_HEIGHT,
@@ -814,7 +831,7 @@ def layout(ui):
         {
             "name": "list",
             "role": "list",
-            "x": X + INSET_LEFT,
+            "x": X + LIST_LEFT,
             "y": Y - LIST_TOP,
             "w": LIST_WIDTH,
             "h": LIST_HEIGHT,
@@ -822,7 +839,7 @@ def layout(ui):
         {
             "name": "rename",
             "role": "button",
-            "x": header_x + WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT - LIST_WIDTH - COLUMN_GAP - RENAME_WIDTH,
+            "x": header_x + WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP - RENAME_WIDTH,
             "y": header_y + (HEADER_HEIGHT - RENAME_HEIGHT) // 2,
             "w": RENAME_WIDTH,
             "h": RENAME_HEIGHT,
@@ -832,7 +849,7 @@ def layout(ui):
         {
             "name": "new",
             "role": "button",
-            "x": X + INSET_LEFT,
+            "x": X + LIST_LEFT,
             "y": button_y,
             "w": BUTTON_WIDTH,
             "h": BUTTON_HEIGHT,
@@ -840,9 +857,17 @@ def layout(ui):
         {
             "name": "delete",
             "role": "button",
-            "x": X + INSET_LEFT + BUTTON_WIDTH + FOOTER_GAP,
+            "x": X + LIST_LEFT + BUTTON_WIDTH + FOOTER_GAP,
             "y": button_y,
             "w": DELETE_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "history",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + FOOTER_GAP * 2,
+            "y": button_y,
+            "w": HISTORY_WIDTH,
             "h": BUTTON_HEIGHT,
         },
         {
@@ -864,14 +889,132 @@ def layout(ui):
         {
             "name": "tabs",
             "role": "tabs",
-            "edge": "right",
-            "x": X + WINDOW_WIDTH - SIDE_TAB_EDGE,
+            "edge": "left",
+            "x": X + SIDE_TAB_EDGE,
             "y": Y + SIDE_TAB_TOP,
             "w": rail_width,
             "h": rail_height,
         },
     ]
     return {"frame": {"x": X, "y": Y, "w": WINDOW_WIDTH, "h": WINDOW_HEIGHT}, "widgets": widgets}
+
+
+# The History dialog's sample snapshots. Each live row says what changed against the next newer text; a deleted
+# macro keeps its name and summary.
+HISTORY_ENTRIES = [
+    ("header", "This macro"),
+    ("2026-11-10 14:32", "Line 2 changed"),
+    ("2026-11-10 14:20", "Renamed to Arcane Shot"),
+    ("2026-11-10 14:02", "Icon changed, +1 line"),
+    ("header", "Deleted"),
+    ("2026-11-10 13:50", "Trap: Freezing Trap"),
+]
+
+
+def history_geometry():
+    x = X + (WINDOW_WIDTH - HISTORY_PANEL_WIDTH) // 2
+    y = Y + (WINDOW_HEIGHT - HISTORY_PANEL_HEIGHT) // 2
+    return x, y, HISTORY_PANEL_WIDTH, HISTORY_PANEL_HEIGHT
+
+
+def draw_history(canvas):
+    """The History window over the macro window: a native portrait frame, an inset list, and Restore."""
+    x, y, w, h = history_geometry()
+    background(canvas, x, y, w, h)
+    inset_x, inset_y = x + 10, y + 50
+    inset_w, inset_h = w - 20, h - 50 - 42
+    inset(canvas, inset_x, inset_y, inset_w, inset_h)
+    scroll_x = inset_x + HISTORY_PANEL_INSET
+    scroll_y = inset_y + HISTORY_PANEL_INSET
+    scroll_w = inset_w - HISTORY_PANEL_INSET - (HISTORY_SCROLL_WIDTH + HISTORY_SCROLL_GAP + HISTORY_SCROLL_RIGHT)
+    scroll_h = inset_h - HISTORY_PANEL_INSET * 2
+    for index, (time, summary) in enumerate(HISTORY_ENTRIES):
+        row_y = scroll_y + index * ROW_HEIGHT
+        height = min(ROW_HEIGHT, scroll_y + scroll_h - row_y)
+        if height <= 0:
+            break
+        if index == 1:
+            canvas.fill(scroll_x, row_y, scroll_w, height, (1, 0.82, 0.2, 0.10))
+            canvas.fill(scroll_x, row_y + 3, 2, height - 6, (1, 0.82, 0.2, 1))
+        if time == "header":
+            canvas.text(
+                scroll_x + 8,
+                row_y + 10,
+                summary,
+                FONTS["GameFontHighlight"],
+                GOLD,
+                width=scroll_w - 14,
+            )
+        else:
+            canvas.text(
+                scroll_x + 8,
+                row_y + 4,
+                time,
+                FONTS["GameFontHighlightSmall"],
+                MUTED,
+                width=scroll_w - 14,
+            )
+            canvas.text(
+                scroll_x + 8,
+                row_y + 20,
+                summary,
+                FONTS["GameFontHighlight"],
+                GOLD if index == 1 else WHITE,
+                width=scroll_w - 14,
+            )
+    wowmock.minimal_scrollbar(
+        canvas,
+        scroll_x + scroll_w + HISTORY_SCROLL_GAP,
+        scroll_y,
+        scroll_h,
+        visible=0.8,
+    )
+    button(
+        canvas,
+        x + w - 10 - BUTTON_WIDTH,
+        y + h - HISTORY_BOTTOM - BUTTON_HEIGHT,
+        BUTTON_WIDTH,
+        "Restore",
+        h=BUTTON_HEIGHT,
+    )
+    wowmock.portrait_frame_art(canvas, x, y, w, h, "interface/icons/inv_misc_note_01.blp", "History")
+    return x, y, w, h
+
+
+def history_layout():
+    x, y, w, h = history_geometry()
+    scroll_x = x + 10 + HISTORY_PANEL_INSET
+    scroll_w = w - 20 - HISTORY_PANEL_INSET - (HISTORY_SCROLL_WIDTH + HISTORY_SCROLL_GAP + HISTORY_SCROLL_RIGHT)
+    return {
+        "frame": {"x": x, "y": y, "w": w, "h": h},
+        "widgets": [
+            {
+                "name": "history-list",
+                "role": "list",
+                "x": scroll_x,
+                "y": y + 50 + HISTORY_PANEL_INSET,
+                "w": scroll_w,
+                "h": h - 50 - 42 - HISTORY_PANEL_INSET * 2,
+            },
+            {
+                "name": "history-restore",
+                "role": "button",
+                "x": x + w - 10 - BUTTON_WIDTH,
+                "y": y + h - HISTORY_BOTTOM - BUTTON_HEIGHT,
+                "w": BUTTON_WIDTH,
+                "h": BUTTON_HEIGHT,
+            },
+        ],
+    }
+
+
+def layout(ui):
+    return {
+        "scenes": [
+            window_layout(ui),
+            history_layout(),
+        ]
+    }
 
 
 def completion_data(data):
@@ -904,6 +1047,17 @@ def main():
     )
     wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "window.png")
     print(output / "window.png")
+
+    history_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data=window_data,
+    )
+    draw_history(history_canvas)
+    wowmock.scene(ui, [(history_canvas, 0, 0)]).save(output / "history.png")
+    print(output / "history.png")
 
     completion = completion_data(data)
     completion_scene = {
