@@ -5,6 +5,13 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **The editor shows a caret again.** A white caret sits at the insert position and blinks while the editor has focus, so
+  you can see where typing goes.
+- **Editor text is larger and its lines have room to breathe.** Macro text is now 14 units on 19-unit lines, still in
+  the same window, and a 255-character macro still fits without scrolling.
+- **The General and character tabs are square tabs on the window's right edge.** General shows a book and the
+  character tab shows your own portrait, and the list now starts higher, in the space the old tabs floated above.
+
 ## [0.1.1] - 2026-11-10
 
 - **Spells behind a spellbook flyout now count as yours.** Call Pet, Aspect and the other spells inside a flyout

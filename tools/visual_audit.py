@@ -17,7 +17,14 @@ def main():
     for widget in widgets:
         x, y = widget["x"], widget["y"]
         right, bottom = x + widget["w"], y + widget["h"]
-        if x < frame["x"] or y < frame["y"] or right > frame["x"] + frame["w"] or bottom > frame["y"] + frame["h"]:
+        inside = x >= frame["x"] and y >= frame["y"] and bottom <= frame["y"] + frame["h"]
+        # A side rail belongs on the frame's outer right edge (docs/ui-composition.md): it starts inside the
+        # frame and runs past it, so only its vertical bounds must stay within the frame.
+        if widget.get("edge") == "right":
+            inside = inside and x < frame["x"] + frame["w"]
+        else:
+            inside = inside and right <= frame["x"] + frame["w"]
+        if not inside:
             errors.append(f"{widget['name']} lies outside the frame")
     interactive = [widget for widget in widgets if widget["role"] in {"button", "tabs", "input"}]
     for index, first in enumerate(interactive):

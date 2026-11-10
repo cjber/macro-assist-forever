@@ -44,10 +44,11 @@ WINDOW_WIDTH = number("WINDOW_WIDTH")
 WINDOW_HEIGHT = number("WINDOW_HEIGHT")
 INSET_LEFT = number("INSET_LEFT")
 INSET_RIGHT = number("INSET_RIGHT")
-TAB_LEFT = number("TAB_LEFT")
-TAB_TOP = number("TAB_TOP")
 LIST_TOP = number("LIST_TOP")
 LIST_HEIGHT = number("LIST_HEIGHT")
+SIDE_TAB_EDGE = number("SIDE_TAB_EDGE")
+SIDE_TAB_TOP = number("SIDE_TAB_TOP")
+SIDE_TAB_GAP = number("SIDE_TAB_GAP")
 HEADER_HEIGHT = number("HEADER_HEIGHT")
 GAP = number("GAP")
 BOTTOM_OFFSET = number("BOTTOM_OFFSET")
@@ -68,9 +69,9 @@ ROW_TEXT_RIGHT = 6
 SCROLL_GAP = number("SCROLL_GAP")
 SCROLL_WIDTH = number("SCROLL_WIDTH")
 ICON_TEXCOORD = texcoord("ICON_TEXCOORD")
-TOP_TAB_HEIGHT_PERCENT = 0.75  # PanelTopTabButtonMixin:OnLoad keeps the lower 75% of the tab art.
-TOP_TAB_CROP = 1 - TOP_TAB_HEIGHT_PERCENT
 FONT_SIZE = number("FONT_SIZE", EDITOR)
+LINE_SPACING = number("LINE_SPACING", EDITOR)
+LINE_HEIGHT = FONT_SIZE + LINE_SPACING  # one editor line: the font height plus the editor's SetSpacing
 GUTTER_WIDTH = number("GUTTER_WIDTH", EDITOR)
 TEXT_INSET_LEFT = number("TEXT_INSET_LEFT", EDITOR)
 TEXT_INSET_RIGHT = number("TEXT_INSET_RIGHT", EDITOR)
@@ -87,7 +88,6 @@ MAX_CHARACTER = 30
 
 X, Y = 24, 24
 MARGIN = 24
-LINE_HEIGHT = FONT_SIZE
 MONO = wowmock.Font(str(FONT_FILE), FONT_SIZE, wowmock.WHITE, None)
 MUTED = (0.55, 0.55, 0.55)
 WHITE = wowmock.WHITE
@@ -136,7 +136,6 @@ MACROS = [
 ]
 SELECTED = 0
 CURRENT_LINE = 1
-TAB_NAMES = ["General", "Barry's Macros"]
 TAB_SELECTED = 1
 
 # The completion scene: a short Hunter macro with one mistyped command on a line above the caret, and a new
@@ -347,52 +346,18 @@ def inset(canvas, x, y, w, h):
     wowmock.draw_nine_slice(canvas, wowmock.INSET_FRAME_LAYOUT, x, y, w, h)
 
 
-def top_tabs(canvas, x, top, names, selected):
-    """PanelTopTabButtonTemplate: the tab art's lower 75% flipped to hang upwards from the tab's bottom, so both
-    tabs keep their bottoms on one line; the selected tab only swaps to the active art and its text colour, while
-    PanelTemplates_SelectTab/DeselectTab move its text to (0, -4)/(0, -8)."""
-    bottom = top + 32
-    for index, name in enumerate(names):
-        active = index == selected
-        prefix = "uiframe-activetab" if active else "uiframe-tab"
-        left = canvas.ui.atlas(f"{prefix}-left")
-        right = canvas.ui.atlas(f"{prefix}-right")
-        middle = canvas.ui.atlas(f"_{prefix}-center")
-        font = FONTS["GameFontHighlightSmall" if active else "GameFontNormalSmall"]
-        width = max(canvas.text_width(name, font) + 20, 72)
-        height = left.height * TOP_TAB_HEIGHT_PERCENT
-        top_y = bottom - height
-        crop = round(left.image.height * TOP_TAB_CROP)
-        left_x = x + (-1 if active else -3)
-        right_x = x + width + (8 if active else 7) - right.width
-        canvas.draw(
-            left.image.crop((0, crop, left.image.width, left.image.height)),
-            left_x,
-            top_y,
-            left.width,
-            height,
-            flip_v=True,
-        )
-        canvas.draw(
-            right.image.crop((0, crop, right.image.width, right.image.height)),
-            right_x,
-            top_y,
-            right.width,
-            height,
-            flip_v=True,
-        )
-        canvas.draw(
-            middle.image.crop((0, crop, middle.image.width, middle.image.height)),
-            left_x + left.width,
-            top_y,
-            right_x - left_x - left.width,
-            height,
-            flip_v=True,
-        )
-        # ButtonText is anchored at the tab's centre; PanelTemplates_(De)SelectTab moves a top tab to -4 / -8.
-        centre = bottom - 16 + (4 if active else 8)
-        canvas.text(x, centre - 5, name, font, justify="CENTER", width=width, box_height=10)
-        x += width + 3
+SIDE_TABS = [
+    ("interface/icons/inv_misc_book_09.blp", "General"),
+    ("interface/characterframe/temporaryportrait-female-nightelf.blp", "Barry's Macros"),
+]
+
+
+def side_tabs(canvas, x, top, selected):
+    """LargeSideTabButtonTemplate on the window's outer right rail, as SkillUp anchors it: wowmock draws the native
+    common-sidetab art, its mask and the checked ring, and each tab stacks SIDE_TAB_GAP below the last."""
+    y = top
+    for index, (icon, _) in enumerate(SIDE_TABS):
+        y += wowmock.side_tab(canvas, x, y, icon, selected=index == selected) + SIDE_TAB_GAP
 
 
 def button(canvas, x, y, w, text, h=BUTTON_HEIGHT, state="normal"):
@@ -457,7 +422,8 @@ def line_geometry():
 def draw_editor(canvas, body, current_line, caret_column, data):
     editor_x, editor_y, editor_w, editor_h, gutter_x, gutter_y, text_x, text_y, text_w, _ = line_geometry()
     lines = body.split("\n")
-    advance = FONT_SIZE * 14 / 24  # JetBrains Mono's fixed advance at this size: 14 px over 24 px.
+    # The editor measures this run in game; measure the same run here rather than assuming the font's advance.
+    advance = canvas.text_width("M" * 32, MONO) / 32
     # The current-line highlight sits under the text, as the editor's BACKGROUND texture does.
     canvas.fill(
         text_x + TEXT_INSET_LEFT,
@@ -481,10 +447,11 @@ def draw_editor(canvas, body, current_line, caret_column, data):
         )
         highlighted = data["lines"].get(index + 1, line)
         canvas.text(text_x + TEXT_INSET_LEFT, top, highlighted, MONO, box_height=LINE_HEIGHT)
-    # The caret is the EditBox's own white line, above the coloured overlay.
+    # The caret is our own white line above the coloured overlay, placed at the measured column, one line tall.
     if caret_column is not None:
+        prefix = lines[current_line][:caret_column]
         canvas.fill(
-            text_x + TEXT_INSET_LEFT + caret_column * advance,
+            text_x + TEXT_INSET_LEFT + canvas.text_width(prefix, MONO),
             text_y + TEXT_INSET_TOP + current_line * LINE_HEIGHT,
             1,
             LINE_HEIGHT,
@@ -518,8 +485,9 @@ def locate(body, first, last):
 
 
 def draw_completion(canvas, completion, caret_column, text_x, text_y, text_w):
-    _, caret = completion[:2]
-    x = text_x + TEXT_INSET_LEFT + caret_column * (FONT_SIZE * 14 / 24)
+    lines, caret = completion[:2]
+    prefix = lines[caret][:caret_column]
+    x = text_x + TEXT_INSET_LEFT + canvas.text_width(prefix, MONO)
     y = text_y + TEXT_INSET_TOP + caret * LINE_HEIGHT + LINE_HEIGHT
     width = max(280, min(text_w, 560))
     rows = min(POPUP_ROWS, len(completion[2]))
@@ -650,30 +618,31 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
     button(canvas, X + 10 + DELETE_WIDTH + GAP, button_y, BUTTON_WIDTH, "New")
     button(canvas, X + WINDOW_WIDTH - 10 - BUTTON_WIDTH, button_y, BUTTON_WIDTH, "Save")
     button(canvas, X + WINDOW_WIDTH - 10 - BUTTON_WIDTH * 2 - GAP, button_y, BUTTON_WIDTH, "Cancel")
-    # The metal frame, portrait, title and close button sit over the contents; the tabs hang over its top edge.
+    # The metal frame, portrait, title and close button sit over the contents; the side tabs join its right rail.
     wowmock.portrait_frame_art(
         canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT, "interface/icons/inv_misc_note_01.blp", "Macros"
     )
-    top_tabs(canvas, X + TAB_LEFT, Y - TAB_TOP, TAB_NAMES, TAB_SELECTED)
+    # The side rail lies outside the window's own frame, so the scene grows to hold it.
+    side = ui.atlas("common-sidetab")
+    wide = ui.canvas(canvas.width + side.width, canvas.height)
+    wide.paste(canvas, 0, 0)
+    side_tabs(wide, X + WINDOW_WIDTH - SIDE_TAB_EDGE, Y + SIDE_TAB_TOP, TAB_SELECTED)
     # The popup is drawn last, over the editor text, as the editor's popup is in game.
     if completion:
-        draw_completion(canvas, completion, caret_column, text_x, text_y, text_w)
-    return canvas
+        draw_completion(wide, completion, caret_column, text_x, text_y, text_w)
+    return wide
 
 
-def tab_extent(ui):
-    """The two tabs' rects side by side: PanelTemplates_TabResize width plus the 3-unit gap the code sets."""
-    measure = ui.canvas(1, 1)
-    total = 3 * (len(TAB_NAMES) - 1)
-    for index, name in enumerate(TAB_NAMES):
-        font = FONTS["GameFontHighlightSmall" if index == TAB_SELECTED else "GameFontNormalSmall"]
-        total += max(measure.text_width(name, font) + 20, 72)
-    return total
+def side_tab_extent(ui):
+    """One rail rectangle over both stacked tabs: the native art's width and each visible tab's height."""
+    art = ui.atlas("common-sidetab")
+    return art.width, 2 * (art.height - 5) + SIDE_TAB_GAP
 
 
 def layout(ui):
     editor_x, editor_y, editor_w, editor_h, *_ = line_geometry()
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
+    rail_width, rail_height = side_tab_extent(ui)
     widgets = [
         {
             "name": "list",
@@ -720,10 +689,11 @@ def layout(ui):
         {
             "name": "tabs",
             "role": "tabs",
-            "x": X + TAB_LEFT,
-            "y": Y - TAB_TOP,
-            "w": tab_extent(ui),
-            "h": 32,
+            "edge": "right",
+            "x": X + WINDOW_WIDTH - SIDE_TAB_EDGE,
+            "y": Y + SIDE_TAB_TOP,
+            "w": rail_width,
+            "h": rail_height,
         },
     ]
     return {"frame": {"x": X, "y": Y, "w": WINDOW_WIDTH, "h": WINDOW_HEIGHT}, "widgets": widgets}

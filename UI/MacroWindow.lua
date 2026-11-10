@@ -12,10 +12,13 @@ local WINDOW_WIDTH = 800
 local WINDOW_HEIGHT = 930
 local INSET_LEFT = 8
 local INSET_RIGHT = -8
-local TAB_LEFT = 54
-local TAB_TOP = -32
-local LIST_TOP = -70
-local LIST_HEIGHT = 320
+local LIST_TOP = -58
+local LIST_HEIGHT = 332
+-- The side rail's tabs sit on the window's outer right edge, as SkillUp and Adventure Guide anchor theirs
+-- (docs/ui-composition.md: LargeSideTabButtonTemplate owns the outer right rail).
+local SIDE_TAB_EDGE = 2
+local SIDE_TAB_TOP = 48
+local SIDE_TAB_GAP = 2
 local HEADER_HEIGHT = 64
 local GAP = 8
 local BOTTOM_OFFSET = 46
@@ -50,13 +53,11 @@ local MAX_ACCOUNT = MACRO_CONSTS and MACRO_CONSTS.MAX_ACCOUNT_MACROS or 120
 local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 
 ---@class MacroAssistTab : Button
----@field Left Texture
----@field Middle Texture
----@field Right Texture
----@field LeftActive Texture
----@field MiddleActive Texture
----@field RightActive Texture
----@field Text FontString
+---@field Icon Texture
+---@field SelectedTexture Texture
+---@field tooltipText string
+---@field SetChecked fun(self: MacroAssistTab, checked: boolean)
+---@field SetFillToInterior fun(self: MacroAssistTab, fillToInterior: boolean, extent?: number)
 
 ---@class MacroAssistHeader : Frame
 ---@field icon Texture
@@ -101,7 +102,6 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field saveButton Button
 ---@field cancelButton Button
 ---@field Tabs MacroAssistTab[]
----@field maxTabWidth number
 
 ---@class MacroAssistWindow
 ---@field frame MacroAssistFrame
@@ -132,13 +132,8 @@ end
 ---@param tab MacroAssistTab
 ---@param selected boolean
 local function SelectTabArt(tab, selected)
-	-- Blizzard's own tab helpers on our own tab frames: they swap the active art, the font and the text's
-	-- offset, and keep both tabs' art anchored to the same bottom line. Never call them on Blizzard's frames.
-	if selected then
-		PanelTemplates_SelectTab(tab)
-	else
-		PanelTemplates_DeselectTab(tab)
-	end
+	-- LargeSideTabButtonTemplate's own checked art: the gold ring around the selected tab's icon.
+	tab:SetChecked(selected)
 end
 
 ---@param frame Frame
@@ -203,25 +198,27 @@ function Window.Create()
 	---@type MacroAssistTab[]
 	local tabs = {}
 	for index = 1, 2 do
-		local tab = CreateFrame("Button", nil, frame, "PanelTopTabButtonTemplate") --[[@as MacroAssistTab]]
+		-- A Button, so the gamepad's SmartNavigation scan never reads a Frame's mouse scripts; the template owns
+		-- the square side-tab art, its mask and the checked ring (docs/ui-composition.md: the outer right rail).
+		local tab = CreateFrame("Button", nil, frame, "LargeSideTabButtonTemplate") --[[@as MacroAssistTab]]
 		tab:SetID(index)
 		if index == 1 then
-			tab:SetPoint("TOPLEFT", frame, "TOPLEFT", TAB_LEFT, TAB_TOP)
-			tab:SetText(L["General"])
+			tab:SetPoint("TOPLEFT", frame, "TOPRIGHT", -SIDE_TAB_EDGE, -SIDE_TAB_TOP)
+			-- art-ok: a square icon in the square LargeSideTabButtonTemplate sizes for it
+			tab.Icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
+			tab.tooltipText = L["General"]
 		else
-			tab:SetPoint("LEFT", tabs[1], "RIGHT", 3, 0)
-			tab:SetText(L["%s's Macros"]:format(name))
+			tab:SetPoint("TOP", tabs[1], "BOTTOM", 0, -SIDE_TAB_GAP)
+			tab.tooltipText = L["%s's Macros"]:format(name)
 		end
+		tab:SetFillToInterior(true)
 		tab:SetScript("OnClick", function()
 			Window:SelectTab(index)
 		end)
 		tabs[index] = tab
 	end
 	frame.Tabs = tabs
-	-- PanelTabButtonMixin sizes each tab from these parent fields (PanelTemplates_TabResize): no extra padding
-	-- and no minimum beyond the side art; 240 is the widest our own longest tab may grow, as Blizzard's own
-	-- MacroFrame sets maxTabWidth in its XML.
-	frame.maxTabWidth = 240
+	Window:UpdatePortrait()
 
 	local listInset = CreateFrame("Frame", nil, frame, "InsetFrameTemplate")
 	listInset:SetPoint("TOPLEFT", frame, "TOPLEFT", INSET_LEFT, LIST_TOP)
@@ -326,8 +323,8 @@ function Window.Create()
 		Window:Cancel()
 	end)
 
-	frame:SetScript("OnEvent", function(_, event)
-		Window:OnEvent(event)
+	frame:SetScript("OnEvent", function(_, event, ...)
+		Window:OnEvent(event, ...)
 	end)
 	frame:SetScript("OnShow", function()
 		Window:OnShow()
@@ -352,6 +349,18 @@ function Window.AttachToMacroFrame()
 	frame:SetPoint("TOPLEFT", MacroFrame, "TOPLEFT", 0, 0)
 	frame:SetFrameStrata("HIGH")
 	frame:SetFrameLevel(MacroFrame:GetFrameLevel() + 10)
+end
+
+-- The character tab is the player's own portrait, drawn by the client into the tab's square icon; UNIT_PORTRAIT_UPDATE
+-- redraws it when the portrait changes (a haircut, a barbershop visit) and every show starts from the current one.
+function Window:UpdatePortrait()
+	local tabs = self.frame and self.frame.Tabs
+	local tab = tabs and tabs[2]
+	if not tab then
+		return
+	end
+	SetPortraitTexture(tab.Icon, "player")
+	tab:SetFillToInterior(true)
 end
 
 ---@param row MacroAssistRow
@@ -663,9 +672,11 @@ function Window:OnShow()
 	frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 	frame:RegisterEvent("PLAYER_TARGET_CHANGED")
 	frame:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
+	frame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 	ns.Context.Rebuild()
 	self.combat = InCombatLockdown()
 	self.deleteArmed = false
+	self:UpdatePortrait()
 	frame.editor:RefreshAll()
 	frame.editor:SetCombat(self.combat)
 	self:RefreshList()
@@ -684,6 +695,7 @@ function Window:OnHide()
 	frame:UnregisterEvent("MODIFIER_STATE_CHANGED")
 	frame:UnregisterEvent("PLAYER_TARGET_CHANGED")
 	frame:UnregisterEvent("UPDATE_MOUSEOVER_UNIT")
+	frame:UnregisterEvent("UNIT_PORTRAIT_UPDATE")
 	frame.editor:ClearFocus()
 	frame.editor:HideCompletion()
 	if frame.iconSelector then
@@ -691,10 +703,15 @@ function Window:OnHide()
 	end
 end
 
-function Window:OnEvent(event)
+function Window:OnEvent(event, ...)
 	local frame = self.frame
 	if event == "UPDATE_MACROS" then
 		self:RefreshList()
+	elseif event == "UNIT_PORTRAIT_UPDATE" then
+		local unit = ...
+		if unit == "player" then
+			self:UpdatePortrait()
+		end
 	elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
 		self.combat = event == "PLAYER_REGEN_DISABLED"
 		frame.editor:SetCombat(self.combat)
