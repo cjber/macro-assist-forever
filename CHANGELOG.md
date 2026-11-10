@@ -5,6 +5,9 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **The caret, line highlight, wavy underlines and completions follow the real text and the editor's own word wrap.**
+  Clicking to the right of a line keeps the cursor on that line, and the wavy underlines no longer block clicks; put
+  the cursor on one to read it and press Tab to apply its fix.
 - **The editor shows a caret again.** A white caret sits at the insert position and blinks while the editor has focus, so
   you can see where typing goes.
 - **Editor text is larger and its lines have room to breathe.** Macro text is now 14 units on 19-unit lines, still in
