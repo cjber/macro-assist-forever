@@ -5,9 +5,13 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-10
+
 - **Needs Forever Core.** The shared tracker column, bug report and leaderboards now come from one Forever Core addon
   that installs with it, so every Forever addon's tracker scale, lock and position stay in step. Your tracker settings
   carry over.
+
+<!-- discord-image: docs/screenshots/window.png -->
 
 ## [0.1.3] - 2026-11-10
 
