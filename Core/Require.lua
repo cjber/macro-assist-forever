@@ -1,4 +1,8 @@
-local _, ns = ...
+local addonName, ns = ...
+
+-- The one client icon this addon shows for itself in game, declared once in the TOC and read here so no other file
+-- repeats the path. The window portrait and every other identity surface draw this value.
+ns.Icon = C_AddOns.GetAddOnMetadata(addonName, "X-Forever-Icon")
 
 -- The game refuses to load this addon when ForeverCore is absent (## Dependencies), but an older ForeverCore still
 -- loads. Its API version says whether it has everything this addon calls, so an out-of-date one stops the addon's own

@@ -6,7 +6,7 @@ ignore = { "212/_.*" } -- unused args prefixed with _
 globals = { "MacroAssistForeverDB", "SlashCmdList" }
 
 read_globals = {
-	"CreateFrame",
+	"C_AddOns", "CreateFrame",
 	"date", "InCombatLockdown",
 	"UIParent",
 	-- The macro window and editor.

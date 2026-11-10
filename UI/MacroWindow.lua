@@ -64,7 +64,6 @@ local SCROLL_WIDTH = 18
 local LEFT_PANEL_X = 16
 local LEFT_PANEL_Y = -116
 
-local PORTRAIT = "Interface\\Icons\\inv_misc_note_01"
 local WHITE_ICON_FRAME = "Interface\\Common\\WhiteIconFrame"
 local MUTED = { 0.55, 0.55, 0.55 }
 local ROW_MUTED = { 0.6, 0.6, 0.6 }
@@ -298,7 +297,7 @@ function Window.Create()
 	frame:SetToplevel(true)
 	frame:SetClampedToScreen(true)
 	frame.TitleContainer.TitleText:SetText(L["Macros"])
-	frame.PortraitContainer.portrait:SetTexture(PORTRAIT)
+	frame.PortraitContainer.portrait:SetTexture(ns.Icon)
 	frame.Inset:Hide()
 	frame.CloseButton:SetScript("OnClick", function()
 		Window.ClosePanel()

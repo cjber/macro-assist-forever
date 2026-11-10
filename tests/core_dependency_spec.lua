@@ -4,9 +4,25 @@
 -- never a chat message.
 local TEXT = "Macro Assist Forever needs ForeverCore, which is missing or too old."
 
+-- The TOC's own fields, as C_AddOns.GetAddOnMetadata answers them in the client.
+local metadata = {}
+local toc = assert(io.open("MacroAssistForever.toc", "r"))
+for line in toc:lines() do
+	local key, value = line:match("^##%s*([^:]+):%s*(.-)%s*$")
+	if key then
+		metadata[key] = value
+	end
+end
+toc:close()
+
 local function Require(foreverCore)
 	local lines = {}
 	local env = {
+		C_AddOns = {
+			GetAddOnMetadata = function(name, key)
+				return name == "MacroAssistForever" and metadata[key] or nil
+			end,
+		},
 		UIErrorsFrame = {
 			AddMessage = function(_, text, red, green, blue)
 				lines[#lines + 1] = { text = text, red = red, green = green, blue = blue }
@@ -34,5 +50,6 @@ assert(#oldLines == 1 and oldLines[1].text == TEXT, "with the same one line")
 local ready, readyLines = Require({ API = 1 })
 assert(ready.broken == nil, "API 1 runs the addon")
 assert(#readyLines == 0, "and says nothing")
+assert(ready.Icon == metadata["X-Forever-Icon"], "the addon reads the TOC's identity icon")
 
 print("core_dependency_spec: the API floor stops an old ForeverCore with one line")

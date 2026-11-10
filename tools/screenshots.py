@@ -21,6 +21,7 @@ CORE = Path(os.environ.get("FOREVER_CORE", ROOT.parent / "forever-core"))
 sys.path.insert(0, str(CORE / "tools" / "wowmock"))
 import wowmock  # noqa: E402
 
+TOC = (ROOT / "MacroAssistForever.toc").read_text(encoding="utf-8-sig")
 SOURCE = (ROOT / "UI" / "MacroWindow.lua").read_text(encoding="utf-8")
 EDITOR = (ROOT / "UI" / "Editor.lua").read_text(encoding="utf-8")
 HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
@@ -39,6 +40,17 @@ def texcoord(name, text=SOURCE):
     """A local texcoord constant from the addon's Lua: the four numbers SetTexCoord receives."""
     block = re.search(rf"local {name} = \{{([^}}]+)\}}", text)[1]
     return [float(value) for value in block.split(",")]
+
+
+def toc_field(name):
+    """A TOC metadata value, such as the addon's one identity icon."""
+    return re.search(rf"^##\s*{re.escape(name)}:\s*(.*?)\s*$", TOC, re.MULTILINE)[1]
+
+
+# Every portrait scene draws the icon the TOC declares, the same value the addon reads at load.
+IDENTITY_ICON = toc_field("X-Forever-Icon").replace("\\", "/").lower()
+if not IDENTITY_ICON.endswith(".blp"):
+    IDENTITY_ICON += ".blp"
 
 
 WINDOW_WIDTH = number("WINDOW_WIDTH")
@@ -787,9 +799,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         h=BUTTON_HEIGHT,
     )
     # The metal frame, portrait, title and close button sit over the contents; the side tabs join its left rail.
-    wowmock.portrait_frame_art(
-        canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT, "interface/icons/inv_misc_note_01.blp", "Macros"
-    )
+    wowmock.portrait_frame_art(canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT, IDENTITY_ICON, "Macros")
     # The side rail sits inside the window's left edge, beside the list it filters.
     side_tabs(canvas, X + SIDE_TAB_EDGE, Y + SIDE_TAB_TOP, TAB_SELECTED)
     # The popup is drawn last, over the editor text, as the editor's popup is in game.
@@ -977,7 +987,7 @@ def draw_history(canvas):
         "Restore",
         h=BUTTON_HEIGHT,
     )
-    wowmock.portrait_frame_art(canvas, x, y, w, h, "interface/icons/inv_misc_note_01.blp", "History")
+    wowmock.portrait_frame_art(canvas, x, y, w, h, IDENTITY_ICON, "History")
     return x, y, w, h
 
 
