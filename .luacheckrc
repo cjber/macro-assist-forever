@@ -16,9 +16,8 @@ read_globals = {
 	"Enum", "GameFontHighlightSmall", "GameTooltip", "GetFlyoutInfo", "GetFlyoutSlotInfo", "GetMacroInfo",
 	"GetNumMacros", "HideUIPanel", "hooksecurefunc",
 	"IconDataProviderExtraType", "IconDataProviderMixin", "IconSelectorPopupFrameIconFilterTypes",
-	"IconSelectorPopupFrameTemplateMixin", "MacroFrame", "NORMAL_FONT_COLOR", "PanelTemplates_DeselectTab",
-	"PanelTemplates_SelectTab", "PickupMacro",
-	"ScrollBoxConstants", "ScrollUtil", "SecureCmdOptionParse", "UnitName",
+	"IconSelectorPopupFrameTemplateMixin", "MacroFrame", "NORMAL_FONT_COLOR",
+	"PickupMacro", "ScrollBoxConstants", "ScrollUtil", "SecureCmdOptionParse", "SetPortraitTexture", "UnitName",
 	-- The slash command, the addon compartment and the gamepad input style.
 	"C_InputInterfaceStyle", "ShowMacroFrame",
 	"SLASH_MACROASSISTFOREVER1", "SLASH_MACROASSISTFOREVER2",

@@ -8,7 +8,9 @@ local _, ns = ...
 local L = ns.L
 
 local FONT_NAME = "MacroAssistMono"
-local FONT_SIZE = 12
+local FONT_SIZE = 14
+-- Extra space below each line (SetSpacing), so 14-unit text reads on 19-unit lines.
+local LINE_SPACING = 5
 local GUTTER_WIDTH = 30
 local TEXT_INSET_LEFT = 2
 local TEXT_INSET_RIGHT = 2
@@ -61,6 +63,7 @@ local function EnsureFont()
 	local font = CreateFont("MacroAssistMono")
 	font:SetFont("Interface/AddOns/MacroAssistForever/media/fonts/JetBrainsMono-Regular.ttf", FONT_SIZE, "")
 	font:SetJustifyH("LEFT")
+	font:SetSpacing(LINE_SPACING)
 end
 
 ---@param text string
@@ -92,6 +95,9 @@ end
 ---@field texture Texture
 ---@field diagnostic MacroAssistDiagnostic?
 
+---@class MacroAssistCaret : Frame
+---@field texture Texture
+
 ---@class MacroAssistEditorLine
 ---@field from integer
 ---@field to integer
@@ -109,6 +115,8 @@ end
 ---@field measure FontString
 ---@field probe FontString
 ---@field highlight Texture
+---@field caret MacroAssistCaret
+---@field caretBlink AnimationGroup
 ---@field status FontString
 ---@field popup MacroAssistCompletionPopup
 ---@field lineFonts FontString[]
@@ -172,14 +180,41 @@ function Editor.Create(parent)
 	self.edit:SetCountInvisibleLetters(true)
 	self.edit:SetTextInsets(0, 0, 0, 0)
 	self.edit:SetFontObject(FONT_NAME)
+	self.edit:SetSpacing(LINE_SPACING)
 	self.edit:SetTextColor(1, 1, 1, 0)
 	self.edit:SetJustifyH("LEFT")
 	self.edit:SetFrameLevel(self.textArea:GetFrameLevel() + 3)
 
+	-- The client has no caret colour or caret texture API: SimpleEditBoxAPI only exposes Get/SetBlinkSpeed, and an
+	-- EditBox draws its caret in its text colour, which is transparent here so the coloured overlay shows. Draw
+	-- our own white caret above the overlay, one line tall, placed from the layout numbers UpdateHighlight computes.
+	-- A repeating alpha AnimationGroup blinks it; there is no OnUpdate or timer.
+	self.caret = CreateFrame("Frame", nil, self.textArea) --[[@as MacroAssistCaret]]
+	self.caret:SetFrameLevel(self.textArea:GetFrameLevel() + 5)
+	self.caret:SetSize(1, self.lineHeight or (FONT_SIZE + LINE_SPACING))
+	self.caret.texture = self.caret:CreateTexture(nil, "ARTWORK")
+	self.caret.texture:SetAllPoints(self.caret)
+	self.caret.texture:SetColorTexture(1, 1, 1, 1)
+	self.caret:Hide()
+	self.caretBlink = self.caret:CreateAnimationGroup()
+	self.caretBlink:SetLooping("REPEAT")
+	local on = self.caretBlink:CreateAnimation("Alpha")
+	on:SetFromAlpha(1)
+	on:SetToAlpha(1)
+	on:SetDuration(0.5)
+	on:SetOrder(1)
+	local off = self.caretBlink:CreateAnimation("Alpha")
+	off:SetFromAlpha(0)
+	off:SetToAlpha(0)
+	off:SetDuration(0.5)
+	off:SetOrder(2)
+
 	self.measure = self.textArea:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
 	self.measure:SetJustifyH("LEFT")
+	self.measure:SetSpacing(LINE_SPACING)
 	self.measure:SetAlpha(0)
 	self.probe = self.textArea:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
+	self.probe:SetSpacing(LINE_SPACING)
 	self.probe:SetAlpha(0)
 	self.probe:SetText(string.rep("M", 32))
 	-- Measured, never assumed: a known run's width divided by its length gives the fixed advance.
@@ -188,10 +223,8 @@ function Editor.Create(parent)
 		self.advance = 1
 	end
 	self.probe:SetText("")
-	self.lineHeight = self.measure:GetLineHeight()
-	if not self.lineHeight or self.lineHeight <= 0 then
-		self.lineHeight = FONT_SIZE + 2
-	end
+	self.lineHeight = FONT_SIZE + LINE_SPACING
+	self:UpdateMetrics()
 
 	self.status = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	self.status:SetPoint("LEFT", parent, "LEFT", 10, 10)
@@ -274,8 +307,12 @@ function Editor.Create(parent)
 			self:PositionPopup()
 		end
 	end)
+	self.edit:SetScript("OnEditFocusGained", function()
+		self:UpdateHighlight()
+	end)
 	self.edit:SetScript("OnEditFocusLost", function()
 		self:HideCompletion()
+		self:StopCaret()
 	end)
 	self.edit:SetScript("OnArrowPressed", function(_, key)
 		if not self.popup:IsShown() then
@@ -350,8 +387,8 @@ function Editor:SetCombat(inCombat)
 end
 
 -- The bundled mono font may still be resolving when the editor is created, so the probe's first width can be the
--- fallback font's advance. Measure again on every layout: one GetStringWidth, and the squiggle, popup and wrapping
--- column all use the advance the overlay and EditBox are actually drawing with.
+-- fallback font's advance. Measure again on every layout: one GetStringWidth, and the squiggle, caret, popup and
+-- wrapping column all use the advance the overlay and EditBox are actually drawing with.
 function Editor:UpdateAdvance()
 	self.probe:SetText(string.rep("M", 32))
 	local width = self.probe:GetStringWidth()
@@ -364,11 +401,27 @@ function Editor:UpdateAdvance()
 	end
 end
 
+-- One line's pitch from the font API: the measured line height plus the spacing SetSpacing adds, the same sum
+-- Blizzard uses in SecureUtil's maxLines. The overlay, gutter, caret, highlight, squiggles and popup read this.
+function Editor:UpdateLineHeight()
+	local height = self.probe:GetLineHeight()
+	local spacing = self.probe:GetSpacing()
+	if type(height) == "number" and height > 0 then
+		self.lineHeight = height + (type(spacing) == "number" and spacing or 0)
+		self.caret:SetHeight(self.lineHeight)
+	end
+end
+
+function Editor:UpdateMetrics()
+	self:UpdateAdvance()
+	self:UpdateLineHeight()
+end
+
 function Editor:RefreshAll()
 	if not self.textArea:GetWidth() or self.textArea:GetWidth() <= 1 then
 		return
 	end
-	self:UpdateAdvance()
+	self:UpdateMetrics()
 	self.wrapWidth = math.max(1, self.textArea:GetWidth() - TEXT_INSET_LEFT - TEXT_INSET_RIGHT)
 	self.columns = math.max(1, math.floor(self.wrapWidth / self.advance))
 	local text = self:GetText()
@@ -385,11 +438,7 @@ end
 function Editor:LayoutLines(parsed)
 	self.layout = {}
 	self.measure:SetWidth(self.wrapWidth)
-	self.measure:SetText("M")
-	local lineHeight = self.measure:GetLineHeight()
-	if lineHeight and lineHeight > 0 then
-		self.lineHeight = lineHeight
-	end
+	local lineHeight = self.lineHeight
 	local used = 0
 	local y = 0
 	for index, line in ipairs(parsed.lines) do
@@ -398,15 +447,14 @@ function Editor:LayoutLines(parsed)
 		if not rows or rows < 1 then
 			rows = 1
 		end
-		local height = self.measure:GetStringHeight()
-		if not height or height < self.lineHeight then
-			height = rows * self.lineHeight
-		end
+		-- Every wrapped row is one measured line apart, so the overlay, gutter, caret and squiggles share the pitch.
+		local height = rows * lineHeight
 		used = used + 1
 		local font = self.lineFonts[used]
 		if not font then
 			font = self.overlay:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
 			font:SetJustifyH("LEFT")
+			font:SetSpacing(LINE_SPACING)
 			self.lineFonts[used] = font
 		end
 		-- The EditBox wraps its own transparent text; this FontString wraps the coloured copy at the same font and
@@ -574,6 +622,7 @@ end
 
 function Editor:UpdateHighlight()
 	if not self.layout or #self.layout == 0 then
+		self:StopCaret()
 		return
 	end
 	local cursor = (self.edit:GetCursorPosition() or 0) + 1
@@ -592,6 +641,7 @@ function Editor:UpdateHighlight()
 		end
 	end
 	if not layout then
+		self:StopCaret()
 		return
 	end
 	local column = ns.Length(layout.text:sub(1, math.max(0, cursor - layout.from)))
@@ -602,6 +652,38 @@ function Editor:UpdateHighlight()
 	self.highlight:Show()
 	self.cursorLine = layout
 	self.cursorRow = row
+	self:PlaceCaret(column - row * self.columns, y)
+end
+
+-- The caret sits at the same measured column the current-line highlight starts from, one measured line tall.
+---@param column integer
+---@param y number
+function Editor:PlaceCaret(column, y)
+	self.caret:ClearAllPoints()
+	self.caret:SetPoint(
+		"TOPLEFT",
+		self.textArea,
+		"TOPLEFT",
+		TEXT_INSET_LEFT + column * self.advance,
+		-(TEXT_INSET_TOP + y)
+	)
+	self.caret:SetSize(1, self.lineHeight)
+	if not self.edit:HasFocus() then
+		self:StopCaret()
+		return
+	end
+	self.caret:Show()
+	self.caret:SetAlpha(1)
+	self.caretBlink:Stop()
+	self.caretBlink:Play()
+end
+
+function Editor:StopCaret()
+	if not self.caret then
+		return
+	end
+	self.caretBlink:Stop()
+	self.caret:Hide()
 end
 
 ---@return string? now
