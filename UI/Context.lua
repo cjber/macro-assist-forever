@@ -76,6 +76,79 @@ end
 
 ctx.evaluate = Evaluate
 
+-- One spell the player knows, added under its name. The same name reached twice, from a spellbook line and from a
+-- flyout, is one entry whose ranks both contribute.
+---@param spells table[]
+---@param byName table
+---@param spellName string
+---@param spellID any
+---@param subName any?
+local function AddSpell(spells, byName, spellName, spellID, subName)
+	local rank
+	if spellID and type(C_Spell) == "table" and type(C_Spell.GetSpellSubtext) == "function" then
+		local subOk, sub = pcall(C_Spell.GetSpellSubtext, spellID)
+		if subOk then
+			rank = ns.Readable(sub)
+		end
+	end
+	rank = rank or ns.Readable(subName)
+	local number = type(rank) == "string" and tonumber(rank:match("(%d+)")) or nil
+	local key = spellName:lower()
+	local existing = byName[key]
+	if existing then
+		if number then
+			existing.ranks = existing.ranks or {}
+			local found = false
+			for _, value in ipairs(existing.ranks) do
+				if value == number then
+					found = true
+					break
+				end
+			end
+			if not found then
+				existing.ranks[#existing.ranks + 1] = number
+			end
+		end
+	else
+		local entry = {
+			name = spellName,
+			ranks = number and { number } or nil,
+			learned = true,
+		}
+		byName[key] = entry
+		spells[#spells + 1] = entry
+	end
+end
+
+-- A flyout is a button holding several spells: Pet Utilities, Aspect and the like. Blizzard's spell search walks one
+-- the same way (Blizzard_SpellSearchNameFilter.lua, DerivedGetMatchTypeForFlyout): GetFlyoutInfo gives the slot count
+-- and whether the flyout itself is known, and only a slot whose isKnown is true is a spell the player has.
+---@param spells table[]
+---@param byName table
+---@param flyoutID any
+local function AddFlyout(spells, byName, flyoutID)
+	if type(GetFlyoutInfo) ~= "function" or type(GetFlyoutSlotInfo) ~= "function" then
+		return
+	end
+	local infoOk, numSlots, isKnown = pcall(function()
+		local _, _, slots, known = GetFlyoutInfo(flyoutID)
+		return slots, known
+	end)
+	if not infoOk or isKnown == false or type(numSlots) ~= "number" then
+		return
+	end
+	for index = 1, numSlots do
+		local slotOk, spellID, slotKnown, slotName = pcall(function()
+			local id, _, known, name = GetFlyoutSlotInfo(flyoutID, index)
+			return id, known, name
+		end)
+		local spellName = slotOk and ns.Readable(slotName) or nil
+		if slotKnown and type(spellName) == "string" and spellName ~= "" then
+			AddSpell(spells, byName, spellName, spellID)
+		end
+	end
+end
+
 -- Blizzard's spellbook reads a slot's name from C_SpellBook.GetSpellBookItemInfo(slot, bank).name and its rank
 -- from the entry's subName, falling back to the spell's subtext (Blizzard_MacroUI's spellbook item does the same).
 ---@return table[]
@@ -86,6 +159,7 @@ local function Spellbook()
 	end
 	local bank = Enum.SpellBookSpellBank.Player
 	local spellType = Enum.SpellBookItemType and Enum.SpellBookItemType.Spell
+	local flyoutType = Enum.SpellBookItemType and Enum.SpellBookItemType.Flyout
 	local byName = {}
 	local ok, count = pcall(C_SpellBook.GetNumSpellBookSkillLines)
 	if not ok or type(count) ~= "number" then
@@ -100,45 +174,10 @@ local function Spellbook()
 				local itemOk, item = pcall(C_SpellBook.GetSpellBookItemInfo, slot, bank)
 				local spellName = itemOk and type(item) == "table" and ns.Readable(item.name) or nil
 				if type(spellName) == "string" and spellName ~= "" then
-					if not spellType or item.itemType == spellType then
-						local rank
-						if
-							item.spellID
-							and type(C_Spell) == "table"
-							and type(C_Spell.GetSpellSubtext) == "function"
-						then
-							local subOk, sub = pcall(C_Spell.GetSpellSubtext, item.spellID)
-							if subOk then
-								rank = ns.Readable(sub)
-							end
-						end
-						rank = rank or ns.Readable(item.subName)
-						local number = type(rank) == "string" and tonumber(rank:match("(%d+)")) or nil
-						local key = spellName:lower()
-						local existing = byName[key]
-						if existing then
-							if number then
-								existing.ranks = existing.ranks or {}
-								local found = false
-								for _, value in ipairs(existing.ranks) do
-									if value == number then
-										found = true
-										break
-									end
-								end
-								if not found then
-									existing.ranks[#existing.ranks + 1] = number
-								end
-							end
-						else
-							local entry = {
-								name = spellName,
-								ranks = number and { number } or nil,
-								learned = true,
-							}
-							byName[key] = entry
-							spells[#spells + 1] = entry
-						end
+					if flyoutType and item.itemType == flyoutType then
+						AddFlyout(spells, byName, item.actionID)
+					elseif not spellType or item.itemType == spellType then
+						AddSpell(spells, byName, spellName, item.spellID, item.subName)
 					end
 				end
 			end

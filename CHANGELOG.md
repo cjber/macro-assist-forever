@@ -5,6 +5,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **Spells behind a spellbook flyout now count as yours.** Call Pet, Aspect and the other spells inside a flyout
+  button appear in completion and are no longer flagged as "Spell not in your spellbook".
 - **Typing a condition no longer writes "Unknown macro option" to chat.** A half-typed or unknown condition stays in
   the checker until it is complete, and the live value and "Now" line only ask the client about conditions it knows.
 - **`[pet]` and `[nopet]` work with no name**, as do the bare stance, form, group, modifier and channeling forms. Only

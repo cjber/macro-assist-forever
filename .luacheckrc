@@ -13,7 +13,8 @@ read_globals = {
 	-- The macro window and editor.
 	"canaccessvalue", "Constants", "CreateAndInitFromMixin", "CreateDataProvider", "CreateFont",
 	"CreateMacro", "CreateScrollBoxListLinearView", "C_Spell", "C_SpellBook", "DeleteMacro", "EditMacro",
-	"Enum", "GameFontHighlightSmall", "GameTooltip", "GetMacroInfo", "GetNumMacros", "HideUIPanel", "hooksecurefunc",
+	"Enum", "GameFontHighlightSmall", "GameTooltip", "GetFlyoutInfo", "GetFlyoutSlotInfo", "GetMacroInfo",
+	"GetNumMacros", "HideUIPanel", "hooksecurefunc",
 	"IconDataProviderExtraType", "IconDataProviderMixin", "IconSelectorPopupFrameIconFilterTypes",
 	"IconSelectorPopupFrameTemplateMixin", "MacroFrame", "NORMAL_FONT_COLOR", "PanelTemplates_DeselectTab",
 	"PanelTemplates_SelectTab", "PickupMacro",

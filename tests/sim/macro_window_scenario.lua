@@ -202,6 +202,29 @@ scenario("completion, a problem and its fix", function(sim)
 	check(fixTab(editor.edit), "Tab did not consume the fix")
 	check(textOf(window) == "/stopcasting", "the fix did not replace the command")
 	sim:leave()
+
+	-- A spell inside a spellbook flyout is a spell the player knows; a slot the flyout marks unknown is not.
+	setText(sim, window, "/cast Call Pet", true)
+	equal(#editor.diagnostics, 0, "a spell inside a flyout was reported as not in the spellbook")
+
+	setText(sim, window, "/cast Call", true)
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	local offered = false
+	for _, item in ipairs(editor.completion.items) do
+		if item.label == "Call Pet" then
+			offered = true
+			break
+		end
+	end
+	check(offered, "completion did not offer a spell from a flyout")
+
+	setText(sim, window, "/cast Feed Pet", true)
+	check(
+		#editor.diagnostics == 1 and editor.diagnostics[1].code == "unknown-spell",
+		"a slot the flyout marks unknown was treated as known"
+	)
 	setText(sim, window, original, false)
 end)
 
