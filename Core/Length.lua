@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- What the macro window's counter counts.
 --
 -- Blizzard_MacroUI.xml gives MacroFrameText `letters="255" countInvisibleLetters="true"` and writes

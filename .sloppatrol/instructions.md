@@ -18,5 +18,5 @@ Nothing below is dead code, even when no file calls it by name.
 - The files `MacroAssistForever.toc` lists, loaded in order: `Locales/`, `Core/`, `UI/`.
 - `## SavedVariables: MacroAssistForeverDB`: anything read from it may hold data an older version wrote.
 - `ns.DEFAULTS` in `Core/Core.lua`: every saved option's default, read when an old save file loads.
-- `UI/Report.lua` and `UI/ForeverFamily.lua`: shared Forever files the TOC loads, called by later UI work.
+- `ns.ReportLines` in `Core/Core.lua`: read by ForeverCore's report window, which keeps it reachable even with no caller.
 - `tools/`: run by CI, `tools/typecheck.sh` and releases, not imported by the addon.

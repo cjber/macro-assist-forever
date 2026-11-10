@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Our own icon picker: the client template and its icon data provider, parented to our window so it hides with it.
 -- Nothing here reaches MacroFrame or its popup; the provider is created and released on this instance only.
 

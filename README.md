@@ -38,7 +38,7 @@ History keeps the previous versions of each macro, with a Deleted section for ma
 
 Put the `MacroAssistForever` folder in `World of Warcraft/_forever_/Interface/AddOns`, or install it from CurseForge. Then type `/reload`.
 
-Nothing else is needed. The addon works with no other addon installed.
+Macro Assist Forever needs [Forever Core](https://www.curseforge.com/wow/addons/forevercore), which CurseForge and Wago install with it. Nothing else is needed.
 
 ## Usage
 
@@ -48,7 +48,7 @@ Click a macro to edit it, or type in the search box to narrow the list by name o
 
 ## Works alongside
 
-Macro Assist Forever covers Blizzard's macro panel but leaves the panel, its keybind and the macro store in place. It does not run macros for you and needs no other addon.
+Macro Assist Forever covers Blizzard's macro panel but leaves the panel, its keybind and the macro store in place. It does not run macros for you; its only dependency is Forever Core, which supplies the shared report window and error log.
 
 ## Development
 
@@ -56,7 +56,7 @@ Run `stylua --check .`, `luacheck .`, and every `tests/*_spec.lua` under LuaJIT.
 
 ## Credits
 
-Thanks to the JetBrains Mono project for the bundled mono font, used under the SIL Open Font License, and to warcraft.wiki.gg for the macro conditional reference. The shared family, report and log files come from [Forever Core](https://github.com/cjber/forever-core). [THIRD_PARTY.md](THIRD_PARTY.md) lists every input and its licence.
+Thanks to the JetBrains Mono project for the bundled mono font, used under the SIL Open Font License, and to warcraft.wiki.gg for the macro conditional reference. [Forever Core](https://github.com/cjber/forever-core) supplies the shared report window and error log. [THIRD_PARTY.md](THIRD_PARTY.md) lists every input and its licence.
 
 ## Licence
 

@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Macro history: one record per macro name in MacroAssistForeverDB.history, holding the newest snapshots of that
 -- macro's name, icon and body. A record follows a rename, and a deleted macro's record stays until the player
 -- restores it. This file is pure Lua and never calls the client, so tests/history_spec.lua can cover storage,

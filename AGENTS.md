@@ -4,9 +4,14 @@ Macro Assist Forever gives WoW: Forever (`Interface 16001`) a macro window of it
 list of every macro, and an editor with a mono font, line numbers, completions, live condition values and diagnostics
 as you type. Blizzard's macro panel still opens; our window covers it at alpha 0. It never runs macros for the player.
 
+It requires ForeverCore (`## Dependencies: ForeverCore`, `required-dependencies` in `.pkgmeta`), the standalone addon
+every Forever addon needs: the report window, the error journal, the debug log and the family page are core's alone.
+The stores install ForeverCore with it, and no core file is ever vendored here.
+
 ## Commands
 
 ```sh
+export FOREVER_CORE=forever-core   # or ../forever-core, the checkout of tools/forever-core.txt's ref
 stylua --check .
 luacheck .
 for spec in tests/*_spec.lua; do luajit "$spec" || exit 1; done
@@ -26,10 +31,12 @@ ruff check tools && ruff format --check tools
 ```
 
 CI runs the same gate in the jobs `deadcode`, `check`, `python`, `typecheck`, `project-rules` (changelog), `workflows`,
-`secrets` and `package`, each on every pull request. The separate `core-shared` workflow runs the client load rule,
-the menu rule and the vendored-file drift check. `tools/deadcode.py`, `tools/deadcode-allow.txt`,
-`tools/check_client_load.py`, `tools/check_menu_scroll.py` and `.github/workflows/core-shared-drift.yml` are copied
-from forever-core: change them there, never here. `tools/forever_tools/` is the suite's shared Python tooling and `tools/forever_sim/` is the vendored simulator; both
+`secrets` and `package`, each on every pull request. The `check`, `typecheck` and `package` jobs check out
+cjber/forever-core at the ref in `tools/forever-core.txt` into `forever-core/` and set `FOREVER_CORE` to it. The
+separate `core-shared` workflow runs the client load rule, the menu rule and the vendored-tooling drift check.
+`tools/deadcode.py`, `tools/deadcode-allow.txt`, `tools/check_client_load.py`, `tools/check_menu_scroll.py` and
+`.github/workflows/core-shared-drift.yml` are copied from forever-core: change them there, never here.
+`tools/forever_tools/` is the suite's shared Python tooling and `tools/forever_sim/` is the vendored simulator; both
 are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cache/` and is never committed.
 
 ## Workflow
@@ -43,6 +50,13 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
 - Render every player-facing UI scene and inspect the PNG at full size. Keep the render reproducible and audit its
   layout with `tools/visual_audit.py`.
 - Do not save frames, functions, userdata, or client tables.
+- `Core/Require.lua` runs before any other addon file and stops the addon with one line in `UIErrorsFrame` when
+  ForeverCore is missing or its `API` is below 1. Every file after it opens with `if ns.broken then return end`.
+- `Core/Core.lua` registers the addon's shared services once at load (`ns.core = ForeverCore.Register(...)`) and
+  attaches the saved table at login. Everything shared (report, journal, log, family page) is ForeverCore's, read
+  from the `ForeverCore` global: never copy one of its files here.
+- The specs and the sim load ForeverCore the way the client does: `tests/forever_core.lua` finds the checkout
+  (`FOREVER_CORE`, else `../forever-core`) and reads its TOC, so a spec never fakes a shared module.
 - Run `stylua --check .`, `luacheck .`, every `tests/*_spec.lua` under LuaJIT, and `python3 tools/changelog.py --check`
   before proposing changes.
 - Sign commits with `git commit -S`; do not add `-s` sign-off lines.
@@ -58,7 +72,8 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
 - Every player-visible phrase lives in `Locales/enUS.lua` and is read through `ns.L`, never as a bare string.
 - Every saved option gets a default in an `ns.DEFAULTS` table in `Core/Core.lua`, copied into `MacroAssistForeverDB`
   on load, so an old save file and a new setting agree.
-- The addon works with nothing else installed. Shared Forever files are vendored, never required as a dependency.
+- The addon requires ForeverCore and works with nothing else installed. No core file is vendored: a shared file that
+  needs a change is changed in forever-core and reaches players with its release.
 
 ## Standards
 

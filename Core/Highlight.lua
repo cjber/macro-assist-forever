@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Colour-coded text for one parsed macro line. The editor's EditBox draws the real text transparent and an
 -- overlay FontString draws this string with the same font and width; colour codes therefore never enter the
 -- EditBox, where they would count against its 255 letters. Every literal `|` in the macro is doubled, so the

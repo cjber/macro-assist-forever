@@ -408,6 +408,10 @@ def render(entries: list[dict]) -> str:
     lines = [
         "local _, ns = ...",
         "",
+        "if ns.broken then",
+        "\treturn",
+        "end",
+        "",
         f"-- {HEADER} from the client's slash-command registrations and ChatTypeInfoConstants.lua.",
         "-- Do not edit by hand: change the generator or the pinned lists in tools/data, then regenerate.",
         "",

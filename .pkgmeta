@@ -28,3 +28,7 @@ ignore:
   - tests
   - tools
   - types
+  - forever-core
+
+required-dependencies:
+  - forevercore

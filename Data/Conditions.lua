@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 local L = ns.L
 
 -- Macro conditions, from warcraft.wiki.gg/wiki/Macro_conditionals. Every entry keeps `verified = false` until an

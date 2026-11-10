@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Secret values. The client can hand an addon a value it may hold but not read: another unit's name in some combat
 -- and instance states. Comparing, matching or even testing such a value for truth raises an error, so each such
 -- read passes through ns.Readable first. A tooltip the client marks forbidden must not be touched at all; ns.Usable

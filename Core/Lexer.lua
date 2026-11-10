@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Split one macro line into tokens with byte offsets. The lexer never rejects input: every byte belongs to a token,
 -- so the parser can report a malformed line without losing the text the player typed.
 

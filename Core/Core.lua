@@ -1,9 +1,41 @@
 local addonName, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Our window builds and opens without Blizzard_MacroUI; this file never loads that addon. When Blizzard_MacroUI
 -- loads, by the player's /macro, the game menu or a keybind, Attach re-anchors our window to MacroFrame and hooks its
 -- show and hide. Nothing in here runs Blizzard's Lua on its frame: HookScript and the engine's own reads and alpha
 -- call are the only contact, as WFA-38 allows.
+
+-- Forever Core's report window reads these when the player opens it: the macro counts, the history kept, and whether
+-- our window has been built, which is where a macro bug usually starts. English throughout, like the report's field
+-- labels, so one report reads the same in every locale.
+---@return string[]
+function ns.ReportLines()
+	local general, character = GetNumMacros()
+	local kept = 0
+	if type(MacroAssistForeverDB) == "table" then
+		for _ in pairs(MacroAssistForeverDB.history or {}) do
+			kept = kept + 1
+		end
+	end
+	return {
+		("Macros: %d general, %d character"):format(general, character),
+		("History: %d macros kept, at most %d versions each"):format(kept, ns.History.LIMIT),
+		("Window: %s"):format(ns.MacroWindow.frame and "built" or "not built"),
+	}
+end
+
+-- The shared services, registered once: the report window's title and this addon's own report lines. The journal and
+-- the log are Forever Core's, kept in this addon's own saved table.
+ns.core = ForeverCore.Register(addonName, {
+	title = ns.ReportTitle,
+	lines = function()
+		return ns.ReportLines()
+	end,
+})
 
 local addon = CreateFrame("Frame")
 addon:RegisterEvent("ADDON_LOADED")
@@ -117,12 +149,19 @@ addon:SetScript("OnEvent", function(_, event, name)
 		end
 		ns.History.Initialize(MacroAssistForeverDB)
 		_G.SLASH_MACROASSISTFOREVER1 = "/macroassist"
-		SlashCmdList.MACROASSISTFOREVER = function()
+		SlashCmdList.MACROASSISTFOREVER = function(message)
+			local command = type(message) == "string" and message:lower():match("^%s*(.-)%s*$") or ""
+			if ns.core.Report.Command(command) then
+				return
+			end
 			ns.Toggle()
 		end
 		-- Blizzard_MacroUI_Bootstrap.lua defines ShowMacroFrame at startup, before the load-on-demand UI itself.
 		hooksecurefunc("ShowMacroFrame", AfterShowMacroFrame)
 		Attach() -- Blizzard_MacroUI may already be loaded by another addon
+		-- The journal and the log are Forever Core's, kept under `errors` and `log` in this table, the same keys the
+		-- vendored files used, so a /reload keeps earlier sessions' errors.
+		ns.core.Attach(MacroAssistForeverDB)
 	elseif event == "ADDON_LOADED" and name == "Blizzard_MacroUI" then
 		Attach()
 	end
