@@ -45,6 +45,7 @@ end
 ---@field insert string
 ---@field kind string secure, command, chat, emote, condition, unit, spell, directive or value
 ---@field detail string
+---@field live string? the condition's live value, when one was asked for
 
 ---@param items MacroAssistCompletionItem[]
 ---@param seen table<string, boolean>
@@ -54,7 +55,8 @@ end
 ---@param kind string
 ---@param detail string
 ---@param rankOffset integer? pushes the item after the items without it
-local function Add(items, seen, from, to, typed, label, insert, kind, detail, rankOffset)
+---@param live string? the condition's live value
+local function Add(items, seen, from, to, typed, label, insert, kind, detail, rankOffset, live)
 	local rank = Match(typed, label)
 	if not rank or seen[insert] then
 		return
@@ -66,6 +68,7 @@ local function Add(items, seen, from, to, typed, label, insert, kind, detail, ra
 		insert = insert,
 		kind = kind,
 		detail = detail,
+		live = live,
 		rank = rank,
 		from = from,
 		to = to,
@@ -97,6 +100,7 @@ local function Finish(items)
 			insert = item.insert,
 			kind = item.kind,
 			detail = item.detail,
+			live = item.live,
 		}
 	end
 	return result
@@ -231,17 +235,17 @@ end
 ---@param ctx table
 ---@param condition MacroAssistCondition
 ---@param no boolean
----@return string
-local function LiveDetail(ctx, condition, no)
+---@return string?
+local function LiveValue(ctx, condition, no)
 	if type(ctx.evaluate) ~= "function" then
-		return ""
+		return nil
 	end
 	local value = { name = condition.name, no = no, condition = condition }
 	local ok, live = pcall(ctx.evaluate, value)
 	if not ok or live == nil then
-		return ""
+		return nil
 	end
-	return "  " .. tostring(live)
+	return tostring(live)
 end
 
 ---@param spells table?
@@ -401,21 +405,37 @@ local function Complete(text, cursor, ctx)
 				detail = detail .. "  " .. condition.form
 			end
 			local forever = condition.forever == false
+			local live
 			if forever then
 				detail = detail .. "  " .. L["Never applies on WoW: Forever."]
 			else
-				detail = detail .. LiveDetail(ctx, condition, wantedNo)
+				live = LiveValue(ctx, condition, wantedNo)
+				if live then
+					detail = detail .. "  " .. live
+				end
 			end
 			local rankOffset = forever and 2 or 0
 			if wantedNo then
 				if condition.no then
 					for _, alias in ipairs(condition.aliases) do
-						Add(items, seen, from, to, typed, "no" .. alias, "no" .. alias, "condition", detail, rankOffset)
+						Add(
+							items,
+							seen,
+							from,
+							to,
+							typed,
+							"no" .. alias,
+							"no" .. alias,
+							"condition",
+							detail,
+							rankOffset,
+							live
+						)
 					end
 				end
 			else
 				for _, alias in ipairs(condition.aliases) do
-					Add(items, seen, from, to, typed, alias, alias, "condition", detail, rankOffset)
+					Add(items, seen, from, to, typed, alias, alias, "condition", detail, rankOffset, live)
 				end
 			end
 		end

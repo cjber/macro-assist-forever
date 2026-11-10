@@ -90,6 +90,66 @@ local COMMAND_PHRASES = {
 	stopcasting = L["Stop casting"],
 }
 
+-- What a clause targets, as the words a player reads in the "What it does" panel. A unit token the table does not
+-- know gets no phrase, so the caller can skip the clause instead of inventing one.
+local TARGET_PHRASES = {
+	player = L["yourself"],
+	mouseover = L["your mouseover"],
+	target = L["your target"],
+	focus = L["your focus"],
+	pet = L["your pet"],
+	targettarget = L["your target's target"],
+	pettarget = L["your pet's target"],
+}
+
+-- Conditions that describe the unit or the modifier already named by the clause's target or key. Their phrase would
+-- repeat the target ("your mouseover enemy on an enemy"), so the case leaves them out.
+local TARGET_CONDITIONS = {
+	harm = true,
+	help = true,
+	exists = true,
+	dead = true,
+	mouseover = true,
+	target = true,
+	focus = true,
+	player = true,
+	pet = true,
+}
+
+-- Commands whose clauses name an action, with an optional target: the /cast and /use family.
+local ACTION_COMMANDS = {
+	cast = true,
+	spell = true,
+	use = true,
+	castsequence = true,
+	castrandom = true,
+	userandom = true,
+	usetoy = true,
+}
+
+-- Commands that go in the "Also" case, with the words the panel uses for them. These lines run after the cast lines,
+-- so they are one sentence joined by "then".
+local ALSO_PHRASES = {
+	petattack = L["Pet attacks"],
+	petfollow = L["Pet follows"],
+	petstay = L["Pet stays"],
+	petpassive = L["Pet turns passive"],
+	petdefensive = L["Pet turns defensive"],
+	petassist = L["Pet assists"],
+	startattack = L["You start attacking"],
+	stopattack = L["You stop attacking"],
+	stopcasting = L["You stop casting"],
+}
+
+-- The panel's row order: the plain click first, then each modifier, then the commands that run either way.
+local CASE_ORDER = {
+	L["Click"],
+	L["Shift"],
+	L["Ctrl"],
+	L["Alt"],
+	L["Also"],
+}
+
 local MAX_SUMMARY = 100
 
 ---@param condition MacroAssistConditionNode
@@ -244,4 +304,230 @@ local function Explain(body)
 	return Cut(table.concat(parts, ", "))
 end
 
+---@param group MacroAssistGroup
+---@param name string
+---@return boolean
+local function GroupHasCondition(group, name)
+	for _, condition in ipairs(group.conditions) do
+		if condition.name == name and not condition.no then
+			return true
+		end
+	end
+	return false
+end
+
+-- One condition group's target phrase. A group with no unit and no conditions is the macro's fallback, and a group
+-- with no unit but conditions still acts on the player's target. A unit token the table does not know returns nil.
+---@param group MacroAssistGroup
+---@return string?
+local function GroupTarget(group)
+	local unit = group.unit
+	if unit and unit.token ~= "" then
+		local phrase = TARGET_PHRASES[unit.token]
+		if not phrase then
+			return nil
+		end
+		if unit.token == "mouseover" then
+			if GroupHasCondition(group, "harm") then
+				return L["your mouseover enemy"]
+			end
+			if GroupHasCondition(group, "help") then
+				return L["your mouseover friend"]
+			end
+		end
+		return phrase
+	end
+	if #group.conditions == 0 then
+		return L["otherwise your target"]
+	end
+	return L["your target"]
+end
+
+-- Every target a clause names, in the order the client tries its groups. nil when one group has a unit this file does
+-- not understand, so the whole clause is skipped rather than given a made-up target.
+---@param clause MacroAssistClause
+---@return string?
+local function ClauseTarget(clause)
+	if #clause.groups == 0 then
+		return L["your target"]
+	end
+	local phrases = {}
+	for _, group in ipairs(clause.groups) do
+		local phrase = GroupTarget(group)
+		if not phrase then
+			return nil
+		end
+		phrases[#phrases + 1] = phrase
+	end
+	return table.concat(phrases, ", ")
+end
+
+-- The clause's target for an "Also" command: the first group only, so a mouseover-then-target command reads as one
+-- short sentence instead of repeating the fallback.
+---@param clause MacroAssistClause
+---@return string?
+local function AlsoTarget(clause)
+	if #clause.groups == 0 then
+		return L["your target"]
+	end
+	local phrase = GroupTarget(clause.groups[1])
+	if phrase == L["otherwise your target"] then
+		return L["your target"]
+	end
+	return phrase
+end
+
+-- Conditions that add meaning beyond the target, such as [combat] or [mounted]. Target conditions and modifiers are
+-- already covered by the target phrase and the row's key.
+---@param clause MacroAssistClause
+---@return string?
+local function ClauseExtra(clause)
+	local phrases = {}
+	local seen = {}
+	for _, condition in ipairs(clause.conditions) do
+		if condition.name ~= "mod" and not TARGET_CONDITIONS[condition.name] then
+			local phrase = CONDITION_PHRASES[ConditionKey(condition)]
+			if not phrase and not condition.no then
+				phrase = CONDITION_PHRASES[condition.name]
+			end
+			if phrase and not seen[phrase] then
+				seen[phrase] = true
+				phrases[#phrases + 1] = phrase
+			end
+		end
+	end
+	if #phrases == 0 then
+		return nil
+	end
+	return table.concat(phrases, " ")
+end
+
+-- The action a clause names, or nil when it names none (for example `/cast [mod:shift]` with no spell).
+---@param clause MacroAssistClause
+---@return string?
+local function ClauseAction(clause)
+	if not clause.args then
+		return nil
+	end
+	local names = {}
+	for _, item in ipairs(clause.args.items) do
+		if item.name and item.name ~= "" then
+			names[#names + 1] = item.name
+		end
+	end
+	if #names == 0 then
+		return nil
+	end
+	return table.concat(names, ", ")
+end
+
+-- The row key a clause belongs to: its modifier, or Click when it has none. An unsupported modifier skips the clause.
+---@param clause MacroAssistClause
+---@return string? key
+---@return boolean understood
+local function ClauseKey(clause)
+	for _, condition in ipairs(clause.conditions) do
+		if condition.name == "mod" and not condition.no then
+			local param = (condition.param or ""):lower()
+			if param == "shift" then
+				return L["Shift"], true
+			elseif param == "ctrl" then
+				return L["Ctrl"], true
+			elseif param == "alt" then
+				return L["Alt"], true
+			end
+			return nil, false
+		end
+	end
+	return L["Click"], true
+end
+
+---@param text string
+---@return string
+local function LowerFirst(text)
+	if text == "" then
+		return text
+	end
+	return text:sub(1, 1):lower() .. text:sub(2)
+end
+
+-- What the macro does, one row per click and modifier branch, then one "Also" row for the commands that run either
+-- way. Built from the parse tree only: a line, clause or condition this file cannot read adds nothing.
+---@param body string?
+---@return { key: string, text: string }[]
+local function ExplainCases(body)
+	if type(body) ~= "string" or body == "" then
+		return {}
+	end
+	local parsed = ns.Parser.Parse(body)
+	local cases = {}
+	local byKey = {}
+	local also = {}
+
+	local function Add(key, text)
+		if not key or not text or text == "" then
+			return
+		end
+		local case = byKey[key]
+		if case then
+			case.text = case.text .. ", " .. text
+			return
+		end
+		case = { key = key, text = text }
+		byKey[key] = case
+		cases[#cases + 1] = case
+	end
+
+	for _, line in ipairs(parsed.lines) do
+		local command = line.kind == "command" and line.command and line.command.nameLower or nil
+		if command and ACTION_COMMANDS[command] then
+			for _, clause in ipairs(line.clauses) do
+				local action = ClauseAction(clause)
+				local key, understood = ClauseKey(clause)
+				local target = ClauseTarget(clause)
+				if action and understood and target then
+					local text = action .. " " .. target
+					local extra = ClauseExtra(clause)
+					if extra then
+						text = text .. " " .. extra
+					end
+					Add(key, text)
+				end
+			end
+		elseif command and ALSO_PHRASES[command] then
+			local phrase = ALSO_PHRASES[command]
+			local clause = line.clauses[1]
+			local target
+			if command == "petattack" and clause then
+				target = AlsoTarget(clause)
+			end
+			also[#also + 1] = { phrase = phrase, target = target }
+		end
+	end
+
+	if #also > 0 then
+		local parts = {}
+		for index, item in ipairs(also) do
+			local text = item.phrase
+			if item.target then
+				text = text .. " " .. item.target
+			end
+			if index > 1 then
+				text = LowerFirst(text)
+			end
+			parts[#parts + 1] = text
+		end
+		Add(L["Also"], table.concat(parts, ", then "))
+	end
+
+	local ordered = {}
+	for _, key in ipairs(CASE_ORDER) do
+		if byKey[key] then
+			ordered[#ordered + 1] = byKey[key]
+		end
+	end
+	return ordered
+end
+
 ns.Explain = Explain
+ns.ExplainCases = ExplainCases

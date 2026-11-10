@@ -1,30 +1,41 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\..\Blizzard_SharedXML\UI.xsd">
 
-	<!-- One macro in the scroll box. The row highlight atlases are stretched across the row exactly as Blizzard's
-	     own auction house list stretches them; art-ok: auctionhouse-ui-row-select/highlight are row fills. -->
+	<!-- One macro in the scroll box. Rows are two lines: a 26-unit icon and the name above the summary. The selected
+	     row is a soft gold fill with a 2-unit bar on its left, not the auction house's bright row glow. -->
 	<Button name="MacroAssistRowTemplate" virtual="true" motionScriptsWhileDisabled="true">
-		<Size y="22"/>
+		<Size y="38"/>
 		<Layers>
 			<Layer level="BACKGROUND">
-				<Texture parentKey="Selected" atlas="auctionhouse-ui-row-select" alpha="0.8" alphaMode="ADD" setAllPoints="true" hidden="true"/>
+				<Texture parentKey="Selected" setAllPoints="true" hidden="true">
+					<Color r="1" g="0.82" b="0.2" a="0.10"/>
+				</Texture>
+				<Texture parentKey="SelectedBar" hidden="true">
+					<Size x="2"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" x="0" y="-3"/>
+						<Anchor point="BOTTOMLEFT" x="0" y="3"/>
+					</Anchors>
+					<Color r="1" g="0.82" b="0.2" a="1"/>
+				</Texture>
 				<Texture parentKey="Highlight" atlas="auctionhouse-ui-row-highlight" alpha="0.22" alphaMode="ADD" setAllPoints="true" hidden="true"/>
 			</Layer>
 			<Layer level="ARTWORK">
 				<Texture parentKey="Icon">
-					<Size x="18" y="18"/>
+					<Size x="26" y="26"/>
 					<Anchors>
-						<Anchor point="LEFT" x="5" y="0"/>
+						<Anchor point="LEFT" x="6" y="0"/>
 					</Anchors>
 				</Texture>
-				<FontString parentKey="Name" inherits="GameFontHighlightSmall" justifyH="LEFT" wordwrap="false">
+				<FontString parentKey="Name" inherits="GameFontHighlight" justifyH="LEFT" wordwrap="false">
 					<Anchors>
-						<Anchor point="LEFT" relativeKey="$parent.Icon" relativePoint="RIGHT" x="6" y="0"/>
+						<Anchor point="TOPLEFT" x="40" y="-4"/>
+						<Anchor point="RIGHT" x="-6" y="0"/>
 					</Anchors>
 				</FontString>
 				<FontString parentKey="Summary" inherits="GameFontHighlightSmall" justifyH="LEFT" wordwrap="false">
 					<Anchors>
-						<Anchor point="LEFT" relativeKey="$parent.Name" relativePoint="RIGHT" x="6" y="0"/>
+						<Anchor point="TOPLEFT" x="40" y="-21"/>
 						<Anchor point="RIGHT" x="-6" y="0"/>
 					</Anchors>
 				</FontString>

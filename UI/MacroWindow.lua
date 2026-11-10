@@ -8,30 +8,48 @@ local _, ns = ...
 
 local L = ns.L
 
-local WINDOW_WIDTH = 800
-local WINDOW_HEIGHT = 930
-local INSET_LEFT = 8
-local INSET_RIGHT = -8
-local LIST_TOP = -58
-local LIST_HEIGHT = 332
+local WINDOW_WIDTH = 860
+local WINDOW_HEIGHT = 500
+local INSET_LEFT = 10
+local INSET_RIGHT = -10
+local LIST_TOP = -60
+local LIST_WIDTH = 250
+local LIST_HEIGHT = 398
 -- The side rail's tabs sit on the window's outer right edge, as SkillUp and Adventure Guide anchor theirs
 -- (docs/ui-composition.md: LargeSideTabButtonTemplate owns the outer right rail).
 local SIDE_TAB_EDGE = 2
 local SIDE_TAB_TOP = 48
 local SIDE_TAB_GAP = 2
-local HEADER_HEIGHT = 64
+local HEADER_TOP = -30
+local HEADER_HEIGHT = 34
 local GAP = 8
-local BOTTOM_OFFSET = 46
-local BUTTON_HEIGHT = 30
-local BUTTON_WIDTH = 120
-local DELETE_WIDTH = 140
-local CHANGE_WIDTH = 200
+local COLUMN_GAP = 12
+local STATUS_HEIGHT = 22
+local STATUS_INSET = 3
+local BOTTOM_OFFSET = 42
+local BUTTON_HEIGHT = 24
+local BUTTON_WIDTH = 90
+local DELETE_WIDTH = 90
+local FOOTER_GAP = 6
+local RENAME_WIDTH = 110
+local RENAME_HEIGHT = 22
+local SEARCH_LEFT = 60
+local SEARCH_TOP = -32
+local SEARCH_WIDTH = 146
+local SEARCH_HEIGHT = 20
+local COUNT_WIDTH = 40
+local EXPLAIN_INSET = 3
+local EXPLAIN_BOTTOM = 4
+local EXPLAIN_TITLE_TOP = 8
+local EXPLAIN_ROW_TOP = 26
+local EXPLAIN_ROW_HEIGHT = 22
+local EXPLAIN_KEY_GAP = 52
+local EXPLAIN_ROWS = 5
 local INSET_PADDING = 6
 local SCROLL_RIGHT_PADDING = 4
-local HEADER_ICON = 36
-local HEADER_ICON_FRAME = 44
-local ROW_HEIGHT = 22
-local ROW_NAME_WIDTH = 100
+local HEADER_ICON = 28
+local HEADER_ICON_FRAME = 34
+local ROW_HEIGHT = 38
 local SCROLL_GAP = 4
 local SCROLL_WIDTH = 18
 -- Where Blizzard's panel manager puts a left-area panel, from UIParent's TOPLEFT
@@ -42,6 +60,7 @@ local LEFT_PANEL_Y = -116
 local PORTRAIT = "Interface\\Icons\\inv_misc_note_01"
 local WHITE_ICON_FRAME = "Interface\\Common\\WhiteIconFrame"
 local MUTED = { 0.55, 0.55, 0.55 }
+local ROW_MUTED = { 0.6, 0.6, 0.6 }
 -- Icon art carries a baked-in border. The client's item buttons crop 8% off every edge, so every spell or item
 -- icon we draw does the same and its frame never shows a second border inside ours.
 local ICON_TEXCOORD = { 0.08, 0.92, 0.08, 0.92 }
@@ -63,7 +82,10 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field icon Texture
 ---@field name FontString
 ---@field meta FontString
----@field change Button
+---@field rename Button
+
+---@class MacroAssistSearchBox : EditBox
+---@field Instructions FontString
 
 ---@class MacroAssistRow : Button
 ---@field macroIndex integer
@@ -71,12 +93,26 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field Name FontString
 ---@field Summary FontString
 ---@field Selected Texture
+---@field SelectedBar Texture
 ---@field Highlight Texture
 
 ---@class MacroAssistScrollBox : Frame
 ---@field SetDataProvider fun(self: MacroAssistScrollBox, provider: any, scrollContext?: any)
 ---@field ForEachFrame fun(self: MacroAssistScrollBox, callback: fun(row: MacroAssistRow))
 ---@field ScrollToElementDataIndex fun(self: MacroAssistScrollBox, index: integer, alignment?: any)
+---@field GetDerivedScrollOffset fun(self: MacroAssistScrollBox): number
+---@field ScrollToOffset fun(self: MacroAssistScrollBox, offset: number, noInterpolation?: boolean)
+---@field ScrollToBegin fun(self: MacroAssistScrollBox, noInterpolation?: boolean)
+
+---@class MacroAssistExplainRow
+---@field chip Texture
+---@field key FontString
+---@field text FontString
+
+---@class MacroAssistExplainPanel : Frame
+---@field rule Texture
+---@field title FontString
+---@field rows MacroAssistExplainRow[]
 
 ---@class MacroAssistTitleContainer : Frame
 ---@field TitleText FontString
@@ -90,8 +126,12 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field Inset Frame
 ---@field CloseButton Button
 ---@field header MacroAssistHeader
+---@field searchBox MacroAssistSearchBox
+---@field count FontString
 ---@field listInset Frame
----@field editorInset Frame
+---@field editorSurface Frame
+---@field statusBar Frame
+---@field explainPanel MacroAssistExplainPanel
 ---@field editor MacroAssistEditor
 ---@field iconSelector MacroAssistIconSelector
 ---@field scrollBox MacroAssistScrollBox
@@ -108,6 +148,8 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field tab integer
 ---@field dirty boolean
 ---@field drafts table<integer, string>
+---@field filter string
+---@field scrollOffsets table<integer, number>
 ---@field deleteArmed boolean
 ---@field selected integer?
 ---@field combat boolean
@@ -143,7 +185,7 @@ local function BuildHeader(frame)
 	header:SetHeight(HEADER_HEIGHT)
 	local border = header:CreateTexture(nil, "ARTWORK")
 	border:SetSize(HEADER_ICON_FRAME, HEADER_ICON_FRAME)
-	border:SetPoint("TOPLEFT", header, "TOPLEFT", 10, -8)
+	border:SetPoint("TOPLEFT", header, "TOPLEFT", 0, 0)
 	border:SetTexture(WHITE_ICON_FRAME)
 	border:SetVertexColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
 	local icon = header:CreateTexture(nil, "ARTWORK")
@@ -153,22 +195,60 @@ local function BuildHeader(frame)
 	header.icon = icon
 	local name = header:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	name:SetPoint("TOPLEFT", border, "TOPRIGHT", 8, -1)
-	name:SetPoint("RIGHT", header, "RIGHT", -220, 0)
+	name:SetPoint("RIGHT", header, "RIGHT", -RENAME_WIDTH - GAP, 0)
 	name:SetJustifyH("LEFT")
 	name:SetWordWrap(false)
 	header.name = name
 	local meta = header:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	meta:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -3)
-	meta:SetPoint("RIGHT", header, "RIGHT", -220, 0)
+	meta:SetPoint("RIGHT", header, "RIGHT", -RENAME_WIDTH - GAP, 0)
 	meta:SetJustifyH("LEFT")
 	meta:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
 	header.meta = meta
-	local change = CreateFrame("Button", nil, header, "SharedButtonTemplate")
-	change:SetSize(CHANGE_WIDTH, BUTTON_HEIGHT)
-	change:SetPoint("RIGHT", header, "RIGHT", -10, 0)
-	change:SetText(L["Change Name/Icon"])
-	header.change = change
+	local rename = CreateFrame("Button", nil, header, "SharedButtonSmallTemplate")
+	rename:SetSize(RENAME_WIDTH, RENAME_HEIGHT)
+	rename:SetPoint("RIGHT", header, "RIGHT", 0, 0)
+	rename:SetText(L["Rename"])
+	header.rename = rename
 	return header
+end
+
+-- The "What it does" panel at the bottom of the code surface. It is a plain frame over the surface, with one row per
+-- click and modifier branch; the window fills it from ns.ExplainCases whenever the editor's text changes.
+---@param parent Frame
+---@return MacroAssistExplainPanel
+local function BuildExplainPanel(parent)
+	local panel = CreateFrame("Frame", nil, parent) --[[@as MacroAssistExplainPanel]]
+	panel:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", EXPLAIN_INSET, EXPLAIN_BOTTOM)
+	panel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -EXPLAIN_INSET, EXPLAIN_BOTTOM)
+	panel:SetHeight(1)
+	panel:SetFrameLevel(parent:GetFrameLevel() + 6)
+	local background = panel:CreateTexture(nil, "BACKGROUND")
+	background:SetAllPoints(panel)
+	background:SetColorTexture(0.035, 0.035, 0.04, 0.98)
+	panel.rule = panel:CreateTexture(nil, "BORDER")
+	panel.rule:SetColorTexture(1, 1, 1, 0.08)
+	panel.rule:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
+	panel.rule:SetPoint("TOPRIGHT", panel, "TOPRIGHT", 0, 0)
+	panel.rule:SetHeight(1)
+	panel.title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	panel.title:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, -EXPLAIN_TITLE_TOP)
+	panel.title:SetText(L["What it does"])
+	panel.rows = {}
+	for index = 1, EXPLAIN_ROWS do
+		local chip = panel:CreateTexture(nil, "ARTWORK")
+		chip:SetColorTexture(1, 1, 1, 0.08)
+		local key = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+		key:SetJustifyH("CENTER")
+		key:SetWordWrap(false)
+		local text = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+		text:SetJustifyH("LEFT")
+		text:SetWordWrap(false)
+		text:SetTextColor(0.8, 0.8, 0.8)
+		panel.rows[index] = { chip = chip, key = key, text = text }
+	end
+	panel:Hide()
+	return panel
 end
 
 ---@return table
@@ -220,10 +300,27 @@ function Window.Create()
 	frame.Tabs = tabs
 	Window:UpdatePortrait()
 
+	local searchBox = CreateFrame("EditBox", nil, frame, "SearchBoxTemplate") --[[@as MacroAssistSearchBox]]
+	searchBox:SetSize(SEARCH_WIDTH, SEARCH_HEIGHT)
+	searchBox:SetPoint("TOPLEFT", frame, "TOPLEFT", INSET_LEFT + SEARCH_LEFT, SEARCH_TOP)
+	searchBox.Instructions:SetText(L["Search macros"])
+	searchBox:HookScript("OnTextChanged", function(edit)
+		Window:SetFilter(edit:GetText() or "")
+	end)
+	frame.searchBox = searchBox
+
+	-- The count sits at the list column's right edge, right of the search box, as "9/30".
+	local count = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	count:SetPoint("RIGHT", frame, "TOPLEFT", INSET_LEFT + LIST_WIDTH, SEARCH_TOP - SEARCH_HEIGHT / 2)
+	count:SetSize(COUNT_WIDTH, SEARCH_HEIGHT)
+	count:SetJustifyH("RIGHT")
+	count:SetWordWrap(false)
+	count:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+	frame.count = count
+
 	local listInset = CreateFrame("Frame", nil, frame, "InsetFrameTemplate")
 	listInset:SetPoint("TOPLEFT", frame, "TOPLEFT", INSET_LEFT, LIST_TOP)
-	listInset:SetPoint("TOPRIGHT", frame, "TOPRIGHT", INSET_RIGHT, LIST_TOP)
-	listInset:SetHeight(LIST_HEIGHT)
+	listInset:SetSize(LIST_WIDTH, LIST_HEIGHT)
 	frame.listInset = listInset
 
 	local scrollBox = CreateFrame("Frame", nil, listInset, "WowScrollBoxList") --[[@as MacroAssistScrollBox]]
@@ -255,30 +352,49 @@ function Window.Create()
 	frame.empty = empty
 
 	local header = BuildHeader(frame)
-	header:SetPoint("TOPLEFT", listInset, "BOTTOMLEFT", 0, -GAP)
-	header:SetPoint("TOPRIGHT", listInset, "BOTTOMRIGHT", 0, -GAP)
+	header:SetPoint("TOPLEFT", frame, "TOPLEFT", INSET_LEFT + LIST_WIDTH + COLUMN_GAP, HEADER_TOP)
+	header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", INSET_RIGHT, HEADER_TOP)
 	frame.header = header
 
-	local editorInset = CreateFrame("Frame", nil, frame, "InsetFrameTemplate")
-	editorInset:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -GAP)
-	editorInset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, BOTTOM_OFFSET)
-	frame.editorInset = editorInset
+	-- The code surface is a BackdropTemplate, not an InsetFrameTemplate: a dark panel behind the editor.
+	local editorSurface = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+	editorSurface:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -GAP)
+	editorSurface:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, BOTTOM_OFFSET + STATUS_HEIGHT)
+	-- The tooltip's old loose backdrop files are blacklisted by the suite asset gate, so the same dark fill and
+	-- 1-unit grey edge come from the client's white primitive instead of the pre-NineSlice tooltip files.
+	editorSurface:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8X8",
+		edgeFile = "Interface\\Buttons\\WHITE8X8",
+		tile = false,
+		edgeSize = 1,
+		insets = { left = 1, right = 1, top = 1, bottom = 1 },
+	})
+	editorSurface:SetBackdropColor(0.035, 0.035, 0.04, 0.94)
+	editorSurface:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+	frame.editorSurface = editorSurface
 
-	local delete = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
-	delete:SetSize(DELETE_WIDTH, BUTTON_HEIGHT)
-	delete:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 8)
-	delete:SetText(L["Delete"])
+	local statusBar = CreateFrame("Frame", nil, frame)
+	statusBar:SetPoint("TOPLEFT", editorSurface, "BOTTOMLEFT", STATUS_INSET, 0)
+	statusBar:SetPoint("TOPRIGHT", editorSurface, "BOTTOMRIGHT", -STATUS_INSET, 0)
+	statusBar:SetHeight(STATUS_HEIGHT)
+	statusBar:EnableMouse(false)
+	frame.statusBar = statusBar
+
 	local new = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	new:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
-	new:SetPoint("LEFT", delete, "RIGHT", GAP, 0)
+	new:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", INSET_LEFT, 8)
 	new:SetText(L["New"])
+	local delete = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
+	delete:SetSize(DELETE_WIDTH, BUTTON_HEIGHT)
+	delete:SetPoint("LEFT", new, "RIGHT", FOOTER_GAP, 0)
+	delete:SetText(L["Delete"])
 	local save = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	save:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
-	save:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 8)
+	save:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, 8)
 	save:SetText(L["Save"])
 	local cancel = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	cancel:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
-	cancel:SetPoint("RIGHT", save, "LEFT", -GAP, 0)
+	cancel:SetPoint("RIGHT", save, "LEFT", -FOOTER_GAP, 0)
 	cancel:SetText(L["Cancel"])
 
 	frame.deleteButton = delete
@@ -289,25 +405,31 @@ function Window.Create()
 	Window.tab = 1
 	Window.dirty = false
 	Window.drafts = {}
+	Window.filter = ""
+	Window.scrollOffsets = {}
 	Window.deleteArmed = false
 	Window.selected = nil
 	Window.combat = false
 
-	frame.editor = ns.Editor.Create(editorInset)
-	editorInset:SetScript("OnSizeChanged", function()
-		if editorInset:GetWidth() > 1 and frame:IsShown() then
+	frame.explainPanel = BuildExplainPanel(editorSurface)
+	frame.editor = ns.Editor.Create(editorSurface, statusBar)
+	editorSurface:SetScript("OnSizeChanged", function()
+		if editorSurface:GetWidth() > 1 and frame:IsShown() then
 			frame.editor:RefreshAll()
 		end
 	end)
 	frame.editor.onEdited = function()
 		Window:OnTextEdited()
 	end
+	frame.editor.onExplain = function()
+		Window:UpdateExplain()
+	end
 	frame.editor.onEscape = function()
 		Window.ClosePanel()
 	end
 	frame.iconSelector = ns.IconSelector.Create(frame)
 
-	header.change:SetScript("OnClick", function()
+	header.rename:SetScript("OnClick", function()
 		Window:OpenNameAndIcon()
 	end)
 	delete:SetScript("OnClick", function()
@@ -336,6 +458,7 @@ function Window.Create()
 	SelectTabArt(tabs[1], true)
 	SelectTabArt(tabs[2], false)
 	Window:RefreshList()
+	Window:UpdateExplain()
 	return Window
 end
 
@@ -369,11 +492,17 @@ function Window:InitializeRow(row, data)
 	row.macroIndex = data.index
 	row.Icon:SetTexture(data.icon)
 	row.Icon:SetTexCoord(ICON_TEXCOORD[1], ICON_TEXCOORD[2], ICON_TEXCOORD[3], ICON_TEXCOORD[4])
-	row.Name:SetWidth(ROW_NAME_WIDTH)
 	row.Name:SetText(data.name or "")
 	row.Summary:SetText(data.summary or "")
-	row.Summary:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
-	row.Selected:SetShown(data.index == self.selected)
+	row.Summary:SetTextColor(ROW_MUTED[1], ROW_MUTED[2], ROW_MUTED[3])
+	local selected = data.index == self.selected
+	row.Selected:SetShown(selected)
+	row.SelectedBar:SetShown(selected)
+	if selected then
+		row.Name:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+	else
+		row.Name:SetTextColor(1, 1, 1)
+	end
 	row.Highlight:Hide()
 	row:RegisterForDrag("LeftButton")
 	row:SetScript("OnClick", function()
@@ -395,13 +524,31 @@ function Window:SelectTab(index)
 	if index == self.tab then
 		return
 	end
+	local scrollBox = self.frame and self.frame.scrollBox
+	if scrollBox and scrollBox.GetDerivedScrollOffset then
+		local offset = scrollBox:GetDerivedScrollOffset()
+		if type(offset) == "number" then
+			self.scrollOffsets[self.tab] = offset
+		end
+	end
 	self:LeaveSelected()
 	self.tab = index
 	self.deleteArmed = false
-	self.desiredPosition = 1
 	for tabIndex, tab in ipairs(self.frame.Tabs) do
 		SelectTabArt(tab, tabIndex == index)
 	end
+	self:RefreshList(self.scrollOffsets[index])
+end
+
+-- The search box filters on the name and the summary as the player types, without regard to case. The match is a
+-- plain substring, so a space in the box matches the space between two summary words.
+---@param text string
+function Window:SetFilter(text)
+	local filter = type(text) == "string" and text or ""
+	if filter == self.filter then
+		return
+	end
+	self.filter = filter
 	self:RefreshList()
 end
 
@@ -417,7 +564,8 @@ function Window:TabBounds()
 	return MAX_ACCOUNT, numCharacter, MAX_CHARACTER
 end
 
-function Window:RefreshList()
+---@param keepScrollOffset number? the scroll offset to restore after a tab switch
+function Window:RefreshList(keepScrollOffset)
 	if not self.frame then
 		return
 	end
@@ -457,17 +605,23 @@ function Window:RefreshList()
 		end
 	end
 
+	local needle = (self.filter or ""):lower()
+	local selectedVisible = false
 	local provider = CreateDataProvider()
 	for index = 1, count do
 		local actual = base + index
 		local name, icon, body = GetMacroInfo(actual)
-		if name then
+		local summary = name and ns.Explain(body or "") or ""
+		if name and (needle == "" or name:lower():find(needle, 1, true) or summary:lower():find(needle, 1, true)) then
 			provider:Insert({
 				index = actual,
 				name = name,
 				icon = icon,
-				summary = ns.Explain(body or ""),
+				summary = summary,
 			})
+			if actual == self.selected then
+				selectedVisible = true
+			end
 		end
 	end
 	self.frame.scrollBox:SetDataProvider(provider, ScrollBoxConstants.RetainScrollPosition)
@@ -475,11 +629,22 @@ function Window:RefreshList()
 	if self.frame.scrollBox.ForEachFrame then
 		self.frame.scrollBox:ForEachFrame(function(row)
 			---@cast row MacroAssistRow
-			row.Selected:SetShown(row.macroIndex == self.selected)
+			local selected = row.macroIndex == self.selected
+			row.Selected:SetShown(selected)
+			row.SelectedBar:SetShown(selected)
+			if selected then
+				row.Name:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+			else
+				row.Name:SetTextColor(1, 1, 1)
+			end
 		end)
 	end
-	if position and self.frame.scrollBox.ScrollToElementDataIndex then
+	if keepScrollOffset ~= nil and self.frame.scrollBox.ScrollToOffset then
+		self.frame.scrollBox:ScrollToOffset(keepScrollOffset, true)
+	elseif position and selectedVisible and self.frame.scrollBox.ScrollToElementDataIndex then
 		self.frame.scrollBox:ScrollToElementDataIndex(position, ScrollBoxConstants.AlignNearest)
+	elseif needle ~= "" and self.frame.scrollBox.ScrollToBegin then
+		self.frame.scrollBox:ScrollToBegin(true)
 	end
 	self:UpdateHeader()
 	self:UpdateButtons()
@@ -544,7 +709,9 @@ function Window:SelectMacro(actual)
 end
 
 function Window:UpdateHeader()
-	local header = self.frame.header
+	local frame = self.frame
+	local header = frame.header
+	frame.count:SetText(L["%d/%d"]:format(self.count or 0, self.maximum or 0))
 	if not self.selected then
 		header.icon:SetTexture(nil)
 		header.name:SetText(L["No macro selected"])
@@ -554,12 +721,48 @@ function Window:UpdateHeader()
 	local name, icon = GetMacroInfo(self.selected)
 	header.icon:SetTexture(icon)
 	header.name:SetText(name or L["No macro selected"])
-	local count = self.count or 0
-	if self.tab == 1 then
-		header.meta:SetText(L["General macro · %d of %d"]:format(count, MAX_ACCOUNT))
-	else
-		header.meta:SetText(L["Character macro · %d of %d"]:format(count, MAX_CHARACTER))
+	header.meta:SetText(self.tab == 1 and L["General macro"] or L["Character macro"])
+end
+
+-- Fill the "What it does" panel from the current text. No cases means no panel at all, never an empty one.
+function Window:UpdateExplain()
+	local frame = self.frame
+	if not frame or not frame.explainPanel or not frame.editor then
+		return
 	end
+	local panel = frame.explainPanel
+	local cases = ns.ExplainCases(frame.editor:GetText())
+	if #cases == 0 then
+		panel:Hide()
+		return
+	end
+	panel:SetHeight(EXPLAIN_ROW_TOP + #cases * EXPLAIN_ROW_HEIGHT + EXPLAIN_TITLE_TOP)
+	for index, row in ipairs(panel.rows) do
+		local case = cases[index]
+		if case then
+			row.chip:Show()
+			row.key:Show()
+			row.text:Show()
+			row.key:SetText(case.key)
+			local keyWidth = row.key:GetStringWidth() + 12
+			local y = -(EXPLAIN_ROW_TOP + (index - 1) * EXPLAIN_ROW_HEIGHT)
+			row.chip:ClearAllPoints()
+			row.chip:SetPoint("TOPLEFT", panel, "TOPLEFT", 10, y)
+			row.chip:SetSize(keyWidth, 16)
+			row.key:ClearAllPoints()
+			row.key:SetPoint("LEFT", row.chip, "LEFT", 0, 0)
+			row.key:SetWidth(keyWidth)
+			row.text:ClearAllPoints()
+			row.text:SetPoint("LEFT", row.chip, "LEFT", EXPLAIN_KEY_GAP, 0)
+			row.text:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
+			row.text:SetText(case.text)
+		else
+			row.chip:Hide()
+			row.key:Hide()
+			row.text:Hide()
+		end
+	end
+	panel:Show()
 end
 
 function Window:UpdateButtons()
@@ -573,7 +776,7 @@ function Window:UpdateButtons()
 	self.frame.newButton:SetEnabled((self.count or 0) < (self.maximum or 0) and not combat)
 	self.frame.saveButton:SetEnabled(self.dirty and not combat)
 	self.frame.cancelButton:SetEnabled(self.dirty)
-	self.frame.header.change:SetEnabled(hasMacro and not combat)
+	self.frame.header.rename:SetEnabled(hasMacro and not combat)
 end
 
 function Window:OnTextEdited()

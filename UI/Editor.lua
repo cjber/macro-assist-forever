@@ -12,50 +12,32 @@ local FONT_NAME = "MacroAssistMono"
 local FONT_SIZE = 14
 -- Extra space below each line (SetSpacing), so 14-unit text reads on 19-unit lines.
 local LINE_SPACING = 5
-local GUTTER_WIDTH = 30
-local TEXT_INSET_LEFT = 2
+local GUTTER_WIDTH = 34
+local TEXT_INSET_LEFT = 0
 local TEXT_INSET_RIGHT = 2
-local TEXT_INSET_TOP = 2
+local TEXT_INSET_TOP = 0
 local SQUIGGLE_HEIGHT = 4
+local STATUS_METER_WIDTH = 90
 local POPUP_ROWS = 8
 local POPUP_ROW_HEIGHT = 22
--- common-dropdown-bg keeps its corners at their native size: UiTextureAtlasElementSliceData gives it a
--- 16 / 13 / 16 / 19 unit border (left, top, right, bottom) in UI units. Blizzard's own menus put their content
--- inside that border too (MenuStyle1Mixin:GetInset is 8/8/8/15 around a background that extends 10 more out),
--- so rows are inset by the border itself and label, detail and highlight all stay inside it.
-local POPUP_INSET_LEFT = 16
-local POPUP_INSET_TOP = 13
-local POPUP_INSET_RIGHT = 16
-local POPUP_INSET_BOTTOM = 19
+-- The popup is a flat dark panel with a 1-unit white edge, drawn from the client's white primitive instead of the
+-- tooltip files the asset gate bans. Rows are inset by 4 units, the label starts 10 in, help at 130 and the live
+-- value tag sits 10 from the right edge.
+local POPUP_INSET_LEFT = 4
+local POPUP_INSET_TOP = 4
+local POPUP_INSET_RIGHT = 4
+local POPUP_INSET_BOTTOM = 4
+local POPUP_LABEL_X = 10
+local POPUP_LABEL_WIDTH = 108
+local POPUP_HELP_X = 130
+local POPUP_TAG_WIDTH = 34
+local POPUP_TAG_RIGHT = 10
 
 local COLOUR_CLOSE = "|r"
 local COLOUR_GREEN = "|cff33ff99"
 local COLOUR_RED = "|cffff4040"
 local COLOUR_YELLOW = "|cffffd100"
 local COLOUR_MUTED = "|cff9d9d9d"
-
-local CODE_KINDS = {
-	secure = true,
-	command = true,
-	chat = true,
-	emote = true,
-	directive = true,
-	condition = true,
-	unit = true,
-	value = true,
-}
-
-local BADGES = {
-	secure = "/",
-	command = "/",
-	chat = "/",
-	emote = "/",
-	directive = "#",
-	condition = "[",
-	unit = "@",
-	spell = "S",
-	value = "=",
-}
 
 local function EnsureFont()
 	if _G[FONT_NAME] then
@@ -102,6 +84,7 @@ end
 ---@class MacroAssistEditor
 ---@field parent Frame
 ---@field gutter Frame
+---@field rule Texture
 ---@field textArea Frame
 ---@field overlay Frame
 ---@field edit EditBox
@@ -111,8 +94,18 @@ end
 ---@field highlight Texture
 ---@field caret MacroAssistCaret
 ---@field caretBlink AnimationGroup
----@field status FontString
+---@field problem FontString
+---@field nowLabel FontString
+---@field now FontString
+---@field length FontString
+---@field check Texture
+---@field statusBackground Texture
+---@field statusRule Texture
+---@field meter Frame
+---@field meterTrack Texture
+---@field meterFill Texture
 ---@field popup MacroAssistCompletionPopup
+---@field popupMeasure FontString
 ---@field lineFonts FontString[]
 ---@field numberFonts FontString[]
 ---@field squiggles MacroAssistSquiggle[]
@@ -128,10 +121,12 @@ end
 ---@field click MacroAssistEditorClick?
 ---@field resolvingClick boolean?
 ---@field lineHeight number
+---@field fontHeight number
 ---@field wrapWidth number
 ---@field setting boolean
 ---@field inCombat boolean
 ---@field onEdited? fun()
+---@field onExplain? fun()
 ---@field onEscape? fun()
 local Editor = {}
 
@@ -155,6 +150,37 @@ local function Boundaries(text)
 		out[#out + 1] = index
 	end
 	return out
+end
+
+-- Trim a FontString's text to a width with an ellipsis, as the popup's help column needs when a condition description
+-- is longer than the row. The hidden measure uses the same font object, so the result matches what the row draws.
+---@param text string
+---@param measure FontString
+---@param width number
+---@return string
+local function TrimToWidth(text, measure, width)
+	if text == "" or width <= 0 then
+		return ""
+	end
+	measure:SetText(text)
+	if measure:GetStringWidth() <= width then
+		measure:SetText("")
+		return text
+	end
+	local bounds = Boundaries(text)
+	local low, high = 1, #bounds - 1
+	while low < high do
+		local middle = math.ceil((low + high) / 2)
+		measure:SetText(text:sub(1, bounds[middle + 1] - 1) .. "...")
+		if measure:GetStringWidth() <= width then
+			low = middle
+		else
+			high = middle - 1
+		end
+	end
+	local result = text:sub(1, bounds[low + 1] - 1):gsub("%s+$", "")
+	measure:SetText("")
+	return result .. "..."
 end
 
 local IsSpace = ns.Lexer.IsSpace
@@ -368,14 +394,17 @@ end
 ---@field offset integer
 
 ---@class MacroAssistCompletionRow : Button
----@field badge FontString
 ---@field label FontString
 ---@field detail FontString
+---@field tagBg Texture
+---@field tagText FontString
 ---@field highlight Texture
 
 ---@class MacroAssistCompletionPopup : Frame
----@field bg Texture
 ---@field rows MacroAssistCompletionRow[]
+---@field SetBackdrop fun(self: MacroAssistCompletionPopup, backdrop: table)
+---@field SetBackdropColor fun(self: MacroAssistCompletionPopup, r: number, g: number, b: number, a: number)
+---@field SetBackdropBorderColor fun(self: MacroAssistCompletionPopup, r: number, g: number, b: number, a: number)
 
 ---@class MacroAssistSquiggle : Frame
 ---@field texture Texture
@@ -384,9 +413,11 @@ end
 ---@field texture Texture
 
 ---@param parent Frame
+---@param statusParent Frame?
 ---@return MacroAssistEditor
-function Editor.Create(parent)
+function Editor.Create(parent, statusParent)
 	EnsureFont()
+	statusParent = statusParent or parent
 	local self = setmetatable({}, { __index = Editor }) --[[@as MacroAssistEditor]]
 	self.parent = parent
 	self.setting = false
@@ -398,16 +429,23 @@ function Editor.Create(parent)
 	self.completion = { items = {}, from = 1, to = 0, selected = 1, offset = 0 }
 
 	self.gutter = CreateFrame("Frame", nil, parent)
-	self.gutter:SetPoint("TOPLEFT", parent, "TOPLEFT", 4, -6)
-	self.gutter:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 4, 26)
+	self.gutter:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -10)
+	self.gutter:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 0, 6)
 	self.gutter:SetWidth(GUTTER_WIDTH)
 
-	self.textArea = CreateFrame("Frame", nil, parent)
-	self.textArea:SetPoint("TOPLEFT", self.gutter, "TOPRIGHT", 2, 0)
-	self.textArea:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -6, 26)
+	-- The gutter's 1-unit rule separates line numbers from the code at the same edge the text starts from.
+	self.rule = parent:CreateTexture(nil, "BORDER")
+	self.rule:SetColorTexture(1, 1, 1, 0.08)
+	self.rule:SetPoint("TOPLEFT", parent, "TOPLEFT", GUTTER_WIDTH, -6)
+	self.rule:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", GUTTER_WIDTH, 6)
+	self.rule:SetWidth(1)
 
-	self.highlight = self.textArea:CreateTexture(nil, "BACKGROUND")
-	self.highlight:SetColorTexture(1, 0.82, 0.2, 0.10)
+	self.textArea = CreateFrame("Frame", nil, parent)
+	self.textArea:SetPoint("TOPLEFT", self.gutter, "TOPRIGHT", 10, 0)
+	self.textArea:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -6, 6)
+
+	self.highlight = parent:CreateTexture(nil, "BACKGROUND")
+	self.highlight:SetColorTexture(1, 0.82, 0.2, 0.08)
 	self.highlight:Hide()
 
 	-- Draw order: highlight, squiggles, coloured overlay, then the EditBox frame. The EditBox's text is transparent,
@@ -480,22 +518,71 @@ function Editor.Create(parent)
 	self.lineHeight = FONT_SIZE + LINE_SPACING
 	self:UpdateMetrics()
 
-	self.status = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	self.status:SetPoint("LEFT", parent, "LEFT", 10, 10)
-	self.status:SetPoint("RIGHT", parent, "RIGHT", -10, 10)
-	self.status:SetJustifyH("LEFT")
-	self.status:SetWordWrap(false)
+	-- The status strip under the code surface: problems on the left, the live result beside them, and the
+	-- character meter on the right. It belongs to the window, not to the EditBox.
+	self.statusBackground = statusParent:CreateTexture(nil, "BACKGROUND")
+	self.statusBackground:SetAllPoints(statusParent)
+	self.statusBackground:SetColorTexture(0, 0, 0, 0.35)
+	self.statusRule = statusParent:CreateTexture(nil, "BORDER")
+	self.statusRule:SetColorTexture(1, 1, 1, 0.08)
+	self.statusRule:SetPoint("TOPLEFT", statusParent, "TOPLEFT", 0, 0)
+	self.statusRule:SetPoint("TOPRIGHT", statusParent, "TOPRIGHT", 0, 0)
+	self.statusRule:SetHeight(1)
 
-	self.popup = CreateFrame("Frame", nil, self.textArea) --[[@as MacroAssistCompletionPopup]]
+	self.check = statusParent:CreateTexture(nil, "ARTWORK")
+	self.check:SetAtlas("common-icon-checkmark")
+	self.check:SetSize(12, 12)
+	self.check:SetPoint("LEFT", statusParent, "LEFT", 8, 0)
+
+	self.problem = statusParent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.problem:SetPoint("LEFT", statusParent, "LEFT", 24, 0)
+	self.problem:SetJustifyH("LEFT")
+	self.problem:SetWordWrap(false)
+
+	self.nowLabel = statusParent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.nowLabel:SetPoint("LEFT", statusParent, "LEFT", 112, 0)
+	self.nowLabel:SetText(L["Now"])
+	self.nowLabel:SetTextColor(0.55, 0.55, 0.55)
+
+	self.length = statusParent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.length:SetPoint("RIGHT", statusParent, "RIGHT", -10, 0)
+	self.length:SetWidth(60)
+	self.length:SetJustifyH("RIGHT")
+	self.length:SetWordWrap(false)
+
+	self.meter = CreateFrame("Frame", nil, statusParent)
+	self.meter:SetSize(STATUS_METER_WIDTH, 4)
+	self.meter:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
+	self.meterTrack = self.meter:CreateTexture(nil, "BACKGROUND")
+	self.meterTrack:SetAllPoints(self.meter)
+	self.meterTrack:SetColorTexture(1, 1, 1, 0.12)
+	self.meterFill = self.meter:CreateTexture(nil, "ARTWORK")
+	self.meterFill:SetPoint("TOPLEFT", self.meter, "TOPLEFT", 0, 0)
+	self.meterFill:SetPoint("BOTTOMLEFT", self.meter, "BOTTOMLEFT", 0, 0)
+	self.meterFill:SetWidth(0)
+	self.meterFill:SetColorTexture(1, 0.82, 0.2, 0.9)
+
+	self.now = statusParent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.now:SetPoint("LEFT", self.nowLabel, "RIGHT", 6, 0)
+	self.now:SetPoint("RIGHT", self.meter, "LEFT", -8, 0)
+	self.now:SetJustifyH("LEFT")
+	self.now:SetWordWrap(false)
+
+	self.popup = CreateFrame("Frame", nil, self.textArea, "BackdropTemplate") --[[@as MacroAssistCompletionPopup]]
 	self.popup:SetFrameStrata("DIALOG")
 	self.popup:SetFrameLevel(self.textArea:GetFrameLevel() + 20)
 	self.popup:SetClampedToScreen(true)
 	self.popup:EnableMouse(true)
 	self.popup:Hide()
-	self.popup.bg = self.popup:CreateTexture(nil, "BACKGROUND")
-	self.popup.bg:SetAllPoints(self.popup)
-	self.popup.bg:SetAtlas("common-dropdown-bg")
-	self.popup.bg:SetAlpha(0.94)
+	self.popup:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8X8",
+		edgeFile = "Interface\\Buttons\\WHITE8X8",
+		tile = false,
+		edgeSize = 1,
+		insets = { left = 1, right = 1, top = 1, bottom = 1 },
+	})
+	self.popup:SetBackdropColor(0.07, 0.07, 0.08, 0.98)
+	self.popup:SetBackdropBorderColor(1, 1, 1, 0.18)
 	self.popup.rows = {}
 	for index = 1, POPUP_ROWS do
 		local row = CreateFrame("Button", nil, self.popup) --[[@as MacroAssistCompletionRow]]
@@ -509,22 +596,29 @@ function Editor.Create(parent)
 		end
 		row.highlight = row:CreateTexture(nil, "BACKGROUND")
 		row.highlight:SetAllPoints(row)
-		row.highlight:SetColorTexture(1, 0.82, 0.2, 0.18)
+		row.highlight:SetColorTexture(1, 0.82, 0.2, 0.14)
 		row.highlight:Hide()
-		row.badge = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-		row.badge:SetPoint("LEFT", row, "LEFT", 2, 0)
-		row.badge:SetWidth(14)
-		row.badge:SetJustifyH("CENTER")
-		row.label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-		row.label:SetPoint("LEFT", row.badge, "RIGHT", 4, 0)
-		row.label:SetPoint("RIGHT", row, "RIGHT", -150, 0)
+		row.label = row:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
+		row.label:SetPoint("LEFT", row, "LEFT", POPUP_LABEL_X, 0)
+		row.label:SetWidth(POPUP_LABEL_WIDTH)
 		row.label:SetJustifyH("LEFT")
 		row.label:SetWordWrap(false)
 		row.detail = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-		row.detail:SetPoint("RIGHT", row, "RIGHT", -4, 0)
-		row.detail:SetWidth(146)
-		row.detail:SetJustifyH("RIGHT")
+		row.detail:SetPoint("LEFT", row, "LEFT", POPUP_HELP_X, 0)
+		row.detail:SetPoint("RIGHT", row, "RIGHT", -(POPUP_TAG_RIGHT + POPUP_TAG_WIDTH + 6), 0)
+		row.detail:SetJustifyH("LEFT")
 		row.detail:SetWordWrap(false)
+		row.detail:SetTextColor(0.6, 0.6, 0.6)
+		row.tagBg = row:CreateTexture(nil, "BACKGROUND")
+		row.tagBg:SetPoint("RIGHT", row, "RIGHT", -POPUP_TAG_RIGHT, 0)
+		row.tagBg:SetSize(POPUP_TAG_WIDTH, POPUP_ROW_HEIGHT - 8)
+		row.tagBg:Hide()
+		row.tagText = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+		row.tagText:SetPoint("CENTER", row.tagBg, "CENTER", 0, 0)
+		row.tagText:SetWidth(POPUP_TAG_WIDTH)
+		row.tagText:SetJustifyH("CENTER")
+		row.tagText:SetWordWrap(false)
+		row.tagText:Hide()
 		row:SetScript("OnClick", function(button)
 			local item = self.completion.items[self.completion.offset + button:GetID()]
 			if item then
@@ -539,6 +633,8 @@ function Editor.Create(parent)
 		end)
 		self.popup.rows[index] = row
 	end
+	self.popupMeasure = self.popup:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.popupMeasure:SetAlpha(0)
 
 	self.edit:SetScript("OnTextChanged", function(_, userInput)
 		self.click = nil
@@ -703,6 +799,7 @@ function Editor:UpdateLineHeight()
 	local height = self.probe:GetLineHeight()
 	local spacing = self.probe:GetSpacing()
 	if type(height) == "number" and height > 0 then
+		self.fontHeight = height
 		self.lineHeight = height + (type(spacing) == "number" and spacing or 0)
 		self.caret:SetHeight(self.lineHeight)
 	end
@@ -804,6 +901,9 @@ function Editor:RefreshAll()
 	self:LayoutDiagnostics()
 	self:UpdateHighlight()
 	self:UpdateStatus()
+	if self.onExplain then
+		self.onExplain()
+	end
 end
 
 -- One coloured FontString per logical line still wraps itself at the edit's width; the measured rows only place
@@ -834,12 +934,12 @@ function Editor:LayoutLines(parsed)
 		if not number then
 			number = self.gutter:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 			number:SetJustifyH("RIGHT")
-			number:SetWidth(GUTTER_WIDTH - 4)
+			number:SetWidth(GUTTER_WIDTH - 10)
 			self.numberFonts[index] = number
 		end
 		number:SetText(tostring(index))
-		number:SetTextColor(0.55, 0.55, 0.55)
-		number:SetPoint("TOPLEFT", self.gutter, "TOPLEFT", 0, -y)
+		number:SetTextColor(0.4, 0.4, 0.4)
+		number:SetPoint("TOPLEFT", self.gutter, "TOPLEFT", 4, -y)
 		number:Show()
 	end
 	for index = used + 1, #self.lineFonts do
@@ -915,12 +1015,14 @@ function Editor:LayoutDiagnostics()
 					frame.texture:SetHorizTile(true)
 					self.squiggles[used] = frame
 				end
+				-- Just under the glyphs, not at the bottom of the spaced line: the extra SetSpacing would otherwise
+				-- make the squiggle read as the next line's.
 				frame:SetPoint(
 					"BOTTOMLEFT",
 					self.textArea,
 					"TOPLEFT",
 					TEXT_INSET_LEFT + x1,
-					-(TEXT_INSET_TOP + row.y + self.lineHeight - 1)
+					-(TEXT_INSET_TOP + row.y + (self.fontHeight or FONT_SIZE) + 1)
 				)
 				frame:SetSize(x2 - x1, SQUIGGLE_HEIGHT)
 				if diagnostic.severity == "error" then
@@ -937,18 +1039,32 @@ function Editor:LayoutDiagnostics()
 	end
 end
 
+---@param line integer?
+function Editor:UpdateNumberColors(line)
+	for index, number in ipairs(self.numberFonts) do
+		if index == line then
+			number:SetTextColor(1, 1, 1)
+		else
+			number:SetTextColor(0.4, 0.4, 0.4)
+		end
+	end
+end
+
 -- The current-line highlight takes its row from the EditBox's cursor y, so it always covers the line the caret is
 -- on, including a wrapped row the model-based column count used to miss.
 function Editor:UpdateHighlight()
 	local row = self.cursorRow and self.rows and self.rows[self.cursorRow]
 	if not row or not self.cursorX or not self.cursorY then
 		self.highlight:Hide()
+		self:UpdateNumberColors(nil)
 		self:StopCaret()
 		return
 	end
-	self.highlight:SetPoint("TOPLEFT", self.textArea, "TOPLEFT", TEXT_INSET_LEFT, -(TEXT_INSET_TOP + row.y))
-	self.highlight:SetSize(self.wrapWidth, self.lineHeight)
+	self.highlight:SetPoint("TOPLEFT", self.parent, "TOPLEFT", 4, -(10 + row.y))
+	self.highlight:SetPoint("TOPRIGHT", self.parent, "TOPRIGHT", -4, -(10 + row.y))
+	self.highlight:SetHeight(self.lineHeight)
 	self.highlight:Show()
+	self:UpdateNumberColors(row.line)
 	self:PlaceCaret()
 end
 
@@ -1004,42 +1120,59 @@ function Editor:NowText()
 end
 
 function Editor:UpdateStatus()
-	if not self.status then
+	if not self.problem then
 		return
 	end
-	local problem
-	if not self.diagnostics or #self.diagnostics == 0 then
-		problem = COLOUR_GREEN .. L["No problems"] .. COLOUR_CLOSE
-	else
-		local count = #self.diagnostics
-		local colour = self.diagnostics[1].severity == "error" and COLOUR_RED or COLOUR_YELLOW
-		local phrase = count == 1 and L["%d problem · %s"] or L["%d problems · %s"]
-		problem = colour .. phrase:format(count, self.diagnostics[1].message) .. COLOUR_CLOSE
+	local parent = self.problem:GetParent()
+	local length = ns.Length(self:GetText())
+	self.length:SetText(COLOUR_MUTED .. L["%d/%d"]:format(length, ns.MacroLimit) .. COLOUR_CLOSE)
+	self.meterFill:SetWidth(STATUS_METER_WIDTH * math.min(length, ns.MacroLimit) / ns.MacroLimit)
+	local suffix = ""
+	if self.inCombat then
+		suffix = "  " .. COLOUR_RED .. L["Saving is disabled in combat."] .. COLOUR_CLOSE
 	end
+	local first = self.diagnostics and self.diagnostics[1] or nil
+	self.problem:ClearAllPoints()
+	if first then
+		-- A problem takes the whole strip before the character count: the full first message, then the fix hint.
+		-- The strip turns red so a problem cannot be mistaken for the quiet live line.
+		local count = #self.diagnostics
+		local colour = first.severity == "error" and COLOUR_RED or COLOUR_YELLOW
+		local phrase = count == 1 and L["%d problem"] or L["%d problems"]
+		local text = colour .. phrase:format(count) .. COLOUR_CLOSE .. " " .. first.message
+		if first.fix then
+			text = text .. "  " .. COLOUR_MUTED .. L["Tab to fix"] .. COLOUR_CLOSE
+		end
+		self.problem:SetText(text .. suffix)
+		self.statusBackground:SetColorTexture(0.25, 0.02, 0.02, 0.45)
+		self.statusRule:SetColorTexture(1, 0.25, 0.25, 0.5)
+		self.problem:SetPoint("LEFT", parent, "LEFT", 10, 0)
+		self.problem:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
+		self.check:Hide()
+		self.nowLabel:Hide()
+		self.now:Hide()
+		self.meter:Hide()
+		return
+	end
+	self.problem:SetText(COLOUR_GREEN .. L["No problems"] .. COLOUR_CLOSE .. suffix)
+	self.statusBackground:SetColorTexture(0, 0, 0, 0.35)
+	self.statusRule:SetColorTexture(1, 1, 1, 0.08)
+	self.problem:SetPoint("LEFT", parent, "LEFT", 24, 0)
+	self.problem:SetPoint("RIGHT", self.nowLabel, "LEFT", -8, 0)
+	self.check:Show()
+	self.nowLabel:Show()
+	self.now:Show()
+	self.meter:Show()
 	local now, hasCommands = self:NowText()
 	local nowText
 	if now and now ~= "" then
-		nowText = L["Now: %s"]:format(now)
+		nowText = now
 	elseif hasCommands then
 		nowText = COLOUR_MUTED .. L["Nothing fires now"] .. COLOUR_CLOSE
 	else
 		nowText = COLOUR_MUTED .. L["No commands in this macro yet."] .. COLOUR_CLOSE
 	end
-	local text = problem
-		.. COLOUR_MUTED
-		.. "  ·  "
-		.. COLOUR_CLOSE
-		.. nowText
-		.. COLOUR_MUTED
-		.. "  ·  "
-		.. COLOUR_CLOSE
-		.. COLOUR_YELLOW
-		.. L["%d/%d"]:format(ns.Length(self:GetText()), ns.MacroLimit)
-		.. COLOUR_CLOSE
-	if self.inCombat then
-		text = text .. COLOUR_RED .. "  ·  " .. L["Saving is disabled in combat."] .. COLOUR_CLOSE
-	end
-	self.status:SetText(text)
+	self.now:SetText(nowText)
 end
 
 ---@param diagnostic MacroAssistDiagnostic
@@ -1146,10 +1279,25 @@ function Editor:RefreshCompletions()
 	self:ShowCompletionTooltip(self.completion.selected)
 end
 
+-- The popup never leaves the code surface: its width is capped to the surface, and PositionPopup clamps both the
+-- caret's x and the row below it to the surface's edges.
+---@return number
+function Editor:CompletionWidth()
+	local width = math.max(280, math.min(self.wrapWidth, 560))
+	local parentWidth = self.parent:GetWidth() or 0
+	if parentWidth > 0 then
+		width = math.min(width, parentWidth - 8)
+	end
+	return math.max(160, width)
+end
+
 function Editor:RenderCompletion()
 	local items = self.completion.items
 	local first = self.completion.offset + 1
 	local last = math.min(#items, self.completion.offset + POPUP_ROWS)
+	local width = self:CompletionWidth()
+	self.popup:SetWidth(width)
+	local helpWidth = width - POPUP_HELP_X - POPUP_TAG_RIGHT - POPUP_TAG_WIDTH - 6
 	for index = 1, POPUP_ROWS do
 		local row = self.popup.rows[index]
 		local itemIndex = first + index - 1
@@ -1157,15 +1305,32 @@ function Editor:RenderCompletion()
 		if item then
 			row:SetID(index)
 			row:Show()
-			row.badge:SetText(BADGES[item.kind] or "?")
 			row.label:SetText(item.label)
-			if CODE_KINDS[item.kind] then
-				row.label:SetFontObject(FONT_NAME)
-			else
-				row.label:SetFontObject("GameFontHighlight")
+			local detail = item.detail or ""
+			local live = item.live
+			if live and live ~= "" then
+				local suffix = "  " .. live
+				if detail:sub(-#suffix) == suffix then
+					detail = detail:sub(1, -#suffix - 1)
+				end
 			end
-			row.detail:SetText(item.detail or "")
+			row.detail:SetText(TrimToWidth(detail, self.popupMeasure, helpWidth))
 			row.highlight:SetShown(itemIndex == self.completion.selected)
+			if live and live ~= "" then
+				row.tagBg:Show()
+				row.tagText:Show()
+				row.tagText:SetText(live)
+				if live == "yes" then
+					row.tagBg:SetColorTexture(0.2, 0.8, 0.4, 0.25)
+					row.tagText:SetTextColor(0.2, 1, 0.6)
+				else
+					row.tagBg:SetColorTexture(1, 1, 1, 0.07)
+					row.tagText:SetTextColor(0.55, 0.55, 0.55)
+				end
+			else
+				row.tagBg:Hide()
+				row.tagText:Hide()
+			end
 		else
 			row:Hide()
 		end
@@ -1180,17 +1345,32 @@ function Editor:PositionPopup()
 	if not row then
 		return
 	end
-	local x = TEXT_INSET_LEFT + Editor.RowOffset(row, cursor, self.textMeasure)
-	local y = TEXT_INSET_TOP + row.y + self.lineHeight
+	local parent = self.parent
+	local parentWidth = parent:GetWidth() or 0
+	local parentHeight = parent:GetHeight() or 0
+	local width = self:CompletionWidth()
 	local height = self.popup:GetHeight()
-	local width = math.max(280, math.min(self.wrapWidth, 560))
 	self.popup:SetWidth(width)
-	self.popup:ClearAllPoints()
-	if self.textArea:GetHeight() > 0 and y + height > self.textArea:GetHeight() then
-		self.popup:SetPoint("BOTTOMLEFT", self.textArea, "TOPLEFT", x, -(y - self.lineHeight - 2))
-	else
-		self.popup:SetPoint("TOPLEFT", self.textArea, "TOPLEFT", x, -y - 2)
+	local x = GUTTER_WIDTH + 10 + TEXT_INSET_LEFT + Editor.RowOffset(row, cursor, self.textMeasure)
+	local y = 10 + TEXT_INSET_TOP + row.y + self.lineHeight + 2
+	local maxX = math.max(4, parentWidth - width - 4)
+	if x > maxX then
+		x = maxX
 	end
+	if x < 4 then
+		x = 4
+	end
+	if parentHeight > 0 and y + height > parentHeight - 4 then
+		y = 10 + TEXT_INSET_TOP + row.y - height - 2
+	end
+	if y < 4 then
+		y = 4
+	end
+	if parentHeight > 0 and y + height > parentHeight - 4 then
+		y = math.max(4, parentHeight - height - 4)
+	end
+	self.popup:ClearAllPoints()
+	self.popup:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -y)
 end
 
 ns.Editor = Editor
