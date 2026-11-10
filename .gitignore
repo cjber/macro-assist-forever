@@ -17,3 +17,6 @@ scratch/
 .bugpatrol/runs/
 .speedpatrol/runs/
 .sloppatrol/runs/
+
+# The ForeverCore checkout the specs, the sim and the typecheck load (FOREVER_CORE)
+forever-core

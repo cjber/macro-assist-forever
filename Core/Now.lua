@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- What a macro would run right now, from the parse tree only. SecureCmdOptionParse writes an unknown or half-typed
 -- condition to chat, so a line reaches it only when every condition in it resolves to a known entry with a usable
 -- parameter. The client read stays in the caller: this file is pure Lua and its spec needs no game.

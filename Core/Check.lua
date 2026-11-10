@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Diagnostics for a macro body. Everything the client knows (spells, items, live condition values) arrives in `ctx`;
 -- the command and condition tables are this addon's own data. The result is sorted by byte offset so a caller can
 -- underline it without sorting again.

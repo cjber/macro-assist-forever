@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- The little bit of the client that completion and checks need: the spellbook, with the rank names the client's own
 -- spellbook shows, and a live yes/no for one condition. Everything else in the editor is pure Lua in Core/.
 

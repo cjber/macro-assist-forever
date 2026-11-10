@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- The macro editor: a real multi-line EditBox draws the caret and takes typing, while every visible string is an
 -- overlay FontString built from ns.Highlight. The EditBox's own text is transparent, so colour codes never count
 -- against its 255 letters. The caret, current-line highlight, gutter numbers, squiggles and popup all use the

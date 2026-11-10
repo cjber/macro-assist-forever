@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- The History window: the selected macro's saved snapshots, newest first, and a Deleted section for macros that are
 -- no longer in the store. It only lists and selects; the restore itself goes through MacroWindow's write path, so it
 -- takes the same snapshot, the same combat refusal and the same list refresh as Save.
@@ -141,7 +145,7 @@ function Panel.Create(parent)
 		local owner = self.window
 		---@cast owner MacroAssistWindow
 		local db = MacroAssistForeverDB
-		local provider = CreateDataProvider()
+		local provider = CreateDataProvider() --[[@as DataProviderMixin]]
 		local rows = {}
 		local live = owner:LiveMacroNames()
 		local selectedName

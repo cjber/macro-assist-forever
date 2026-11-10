@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Our macro window. Blizzard's MacroFrame still opens and closes through every path the game has; once
 -- Blizzard_MacroUI loads, its OnShow and OnHide hooks show and hide this frame and MacroFrame is drawn at alpha 0
 -- underneath. Until then the window stands on its own at the panel manager's left-panel spot. Nothing here calls a
@@ -647,7 +651,7 @@ function Window:RefreshList(keepScrollOffset)
 
 	local needle = (self.filter or ""):lower()
 	local selectedVisible = false
-	local provider = CreateDataProvider()
+	local provider = CreateDataProvider() --[[@as DataProviderMixin]]
 	for index = 1, count do
 		local actual = base + index
 		local name, icon, body = GetMacroInfo(actual)

@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Parse a macro body into lines, clauses, condition groups and argument items, with byte offsets for every token.
 -- The parser is syntax only: it does not know which commands or conditions exist, so a malformed line still produces
 -- nodes plus diagnostics instead of an error.

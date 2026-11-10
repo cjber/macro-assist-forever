@@ -5,6 +5,14 @@
 -- luacheck: read globals scenario ADDON
 
 local world = assert(loadfile("tests/sim/macro_world.lua"))()
+local ForeverCore = dofile("tests/forever_core.lua")
+
+-- ForeverCore is a hard dependency, so every scenario runs with it registered and loaded first, as the client does
+-- for a TOC's ## Dependencies. The scenario runner fires each addon's ADDON_LOADED in that order.
+local declare = scenario
+local function scenario(name, work)
+	declare(name, { addons = ForeverCore.addons() }, work)
+end
 
 local PLAYER = "MacroAssistForeverFrame"
 
@@ -899,4 +907,23 @@ scenario("/m opens the window with the gamepad on and then leaves it open", func
 	check(panelClosed(sim), "/m did not close the macro window after the gamepad")
 	sim:expectNoErrors(ADDON)
 	sim:expectNoGamepadTaint(ADDON)
+end)
+
+scenario("/macroassist report opens ForeverCore's report with this addon's lines", function(sim)
+	world.install(sim)
+	sim:login()
+	local ns
+	for _, entry in ipairs(sim.loader.addons) do
+		if entry.name == ADDON then
+			ns = entry.ns
+		end
+	end
+	check(ns and ns.core and ns.core.name == ADDON, "the addon did not register with ForeverCore")
+	local text = ns.core.Report.Text(ns.ReportLines())
+	check(text:find("Macros: 2 general, 5 character", 1, true) ~= nil, "the report misses the macro counts")
+	check(text:find("History: 0 macros kept", 1, true) ~= nil, "the report misses the history")
+	sim:slash("/macroassist report")
+	local report = sim.G[ADDON .. "Report"]
+	check(report ~= nil and report:IsShown(), "/macroassist report did not open the report window")
+	sim:expectNoErrors(ADDON)
 end)

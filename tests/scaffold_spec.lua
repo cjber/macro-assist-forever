@@ -1,4 +1,6 @@
--- The scaffold: the TOC's files load in order under a stubbed client, and the addon creates its saved table.
+-- The scaffold: the TOC's files load in order under a stubbed client and ForeverCore, and the addon creates its saved
+-- table and registers once. ForeverCore itself is real in the sim (tests/sim) and in the client; here it is the one
+-- context table Core/Core.lua calls, with no frames behind it.
 local function equal(actual, expected, label)
 	assert(actual == expected, ("%s: expected %s, got %s"):format(label, tostring(expected), tostring(actual)))
 end
@@ -15,20 +17,42 @@ _G.CreateFrame = function(kind)
 	frames[#frames + 1] = frame
 	return frame
 end
-_G.geterrorhandler = function()
-	return function() end
-end
-_G.seterrorhandler = function() end
 _G.hooksecurefunc = function() end
 _G.ShowMacroFrame = function() end
+_G.GetNumMacros = function()
+	return 2, 3
+end
 _G.SlashCmdList = {}
+
+local registered, attached
+local context = {
+	Report = {
+		Command = function(command)
+			return command == "report"
+		end,
+	},
+	Attach = function(db)
+		attached = db
+	end,
+}
+_G.ForeverCore = {
+	API = 1,
+	Register = function(name, spec)
+		registered = { name = name, spec = spec }
+		return context
+	end,
+}
 
 local ns = {}
 local addonName = "MacroAssistForever"
 
 local toc = assert(io.open("MacroAssistForever.toc", "r"))
-local loaded = {}
+local loaded, metadata = {}, {}
 for line in toc:lines() do
+	local key, value = line:match("^##%s*([^:]+):%s*(.-)%s*$")
+	if key then
+		metadata[key] = value
+	end
 	local entry = line:match("^%s*([^#%s].*)$")
 	if entry then
 		entry = entry:gsub("\\", "/"):gsub("%s+$", "")
@@ -41,13 +65,26 @@ for line in toc:lines() do
 end
 toc:close()
 
+equal(metadata["Dependencies"], "ForeverCore", "the TOC requires ForeverCore")
 equal(loaded[1], "Locales/enUS.lua", "the locale loads first")
+equal(loaded[2], "Core/Require.lua", "the API floor follows it, before any addon code")
 equal(loaded[#loaded], "Core/Core.lua", "the core loads last")
+for _, shared in ipairs({ "Core/SafeCall.lua", "Core/Log.lua", "UI/Report.lua", "UI/ForeverFamily.lua" }) do
+	for _, entry in ipairs(loaded) do
+		assert(entry ~= shared, "the TOC still lists " .. shared)
+	end
+end
 equal(type(ns.L), "table", "the locale table is published")
-equal(type(ns.SafeCall), "function", "the shared error journal is loaded")
-equal(type(ns.Log), "function", "the shared log is loaded")
-equal(type(ns.Family), "table", "the shared family links are loaded")
-equal(type(ns.Report), "table", "the shared report window is loaded")
+equal(ns.ReportTitle, "Macro Assist Forever report", "the report title is set")
+
+assert(registered, "the addon registered its ForeverCore services")
+equal(registered.name, addonName, "under its own folder name")
+equal(registered.spec.title, ns.ReportTitle, "the report window takes the addon's title")
+local lines = registered.spec.lines()
+equal(lines[1], "Macros: 2 general, 3 character", "the report reads the client's macro counts")
+assert(lines[2]:find("History: 0 macros kept", 1, true), "and the history it keeps")
+assert(lines[3]:find("Window: not built", 1, true), "and whether the window is built")
+assert(ns.core == context, "ns.core is the context Register returned")
 
 local addon
 for _, frame in ipairs(frames) do
@@ -62,10 +99,22 @@ equal(MacroAssistForeverDB, nil, "another addon's load does not initialise this 
 
 addon.OnEvent(addon, "ADDON_LOADED", addonName)
 assert(type(MacroAssistForeverDB) == "table", "ADDON_LOADED creates the saved table")
+assert(attached == MacroAssistForeverDB, "the saved table is attached to ForeverCore")
+equal(MacroAssistForeverDB.errors, nil, "the addon's old journal key is gone")
+equal(MacroAssistForeverDB.log, nil, "the addon's old log key is gone")
 
 equal(SLASH_MACROASSISTFOREVER1, "/macroassist", "the full command is registered")
 equal(SLASH_MACROASSISTFOREVER2, nil, "the client's /ma is not registered")
 equal(type(SlashCmdList.MACROASSISTFOREVER), "function", "the command has a handler")
+
+local toggled = false
+ns.Toggle = function()
+	toggled = true
+end
+SlashCmdList.MACROASSISTFOREVER("report")
+equal(toggled, false, "/macroassist report opens the report instead of toggling")
+SlashCmdList.MACROASSISTFOREVER("")
+equal(toggled, true, "a bare /macroassist still toggles the window")
 
 MacroAssistForeverDB.kept = true
 addon.OnEvent(addon, "ADDON_LOADED", addonName)

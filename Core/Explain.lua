@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- One line for the macro list, built from the parse tree only: no keyword guessing over the macro's free text.
 -- A condition contributes a phrase only when Locales/enUS.lua has one for it; anything else falls back to listing
 -- the spells the clause casts. The default clause comes first, as the macro's main action, then the alternatives.

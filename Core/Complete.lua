@@ -1,5 +1,9 @@
 local _, ns = ...
 
+if ns.broken then
+	return
+end
+
 -- Completion for the macro editor. `Complete(text, cursor, ctx)` looks only at the text before the caret, so it can
 -- be called from OnTextChanged without touching the client. `cursor` is a byte offset into `text`, the same convention
 -- as string.sub: the text before the caret is text:sub(1, cursor - 1). The answer is `{ from, to, items }`, where

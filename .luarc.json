@@ -3,7 +3,11 @@
   "workspace.library": [
     ".types/vscode-wow-api/Annotations/Core",
     ".types/vscode-wow-api/Annotations/FrameXML",
-    "types"
+    "types",
+    "../forever-core",
+    "forever-core",
+    "forever-core/types",
+    "../forever-core/types"
   ],
   "workspace.ignoreDir": [
     ".git",
@@ -15,7 +19,8 @@
     ".agents",
     ".bugpatrol",
     ".speedpatrol",
-    ".sloppatrol"
+    ".sloppatrol",
+    "forever-core"
   ],
   "workspace.checkThirdParty": false,
   "diagnostics.libraryFiles": "Disable",
