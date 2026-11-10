@@ -21,15 +21,22 @@ def check_scene(scene):
     for widget in widgets:
         x, y = widget["x"], widget["y"]
         right, bottom = x + widget["w"], y + widget["h"]
-        inside = x >= frame["x"] and y >= frame["y"] and bottom <= frame["y"] + frame["h"]
-        # A side rail belongs on the frame's own edge (docs/ui-composition.md): it starts inside the frame and
-        # runs past it, so only its vertical bounds must stay within the frame.
-        if widget.get("edge") == "right":
-            inside = inside and x < frame["x"] + frame["w"]
-        elif widget.get("edge") == "left":
-            inside = inside and right > frame["x"]
+        edge = widget.get("edge")
+        if edge == "outside-right":
+            # Blizzard's side tabs hang off the frame's right edge (the spellbook, Professions and Housing
+            # windows all do this), so the widget starts at that edge and must only keep the frame's vertical
+            # bounds. Every other widget stays inside the frame.
+            inside = x >= frame["x"] + frame["w"] - 2 and y >= frame["y"] and bottom <= frame["y"] + frame["h"]
         else:
-            inside = inside and right <= frame["x"] + frame["w"]
+            inside = x >= frame["x"] and y >= frame["y"] and bottom <= frame["y"] + frame["h"]
+            # A side rail belongs on the frame's own edge (docs/ui-composition.md): it starts inside the frame
+            # and runs past it, so only its vertical bounds must stay within the frame.
+            if edge == "right":
+                inside = inside and x < frame["x"] + frame["w"]
+            elif edge == "left":
+                inside = inside and right > frame["x"]
+            else:
+                inside = inside and right <= frame["x"] + frame["w"]
         if not inside:
             errors.append(f"{widget['name']} lies outside the frame")
     interactive = [widget for widget in widgets if widget["role"] in {"button", "tabs", "input"}]
