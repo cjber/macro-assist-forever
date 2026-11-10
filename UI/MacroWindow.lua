@@ -16,14 +16,14 @@ local WINDOW_WIDTH = 860
 local WINDOW_HEIGHT = 500
 local INSET_LEFT = 10
 local INSET_RIGHT = -10
--- LargeSideTabButtonTemplate's art is 55 wide. The tabs own a rail inside the window's left edge, and the list
--- starts to the right of that rail, so the tabs sit beside the list they filter.
-local SIDE_TAB_WIDTH = 55
-local LIST_LEFT = INSET_LEFT + SIDE_TAB_WIDTH
+local LIST_LEFT = INSET_LEFT
 local LIST_TOP = -60
 local LIST_WIDTH = 250
 local LIST_HEIGHT = 398
-local SIDE_TAB_EDGE = 0
+-- LargeSideTabButtonTemplate's art hangs off the window's right edge, as the game's spellbook, Professions,
+-- Collections and Housing windows anchor theirs: the tab's TOPLEFT on the frame's TOPRIGHT at x 0 (the spellbook
+-- reaches -2), then each later tab below the last.
+local SIDE_TAB_X = 0
 local SIDE_TAB_TOP = 60
 local SIDE_TAB_GAP = 2
 local HEADER_TOP = -30
@@ -308,12 +308,12 @@ function Window.Create()
 	local tabs = {}
 	for index = 1, 2 do
 		-- A Button, so the gamepad's SmartNavigation scan never reads a Frame's mouse scripts; the template owns
-		-- the square side-tab art, its mask and the checked ring. The rail sits inside the window's left edge,
-		-- beside the list the tabs filter.
+		-- the square side-tab art, its mask and the checked ring. The tabs hang off the window's right edge, as
+		-- the spellbook's and Professions' do, so the list and editor keep the whole window width.
 		local tab = CreateFrame("Button", nil, frame, "LargeSideTabButtonTemplate") --[[@as MacroAssistTab]]
 		tab:SetID(index)
 		if index == 1 then
-			tab:SetPoint("TOPLEFT", frame, "TOPLEFT", SIDE_TAB_EDGE, -SIDE_TAB_TOP)
+			tab:SetPoint("TOPLEFT", frame, "TOPRIGHT", SIDE_TAB_X, -SIDE_TAB_TOP)
 			-- art-ok: a square icon in the square LargeSideTabButtonTemplate sizes for it
 			tab.Icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
 			tab.tooltipText = L["General"]

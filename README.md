@@ -11,7 +11,7 @@
 
 ## Features
 
-- **Every macro in one searchable list.** General and character tabs sit beside the list they filter, and each macro shows its icon, name and a short summary of its main action with a count of the other cases. The selected row has a soft gold fill and left bar, and the count sits beside the search box, which filters by name or summary as you type.
+- **Every macro in one searchable list.** General and character tabs hang off the window's right edge, as in the game's spellbook, and each macro shows its icon, name and a short summary of its main action with a count of the other cases. The selected row has a soft gold fill and left bar, and the count sits beside the search box, which filters by name or summary as you type.
 - **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
 - **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing it can explain.
 - **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through the suggestions, Tab inserts one, and each suggestion shows its live value as a yes or no tag.

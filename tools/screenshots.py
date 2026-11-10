@@ -57,12 +57,11 @@ WINDOW_WIDTH = number("WINDOW_WIDTH")
 WINDOW_HEIGHT = number("WINDOW_HEIGHT")
 INSET_LEFT = number("INSET_LEFT")
 INSET_RIGHT = number("INSET_RIGHT")
-SIDE_TAB_WIDTH = number("SIDE_TAB_WIDTH")
-LIST_LEFT = INSET_LEFT + SIDE_TAB_WIDTH
+LIST_LEFT = INSET_LEFT
 LIST_TOP = number("LIST_TOP")
 LIST_WIDTH = number("LIST_WIDTH")
 LIST_HEIGHT = number("LIST_HEIGHT")
-SIDE_TAB_EDGE = number("SIDE_TAB_EDGE")
+SIDE_TAB_X = number("SIDE_TAB_X")
 SIDE_TAB_TOP = number("SIDE_TAB_TOP")
 SIDE_TAB_GAP = number("SIDE_TAB_GAP")
 HEADER_TOP = number("HEADER_TOP")
@@ -677,7 +676,8 @@ def status_bar(canvas, x, y, w, length, now, data):
 
 
 def window(ui, *, body, current_line, caret_column, data, completion=None):
-    canvas = ui.canvas(WINDOW_WIDTH + 2 * X, WINDOW_HEIGHT + 2 * Y)
+    rail_width, _ = side_tab_extent(ui)
+    canvas = ui.canvas(WINDOW_WIDTH + 2 * X + rail_width, WINDOW_HEIGHT + 2 * Y)
     background(canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT)
     # The search box sits beside the portrait; the list runs from below it down to the footer.
     wowmock.search_box(
@@ -798,10 +798,11 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         "Cancel",
         h=BUTTON_HEIGHT,
     )
-    # The metal frame, portrait, title and close button sit over the contents; the side tabs join its left rail.
+    # The metal frame, portrait, title and close button sit over the contents; the side tabs hang off its right edge.
     wowmock.portrait_frame_art(canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT, IDENTITY_ICON, "Macros")
-    # The side rail sits inside the window's left edge, beside the list it filters.
-    side_tabs(canvas, X + SIDE_TAB_EDGE, Y + SIDE_TAB_TOP, TAB_SELECTED)
+    # As in Blizzard's spellbook and Professions windows, the tabs start at the frame's right edge and run into
+    # the margin, leaving the list and editor the whole window width.
+    side_tabs(canvas, X + WINDOW_WIDTH + SIDE_TAB_X, Y + SIDE_TAB_TOP, TAB_SELECTED)
     # The popup is drawn last, over the editor text, as the editor's popup is in game.
     if completion:
         draw_completion(canvas, completion, caret_column, text_x, text_y, text_w)
@@ -899,8 +900,8 @@ def window_layout(ui):
         {
             "name": "tabs",
             "role": "tabs",
-            "edge": "left",
-            "x": X + SIDE_TAB_EDGE,
+            "edge": "outside-right",
+            "x": X + WINDOW_WIDTH + SIDE_TAB_X,
             "y": Y + SIDE_TAB_TOP,
             "w": rail_width,
             "h": rail_height,

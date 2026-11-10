@@ -5,6 +5,11 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+### Fixed
+
+- **The General and character tabs hang off the window's right edge again**, as they do in the game's spellbook and
+  Professions windows. The list and editor use the window's full width.
+
 ## [0.2.1] - 2026-11-10
 
 - **Forever Core now comes in the same download.** This addon needs Forever Core, and until Forever Core has its own CurseForge page every Forever addon's download carries a copy of it, so the addon loads with nothing else to install.

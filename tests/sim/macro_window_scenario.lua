@@ -181,7 +181,7 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	)
 	equal(window.editor.now:GetText():find("Arcane Shot", 1, true) ~= nil, true, "the live line still says what fires")
 	equal(arcane.Summary:GetText(), "Arcane Shot", "the row shows the main action")
-	check(window.Tabs[1]:GetLeft() < window.listInset:GetLeft(), "the side tabs are not on the list's left side")
+	check(window.Tabs[1]:GetLeft() >= window:GetRight() - 2, "the side tabs do not hang off the window's right edge")
 
 	local trap = rowNamed(window, "Trap")
 	sim:click(trap)
