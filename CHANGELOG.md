@@ -5,6 +5,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-10
+
 - **The macro window is split into a searchable list and a full-height editor.** Each row shows the macro icon, name
   and summary on two lines, the selected row has a soft gold fill and left bar, and the count sits beside the search
   box. A "What it does" panel at the bottom of the code surface reads each click and modifier branch from the parse.
