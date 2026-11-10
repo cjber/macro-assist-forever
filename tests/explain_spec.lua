@@ -96,4 +96,16 @@ equal(#ns.ExplainCases("/unknowncommand"), 0, "an unknown command adds no case")
 equal(#ns.ExplainCases("#showtooltip"), 0, "a directive adds no case")
 equal(#ns.ExplainCases(""), 0, "an empty body has no cases")
 
+-- The list summary shows the main action and a count of the other cases, so a branch-heavy macro stays short.
+equal(ns.ExplainSummary("/cast Freezing Trap"), "Freezing Trap", "a single-case macro reads as its action")
+equal(ns.ExplainSummary("/cast Feign Death\n/stopattack"), "Feign Death +1", "a second case adds a count")
+equal(ns.ExplainSummary(arcane), "Arcane Shot +2", "the Arcane macro summarises as its click action plus two cases")
+equal(
+	ns.ExplainSummary("/cast [@pet,dead] Revive Pet; [nopet] Call Pet; Mend Pet"),
+	"Mend Pet +2",
+	"a pet macro summarises as its fallback action plus two cases"
+)
+equal(ns.ExplainSummary("#showtooltip\n/cast Fireball"), "Fireball", "the summary still comes from the parse")
+equal(ns.ExplainSummary(""), "", "an empty body has no summary")
+
 print(("explain: %d checks"):format(checks))

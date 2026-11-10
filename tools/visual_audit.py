@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the screenshot scene's recorded widgets against their window bounds and one another."""
+"""Check the screenshot scenes' recorded widgets against their window bounds and one another."""
 
 import json
 from pathlib import Path
@@ -9,24 +9,25 @@ MIN_GAP = 8
 # The approved split layout puts the footer buttons 6 units apart, so these two pairs use their own gap.
 INTENTIONAL_GAPS = {
     frozenset(("new", "delete")): 6,
+    frozenset(("delete", "history")): 6,
     frozenset(("cancel", "save")): 6,
 }
 
 
-def main():
-    manifest = ROOT / "docs" / "screenshots" / "layout.json"
-    data = json.loads(manifest.read_text(encoding="utf-8"))
-    frame = data["frame"]
-    widgets = data["widgets"]
+def check_scene(scene):
+    frame = scene["frame"]
+    widgets = scene["widgets"]
     errors = []
     for widget in widgets:
         x, y = widget["x"], widget["y"]
         right, bottom = x + widget["w"], y + widget["h"]
         inside = x >= frame["x"] and y >= frame["y"] and bottom <= frame["y"] + frame["h"]
-        # A side rail belongs on the frame's outer right edge (docs/ui-composition.md): it starts inside the
-        # frame and runs past it, so only its vertical bounds must stay within the frame.
+        # A side rail belongs on the frame's own edge (docs/ui-composition.md): it starts inside the frame and
+        # runs past it, so only its vertical bounds must stay within the frame.
         if widget.get("edge") == "right":
             inside = inside and x < frame["x"] + frame["w"]
+        elif widget.get("edge") == "left":
+            inside = inside and right > frame["x"]
         else:
             inside = inside and right <= frame["x"] + frame["w"]
         if not inside:
@@ -41,10 +42,22 @@ def main():
                 errors.append(f"{first['name']} overlaps {second['name']}")
             elif dx < gap and dy < gap:
                 errors.append(f"{first['name']} and {second['name']} are less than {gap} units apart")
-    for error in errors:
-        print(f"visual_audit: {error}")
-    print(f"visual_audit: {len(widgets)} widgets, {len(errors)} findings")
-    return bool(errors)
+    return errors
+
+
+def main():
+    manifest = ROOT / "docs" / "screenshots" / "layout.json"
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    scenes = data.get("scenes", [data])
+    widgets = 0
+    findings = 0
+    for index, scene in enumerate(scenes):
+        widgets += len(scene["widgets"])
+        for error in check_scene(scene):
+            print(f"visual_audit: scene {index + 1}: {error}")
+            findings += 1
+    print(f"visual_audit: {widgets} widgets, {findings} findings")
+    return bool(findings)
 
 
 if __name__ == "__main__":

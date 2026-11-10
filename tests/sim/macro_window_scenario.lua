@@ -78,6 +78,24 @@ local function selectedRow(window)
 	end
 end
 
+local function historyRows(window)
+	local out = {}
+	window.history.scrollBox:ForEachFrame(function(row)
+		if row:IsShown() then
+			out[#out + 1] = row
+		end
+	end)
+	return out
+end
+
+local function historyEntry(window, summary)
+	for _, row in ipairs(historyRows(window)) do
+		if row.Time:IsShown() and row.Summary:GetText():find(summary, 1, true) then
+			return row
+		end
+	end
+end
+
 local function textOf(window)
 	return window.editor.edit:GetText()
 end
@@ -154,7 +172,8 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 		"the live line names no unit when the matching clause has none"
 	)
 	equal(window.editor.now:GetText():find("Arcane Shot", 1, true) ~= nil, true, "the live line still says what fires")
-	equal(arcane.Summary:GetText(), "Arcane Shot, mouseover first", "the row summarises the macro")
+	equal(arcane.Summary:GetText(), "Arcane Shot", "the row shows the main action")
+	check(window.Tabs[1]:GetLeft() < window.listInset:GetLeft(), "the side tabs are not on the list's left side")
 
 	local trap = rowNamed(window, "Trap")
 	sim:click(trap)
@@ -182,15 +201,11 @@ scenario("the search box filters the list by name and summary", function(sim)
 	equal(rows(window)[1].Name:GetText(), "FD", "the name search kept the wrong macro")
 
 	sim:input(function()
-		window.searchBox:SetText("MOUSEOVER")
+		window.searchBox:SetText("FREEZING")
 	end)
 	sim:advance(0.05)
-	equal(#rows(window), 2, "a summary search was not case-insensitive")
-	local found = {}
-	for _, row in ipairs(rows(window)) do
-		found[row.Name:GetText()] = true
-	end
-	check(found["Arcane"] and found["Mark"], "the summary search missed a macro")
+	equal(#rows(window), 1, "a summary search was not case-insensitive")
+	equal(rows(window)[1].Name:GetText(), "Trap", "the summary search missed a macro")
 
 	sim:input(function()
 		window.searchBox:SetText("no such macro")
@@ -242,6 +257,19 @@ scenario("the caret is one measured line, follows the cursor and shows only whil
 	check(not editor.caret:IsShown(), "the caret stayed after the editor lost focus")
 	sim:click(window.CloseButton)
 	sim:advance(0.2)
+end)
+
+scenario("a 255-character macro fits the code surface without scrolling", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local body = string.rep("/cast Freezing Trap\n", 12) .. "/cast Wing Clip"
+	equal(#body, 255, "the fixture is a 255-character macro")
+	setText(sim, window, body, true)
+	check(
+		window.editor.contentHeight <= window.editorSurface:GetHeight(),
+		"the code surface is shorter than the macro's measured rows"
+	)
+	equal(#rows(window), 5, "the long macro changed the list")
 end)
 
 scenario("a click right of a line's end keeps the cursor on that line", function(sim)
@@ -394,6 +422,163 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	sim:advance(0.2)
 	check(select(2, sim.G.GetNumMacros()) == before, "the second Delete click did not delete the macro")
 	check(not window.iconSelector:IsShown(), "the icon frame is open after deleting")
+end)
+
+scenario("history keeps a snapshot before a save and restores it", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local original = "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot"
+	equal(textOf(window), original, "the Arcane macro starts as the fixture")
+
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	check(window.history:IsShown(), "History did not open")
+	equal(#historyRows(window), 0, "History lists a snapshot before any write")
+	check(window.history.empty:IsShown(), "the empty History list has no message")
+	sim:click(window.history.CloseButton)
+	sim:advance(0.1)
+	check(not window.history:IsShown(), "the History close button did not close it")
+
+	setText(sim, window, "/cast Wing Clip", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	check(select(3, sim.G.GetMacroInfo(121)) == "/cast Wing Clip", "the save did not write the new body")
+
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	local entry = historyEntry(window, "Line 1 changed")
+	check(entry, "History does not describe the body the save replaced")
+	equal(entry.Summary:GetText(), "Line 1 changed, -1 line", "History does not name the changed and removed line")
+	check(entry.Time:GetText() ~= "", "the history entry shows no time")
+	sim:click(entry)
+	sim:advance(0.1)
+	check(window.history.restoreButton:IsEnabled(), "Restore is not enabled for a selected snapshot")
+	sim:click(window.history.restoreButton)
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(121)), original, "Restore did not write the snapshot body")
+	equal(textOf(window), original, "the editor did not follow the restored body")
+	sim:click(window.history.CloseButton)
+	sim:advance(0.1)
+end)
+
+scenario("history rows say what changed against the newer text", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+
+	-- One line changes and the line count stays the same.
+	setText(sim, window, "#showtooltip\n/cast Wing Clip", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	local changed = historyEntry(window, "Line 2 changed")
+	check(changed, "History does not name the line the save changed")
+	equal(changed.Summary:GetText(), "Line 2 changed", "History uses another line description")
+	sim:click(window.history.CloseButton)
+	sim:advance(0.1)
+
+	-- A line is added.
+	setText(sim, window, "#showtooltip\n/cast Wing Clip\n/stopattack", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	local added = historyEntry(window, "+1 line")
+	check(added, "History does not say the save added a line")
+	equal(added.Summary:GetText(), "+1 line", "History uses another added-line description")
+	sim:click(window.history.CloseButton)
+	sim:advance(0.1)
+
+	-- The rename is described against the live name.
+	sim:click(window.header.rename)
+	sim:advance(0.2)
+	window.iconSelector.BorderBox.IconSelectorEditBox:SetText("Arcane Shot")
+	sim:click(window.iconSelector.BorderBox.OkayButton)
+	sim:advance(0.2)
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	local renamed = historyEntry(window, "Renamed to Arcane Shot")
+	check(renamed, "History does not say the macro was renamed")
+	check(
+		renamed.Summary:GetText():sub(1, #"Renamed to Arcane Shot") == "Renamed to Arcane Shot",
+		"History uses another rename description"
+	)
+	sim:click(window.history.CloseButton)
+	sim:advance(0.1)
+end)
+
+scenario("a deleted macro stays restorable from History", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	sim:click(rowNamed(window, "Trap"))
+	sim:advance(0.1)
+	equal(selectedRow(window).Name:GetText(), "Trap", "Trap is not selected")
+	local before = select(2, sim.G.GetNumMacros())
+	sim:click(window.deleteButton)
+	sim:advance(0.05)
+	sim:click(window.deleteButton)
+	sim:advance(0.2)
+	equal(select(2, sim.G.GetNumMacros()), before - 1, "Delete did not remove Trap")
+
+	-- Open History from the other tab, so the restore has to bring its own tab and selection back with it.
+	sim:click(window.Tabs[1])
+	sim:advance(0.1)
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	local deleted
+	for _, row in ipairs(historyRows(window)) do
+		if not row.Time:IsShown() and row.Summary:GetText() == "Deleted" then
+			deleted = row
+		end
+	end
+	check(deleted, "History has no Deleted section")
+	local entry = historyEntry(window, "Trap: Freezing Trap")
+	check(entry, "the deleted macro is not listed with its last body")
+	sim:click(entry)
+	sim:advance(0.1)
+	sim:click(window.history.restoreButton)
+	sim:advance(0.1)
+	equal(select(2, sim.G.GetNumMacros()), before, "Restore did not recreate the deleted macro")
+	check(select(1, sim.G.GetMacroInfo(121 + before - 1)) == "Trap", "Restore created the wrong macro")
+	check(window.Tabs[2].SelectedTexture:IsShown(), "Restore did not switch to the deleted macro's tab")
+	equal(window.header.meta:GetText(), "Character macro", "the header still names the other tab")
+	equal(selectedRow(window).Name:GetText(), "Trap", "Restore did not select the macro it brought back")
+	sim:click(window.history.CloseButton)
+	sim:advance(0.1)
+	check(rowNamed(window, "Trap"), "the restored macro is not in the list")
+end)
+
+scenario("history restore is off in combat", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	setText(sim, window, "/cast Wing Clip", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	local entry = historyEntry(window, "Line 1 changed")
+	check(entry, "History has no snapshot to restore")
+	sim:click(entry)
+	sim:advance(0.1)
+	check(window.history.restoreButton:IsEnabled(), "Restore is not enabled out of combat")
+
+	sim:enterCombat()
+	sim:advance(0.1)
+	check(not window.history.restoreButton:IsEnabled(), "Restore is enabled in combat")
+	check(window.history.combatText:IsShown(), "the History window does not say why Restore is off")
+	check(
+		window.history.combatText:GetText() == "Saving is disabled in combat.",
+		"the History window uses another combat message"
+	)
+	sim:click(window.history.restoreButton)
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(121)), "/cast Wing Clip", "Restore wrote the macro in combat")
+
+	sim:leaveCombat()
+	sim:advance(0.1)
+	check(window.history.restoreButton:IsEnabled(), "Restore did not come back after combat")
+	sim:click(window.history.CloseButton)
+	sim:advance(0.1)
 end)
 
 scenario("closing by our X and the editor's Escape, and reopening", function(sim)

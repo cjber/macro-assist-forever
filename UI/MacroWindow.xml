@@ -42,4 +42,41 @@
 			</Layer>
 		</Layers>
 	</Button>
+
+	<!-- One saved snapshot in the History list: the time on top, the one-line summary below. A section heading reuses
+	     the same button with the time hidden. -->
+	<Button name="MacroAssistHistoryRowTemplate" virtual="true" motionScriptsWhileDisabled="true">
+		<Size y="38"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="Selected" setAllPoints="true" hidden="true">
+					<Color r="1" g="0.82" b="0.2" a="0.10"/>
+				</Texture>
+				<Texture parentKey="SelectedBar" hidden="true">
+					<Size x="2"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" x="0" y="-3"/>
+						<Anchor point="BOTTOMLEFT" x="0" y="3"/>
+					</Anchors>
+					<Color r="1" g="0.82" b="0.2" a="1"/>
+				</Texture>
+				<Texture parentKey="Highlight" atlas="auctionhouse-ui-row-highlight" alpha="0.22" alphaMode="ADD" setAllPoints="true" hidden="true"/>
+			</Layer>
+			<Layer level="ARTWORK">
+				<FontString parentKey="Time" inherits="GameFontHighlightSmall" justifyH="LEFT" wordwrap="false">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="8" y="-4"/>
+						<Anchor point="RIGHT" x="-6" y="0"/>
+					</Anchors>
+					<Color r="0.55" g="0.55" b="0.55" a="1"/>
+				</FontString>
+				<FontString parentKey="Summary" inherits="GameFontHighlight" justifyH="LEFT" wordwrap="false">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="8" y="-20"/>
+						<Anchor point="RIGHT" x="-6" y="0"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+	</Button>
 </Ui>

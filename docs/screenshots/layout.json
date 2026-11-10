@@ -1,99 +1,137 @@
 {
-  "frame": {
-    "x": 24,
-    "y": 24,
-    "w": 860,
-    "h": 500
-  },
-  "widgets": [
+  "scenes": [
     {
-      "name": "search",
-      "role": "input",
-      "x": 94,
-      "y": 56,
-      "w": 146,
-      "h": 20
+      "frame": {
+        "x": 24,
+        "y": 24,
+        "w": 860,
+        "h": 500
+      },
+      "widgets": [
+        {
+          "name": "search",
+          "role": "input",
+          "x": 149,
+          "y": 56,
+          "w": 146,
+          "h": 20
+        },
+        {
+          "name": "count",
+          "role": "text",
+          "x": 299,
+          "y": 56,
+          "w": 40,
+          "h": 20
+        },
+        {
+          "name": "list",
+          "role": "list",
+          "x": 89,
+          "y": 84,
+          "w": 250,
+          "h": 398
+        },
+        {
+          "name": "rename",
+          "role": "button",
+          "x": 764,
+          "y": 60,
+          "w": 110,
+          "h": 22
+        },
+        {
+          "name": "editor",
+          "role": "edit",
+          "x": 351,
+          "y": 96,
+          "w": 523,
+          "h": 364
+        },
+        {
+          "name": "status",
+          "role": "status",
+          "x": 354,
+          "y": 460,
+          "w": 517,
+          "h": 22
+        },
+        {
+          "name": "new",
+          "role": "button",
+          "x": 89,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "delete",
+          "role": "button",
+          "x": 185,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "history",
+          "role": "button",
+          "x": 281,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "cancel",
+          "role": "button",
+          "x": 688,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "save",
+          "role": "button",
+          "x": 784,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "tabs",
+          "role": "tabs",
+          "edge": "left",
+          "x": 24,
+          "y": 84,
+          "w": 55.0,
+          "h": 112.0
+        }
+      ]
     },
     {
-      "name": "count",
-      "role": "text",
-      "x": 244,
-      "y": 56,
-      "w": 40,
-      "h": 20
-    },
-    {
-      "name": "list",
-      "role": "list",
-      "x": 34,
-      "y": 84,
-      "w": 250,
-      "h": 398
-    },
-    {
-      "name": "rename",
-      "role": "button",
-      "x": 764,
-      "y": 60,
-      "w": 110,
-      "h": 22
-    },
-    {
-      "name": "editor",
-      "role": "edit",
-      "x": 296,
-      "y": 96,
-      "w": 578,
-      "h": 364
-    },
-    {
-      "name": "status",
-      "role": "status",
-      "x": 299,
-      "y": 460,
-      "w": 572,
-      "h": 22
-    },
-    {
-      "name": "new",
-      "role": "button",
-      "x": 34,
-      "y": 492,
-      "w": 90,
-      "h": 24
-    },
-    {
-      "name": "delete",
-      "role": "button",
-      "x": 130,
-      "y": 492,
-      "w": 90,
-      "h": 24
-    },
-    {
-      "name": "cancel",
-      "role": "button",
-      "x": 688,
-      "y": 492,
-      "w": 90,
-      "h": 24
-    },
-    {
-      "name": "save",
-      "role": "button",
-      "x": 784,
-      "y": 492,
-      "w": 90,
-      "h": 24
-    },
-    {
-      "name": "tabs",
-      "role": "tabs",
-      "edge": "right",
-      "x": 882,
-      "y": 72,
-      "w": 55.0,
-      "h": 112.0
+      "frame": {
+        "x": 234,
+        "y": 64,
+        "w": 440,
+        "h": 420
+      },
+      "widgets": [
+        {
+          "name": "history-list",
+          "role": "list",
+          "x": 250,
+          "y": 120,
+          "w": 388,
+          "h": 316
+        },
+        {
+          "name": "history-restore",
+          "role": "button",
+          "x": 574,
+          "y": 452,
+          "w": 90,
+          "h": 24
+        }
+      ]
     }
   ]
 }

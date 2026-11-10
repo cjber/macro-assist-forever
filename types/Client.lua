@@ -15,5 +15,6 @@ C_InputInterfaceStyle = nil
 ---@field completions boolean
 ---@field liveValues boolean
 ---@field diagnostics boolean
+---@field history table<string, MacroAssistHistoryRecord>
 ---@type MacroAssistSaved
 MacroAssistForeverDB = nil

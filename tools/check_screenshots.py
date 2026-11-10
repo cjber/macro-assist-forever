@@ -14,6 +14,7 @@ SCENES = {
             "UI/MacroWindow.lua",
             "UI/MacroWindow.xml",
             "UI/Editor.lua",
+            "UI/History.lua",
             "UI/Context.lua",
             "Core/Explain.lua",
             "Core/Highlight.lua",
@@ -29,7 +30,7 @@ SCENES = {
             "media/squiggle.tga",
         ],
     )
-    for name in ("window.png", "completion.png")
+    for name in ("window.png", "completion.png", "history.png")
 }
 
 if __name__ == "__main__":
