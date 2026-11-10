@@ -54,4 +54,46 @@ equal(
 	"a repeated action keeps its condition on the alternative"
 )
 
+-- The "What it does" panel reads each click and modifier branch from the parse, then joins the commands that run
+-- either way into one "Also" sentence. The Arcane macro is the panel's reference case.
+local arcane = table.concat({
+	"#showtooltip",
+	"/cast [@mouseover,harm,nodead][] Arcane Shot",
+	"/cast [mod:shift] Concussive Shot",
+	"/petattack [@mouseover,harm,nodead][]",
+	"/startattack",
+}, "\n")
+local cases = ns.ExplainCases(arcane)
+equal(#cases, 3, "the Arcane macro has three cases")
+equal(cases[1].key, "Click", "the default branch is Click")
+equal(
+	cases[1].text,
+	"Arcane Shot your mouseover enemy, otherwise your target",
+	"the click branch names the mouseover enemy and the fallback target"
+)
+equal(cases[2].key, "Shift", "the modifier branch is Shift")
+equal(cases[2].text, "Concussive Shot your target", "the shift branch names the spell and the target")
+equal(cases[3].key, "Also", "the commands with no branch are Also")
+equal(
+	cases[3].text,
+	"Pet attacks your mouseover enemy, then you start attacking",
+	"the Also sentence joins the pet attack and startattack"
+)
+
+local helpCases = ns.ExplainCases("/cast [@mouseover,help,nodead][] Flash Heal")
+equal(helpCases[1].text, "Flash Heal your mouseover friend, otherwise your target", "help names a mouseover friend")
+
+local playerCases = ns.ExplainCases("/cast [@player] Heavy Runecloth Bandage")
+equal(playerCases[1].text, "Heavy Runecloth Bandage yourself", "the player unit reads as yourself")
+
+local controlCases = ns.ExplainCases("/cast [mod:ctrl] Frost Nova; [mod:alt] Blink")
+equal(#controlCases, 2, "the two modifier clauses make two cases")
+equal(controlCases[1].key, "Ctrl", "a ctrl clause is Ctrl")
+equal(controlCases[2].key, "Alt", "an alt clause is Alt")
+
+equal(#ns.ExplainCases("/cast [bogus] Fireball"), 1, "a clause with an unknown condition still names its action")
+equal(#ns.ExplainCases("/unknowncommand"), 0, "an unknown command adds no case")
+equal(#ns.ExplainCases("#showtooltip"), 0, "a directive adds no case")
+equal(#ns.ExplainCases(""), 0, "an empty body has no cases")
+
 print(("explain: %d checks"):format(checks))

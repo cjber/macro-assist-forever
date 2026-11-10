@@ -45,26 +45,45 @@ WINDOW_HEIGHT = number("WINDOW_HEIGHT")
 INSET_LEFT = number("INSET_LEFT")
 INSET_RIGHT = number("INSET_RIGHT")
 LIST_TOP = number("LIST_TOP")
+LIST_WIDTH = number("LIST_WIDTH")
 LIST_HEIGHT = number("LIST_HEIGHT")
 SIDE_TAB_EDGE = number("SIDE_TAB_EDGE")
 SIDE_TAB_TOP = number("SIDE_TAB_TOP")
 SIDE_TAB_GAP = number("SIDE_TAB_GAP")
+HEADER_TOP = number("HEADER_TOP")
 HEADER_HEIGHT = number("HEADER_HEIGHT")
 GAP = number("GAP")
+COLUMN_GAP = number("COLUMN_GAP")
+STATUS_HEIGHT = number("STATUS_HEIGHT")
+STATUS_INSET = number("STATUS_INSET")
 BOTTOM_OFFSET = number("BOTTOM_OFFSET")
 BUTTON_HEIGHT = number("BUTTON_HEIGHT")
 BUTTON_WIDTH = number("BUTTON_WIDTH")
 DELETE_WIDTH = number("DELETE_WIDTH")
-CHANGE_WIDTH = number("CHANGE_WIDTH")
+FOOTER_GAP = number("FOOTER_GAP")
+RENAME_WIDTH = number("RENAME_WIDTH")
+RENAME_HEIGHT = number("RENAME_HEIGHT")
+SEARCH_LEFT = number("SEARCH_LEFT")
+SEARCH_TOP = number("SEARCH_TOP")
+SEARCH_WIDTH = number("SEARCH_WIDTH")
+SEARCH_HEIGHT = number("SEARCH_HEIGHT")
+COUNT_WIDTH = number("COUNT_WIDTH")
+EXPLAIN_INSET = number("EXPLAIN_INSET")
+EXPLAIN_BOTTOM = number("EXPLAIN_BOTTOM")
+EXPLAIN_TITLE_TOP = number("EXPLAIN_TITLE_TOP")
+EXPLAIN_ROW_TOP = number("EXPLAIN_ROW_TOP")
+EXPLAIN_ROW_HEIGHT = number("EXPLAIN_ROW_HEIGHT")
+EXPLAIN_KEY_GAP = number("EXPLAIN_KEY_GAP")
 INSET_PADDING = number("INSET_PADDING")
 SCROLL_RIGHT_PADDING = number("SCROLL_RIGHT_PADDING")
 HEADER_ICON = number("HEADER_ICON")
 HEADER_ICON_FRAME = number("HEADER_ICON_FRAME")
 ROW_HEIGHT = number("ROW_HEIGHT")
-ROW_NAME_WIDTH = number("ROW_NAME_WIDTH")
-ROW_ICON_SIZE = 18
-ROW_ICON_INSET = 5
-ROW_ICON_GAP = 6
+ROW_ICON_SIZE = 26
+ROW_ICON_INSET = 6
+ROW_TEXT_X = 40
+ROW_NAME_TOP = 4
+ROW_SUMMARY_TOP = 21
 ROW_TEXT_RIGHT = 6
 SCROLL_GAP = number("SCROLL_GAP")
 SCROLL_WIDTH = number("SCROLL_WIDTH")
@@ -83,6 +102,11 @@ POPUP_INSET_LEFT = number("POPUP_INSET_LEFT", EDITOR)
 POPUP_INSET_TOP = number("POPUP_INSET_TOP", EDITOR)
 POPUP_INSET_RIGHT = number("POPUP_INSET_RIGHT", EDITOR)
 POPUP_INSET_BOTTOM = number("POPUP_INSET_BOTTOM", EDITOR)
+POPUP_LABEL_X = number("POPUP_LABEL_X", EDITOR)
+POPUP_LABEL_WIDTH = number("POPUP_LABEL_WIDTH", EDITOR)
+POPUP_HELP_X = number("POPUP_HELP_X", EDITOR)
+POPUP_TAG_WIDTH = number("POPUP_TAG_WIDTH", EDITOR)
+POPUP_TAG_RIGHT = number("POPUP_TAG_RIGHT", EDITOR)
 MAX_ACCOUNT = 120
 MAX_CHARACTER = 30
 
@@ -96,15 +120,19 @@ GREEN = wowmock.rgb("33ff99")
 RED = wowmock.rgb("ff4040")
 YELLOW = wowmock.rgb("ffd100")
 DIM = wowmock.rgb("9d9d9d")
+SURFACE = (0.035, 0.035, 0.04, 0.94)
+EDGE = (0.45, 0.45, 0.45, 1)
+RULE = (1, 1, 1, 0.08)
 
 
-def editor_badges():
-    """The kind badges the editor's completion popup draws, read from UI/Editor.lua."""
-    block = re.search(r"local BADGES = \{(.*?)\n\}", EDITOR, re.S)[1]
-    return dict(re.findall(r'(\w+) = "([^"]*)"', block))
+def fit(canvas, text, font, width):
+    """Trim to the width with an ellipsis, as a FontString with word wrap off does."""
+    if canvas.text_width(text, font) <= width:
+        return text
+    while text and canvas.text_width(text + "...", font) > width:
+        text = text[:-1]
+    return text.rstrip() + "..."
 
-
-BADGES = editor_badges()
 
 # The Hunter macros the list shows. The bodies are the source of both the summaries and the editor text.
 MACROS = [
@@ -239,6 +267,9 @@ local macros = {{
 }}
 for index, body in ipairs(macros) do
     print("SUMMARY\\t" .. index .. "\\t" .. clean(ns.Explain(body)))
+    for caseIndex, case in ipairs(ns.ExplainCases(body)) do
+        print("EXPLAIN\\t" .. index .. "\\t" .. caseIndex .. "\\t" .. clean(case.key) .. "\\t" .. clean(case.text))
+    end
     for lineIndex, line in ipairs(ns.Parser.Parse(body).lines) do
         print("MACRO_LINE\\t" .. index .. "\\t" .. lineIndex .. "\\t" .. clean(ns.Highlight.Line(line)))
     end
@@ -271,13 +302,15 @@ end
 local result = ns.Complete(completion, {COMPLETION_CARET}, ctx)
 print("COMPLETE\\t" .. result.from .. "\\t" .. result.to)
 for index, item in ipairs(result.items) do
-    print("ITEM\\t" .. index .. "\\t" .. item.kind .. "\\t" .. clean(item.label) .. "\\t" .. clean(item.detail))
+    print("ITEM\\t" .. index .. "\\t" .. item.kind .. "\\t" .. clean(item.label) .. "\\t" .. clean(item.detail)
+        .. "\\t" .. clean(item.live or ""))
 end
 print("LENGTH\\t" .. ns.Length(completion))
 """
     result = subprocess.run(["luajit", "-e", script], cwd=ROOT, capture_output=True, text=True, check=True)
     data = {
         "summary": {},
+        "explain": {},
         "macro_lines": {},
         "completion_summary": "",
         "lines": {},
@@ -290,6 +323,8 @@ print("LENGTH\\t" .. ns.Length(completion))
         parts = line.split("\t")
         if parts[0] == "SUMMARY":
             data["summary"][int(parts[1])] = parts[2]
+        elif parts[0] == "EXPLAIN":
+            data["explain"].setdefault(int(parts[1]), []).append({"key": parts[3], "text": parts[4]})
         elif parts[0] == "MACRO_LINE":
             data["macro_lines"].setdefault(int(parts[1]), {})[int(parts[2])] = parts[3]
         elif parts[0] == "COMPLETION_SUMMARY":
@@ -309,7 +344,14 @@ print("LENGTH\\t" .. ns.Length(completion))
         elif parts[0] == "COMPLETE":
             data["complete"] = (int(parts[1]), int(parts[2]))
         elif parts[0] == "ITEM":
-            data["items"].append({"kind": parts[2], "label": parts[3], "detail": parts[4]})
+            data["items"].append(
+                {
+                    "kind": parts[2],
+                    "label": parts[3],
+                    "detail": parts[4],
+                    "live": parts[5] if len(parts) > 5 else "",
+                }
+            )
         elif parts[0] == "LENGTH":
             data["length"] = int(parts[1])
     return data
@@ -379,89 +421,114 @@ def draw_icon(canvas, path, x, y, size):
 
 
 def draw_row(canvas, x, y, width, icon, name, summary, selected, height=ROW_HEIGHT):
+    """The selected row is a soft gold fill with a 2-unit bar on the left, never the auction house glow."""
     if selected:
-        canvas.draw(canvas.ui.atlas("auctionhouse-ui-row-select"), x, y, width, height, (1, 1, 1, 0.8), blend="ADD")
+        canvas.fill(x, y, width, height, (1, 0.82, 0.2, 0.10))
+        canvas.fill(x, y + 3, 2, height - 6, (1, 0.82, 0.2, 1))
     icon_y = y + (height - ROW_ICON_SIZE) / 2
     draw_icon(canvas, f"interface/icons/{icon}.blp", x + ROW_ICON_INSET, icon_y, ROW_ICON_SIZE)
-    text_x = x + ROW_ICON_INSET + ROW_ICON_SIZE + ROW_ICON_GAP
+    text_x = x + ROW_TEXT_X
+    text_width = x + width - ROW_TEXT_RIGHT - text_x
     canvas.text(
         text_x,
-        y,
+        y + ROW_NAME_TOP,
         name,
-        FONTS["GameFontHighlightSmall"],
-        width=ROW_NAME_WIDTH,
-        box_height=height,
+        FONTS["GameFontHighlight"],
+        GOLD if selected else WHITE,
+        width=text_width,
     )
-    summary_x = text_x + ROW_NAME_WIDTH + ROW_ICON_GAP
     canvas.text(
-        summary_x,
-        y,
-        summary,
+        text_x,
+        y + ROW_SUMMARY_TOP,
+        fit(canvas, summary, FONTS["GameFontHighlightSmall"], text_width),
         FONTS["GameFontHighlightSmall"],
-        MUTED,
-        width=x + width - ROW_TEXT_RIGHT - summary_x,
-        box_height=height,
+        (0.6, 0.6, 0.6),
     )
 
 
-def line_geometry():
-    """Absolute editor rectangles from the frame's constants."""
-    editor_x = X + INSET_LEFT
-    editor_y = Y - LIST_TOP + LIST_HEIGHT + GAP + HEADER_HEIGHT + GAP
-    editor_w = WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT
-    editor_h = WINDOW_HEIGHT - BOTTOM_OFFSET - (editor_y - Y)
-    gutter_x = editor_x + 4
-    gutter_y = editor_y + 6
-    text_x = gutter_x + GUTTER_WIDTH + 2
-    text_y = gutter_y
-    text_w = editor_x + editor_w - 6 - text_x
-    text_h = editor_y + editor_h - 26 - text_y
-    return editor_x, editor_y, editor_w, editor_h, gutter_x, gutter_y, text_x, text_y, text_w, text_h
+def explain_panel(canvas, x, y, w, cases):
+    """What the macro does, one row per click and modifier branch, read from the addon's own parse."""
+    font = FONTS["GameFontHighlightSmall"]
+    canvas.fill(x, y, w, 1, RULE)
+    canvas.text(x + 10, y + EXPLAIN_TITLE_TOP, "What it does", FONTS["GameFontNormalSmall"])
+    row_y = y + EXPLAIN_ROW_TOP
+    for case in cases:
+        key_width = canvas.text_width(case["key"], font) + 12
+        canvas.fill(x + 10, row_y, key_width, 16, (1, 1, 1, 0.08))
+        canvas.text(
+            x + 10,
+            row_y,
+            case["key"],
+            font,
+            justify="CENTER",
+            width=key_width,
+            box_height=16,
+        )
+        canvas.text(x + 10 + EXPLAIN_KEY_GAP, row_y, case["text"], font, (0.8, 0.8, 0.8), box_height=16)
+        row_y += EXPLAIN_ROW_HEIGHT
+
+
+def editor_geometry():
+    """The code surface rectangle, from the header's bottom and the window's footer."""
+    editor_x = X + INSET_LEFT + LIST_WIDTH + COLUMN_GAP
+    top = -HEADER_TOP + HEADER_HEIGHT + GAP
+    editor_y = Y + top
+    editor_w = WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT - LIST_WIDTH - COLUMN_GAP
+    editor_h = WINDOW_HEIGHT - BOTTOM_OFFSET - STATUS_HEIGHT - top
+    return editor_x, editor_y, editor_w, editor_h
+
+
+def status_geometry():
+    editor_x, editor_y, editor_w, editor_h = editor_geometry()
+    return editor_x + STATUS_INSET, editor_y + editor_h, editor_w - 2 * STATUS_INSET, STATUS_HEIGHT
 
 
 def draw_editor(canvas, body, current_line, caret_column, data):
-    editor_x, editor_y, editor_w, editor_h, gutter_x, gutter_y, text_x, text_y, text_w, _ = line_geometry()
+    editor_x, editor_y, editor_w, editor_h = editor_geometry()
+    canvas.fill(editor_x, editor_y, editor_w, editor_h, SURFACE)
+    canvas.fill(editor_x, editor_y, editor_w, 1, EDGE)
+    canvas.fill(editor_x, editor_y + editor_h - 1, editor_w, 1, EDGE)
+    canvas.fill(editor_x, editor_y, 1, editor_h, EDGE)
+    canvas.fill(editor_x + editor_w - 1, editor_y, 1, editor_h, EDGE)
+    canvas.fill(editor_x + GUTTER_WIDTH, editor_y + 6, 1, editor_h - 12, RULE)
     lines = body.split("\n")
-    # The editor measures this run in game; measure the same run here rather than assuming the font's advance.
+    text_x = editor_x + GUTTER_WIDTH + 10
+    text_y = editor_y + 10
+    text_w = editor_x + editor_w - 6 - text_x
     advance = canvas.text_width("M" * 32, MONO) / 32
-    # The current-line highlight sits under the text, as the editor's BACKGROUND texture does.
-    canvas.fill(
-        text_x + TEXT_INSET_LEFT,
-        text_y + TEXT_INSET_TOP + current_line * LINE_HEIGHT,
-        text_w - TEXT_INSET_LEFT - TEXT_INSET_RIGHT,
-        LINE_HEIGHT,
-        (1, 0.82, 0.2, 0.10),
-    )
+    # The current-line band sits under the text, inside the tooltip backdrop's own border.
+    canvas.fill(editor_x + 4, text_y + current_line * LINE_HEIGHT, editor_w - 8, LINE_HEIGHT, (1, 0.82, 0.2, 0.08))
     for index, line in enumerate(lines):
-        top = text_y + TEXT_INSET_TOP + index * LINE_HEIGHT
+        top = text_y + index * LINE_HEIGHT
         number_font = FONTS["GameFontHighlightSmall"]
         canvas.text(
-            gutter_x,
-            gutter_y + index * LINE_HEIGHT,
+            editor_x + 4,
+            top,
             str(index + 1),
             number_font,
-            MUTED,
+            WHITE if index == current_line else (0.4, 0.4, 0.4),
             justify="RIGHT",
-            width=GUTTER_WIDTH - 4,
+            width=GUTTER_WIDTH - 10,
             box_height=LINE_HEIGHT,
         )
         highlighted = data["lines"].get(index + 1, line)
-        canvas.text(text_x + TEXT_INSET_LEFT, top, highlighted, MONO, box_height=LINE_HEIGHT)
+        canvas.text(text_x, top, highlighted, MONO, box_height=LINE_HEIGHT)
     # The caret is our own white line above the coloured overlay, placed at the measured column, one line tall.
     if caret_column is not None:
         prefix = lines[current_line][:caret_column]
         canvas.fill(
-            text_x + TEXT_INSET_LEFT + canvas.text_width(prefix, MONO),
-            text_y + TEXT_INSET_TOP + current_line * LINE_HEIGHT,
+            text_x + canvas.text_width(prefix, MONO),
+            text_y + current_line * LINE_HEIGHT,
             1,
             LINE_HEIGHT,
             WHITE,
         )
-    # One squiggle per diagnostic row, at the native 16 by 4 tile, tinted for its severity.
+    # One squiggle per diagnostic row, at the native 16 by 4 tile, just under the glyphs rather than at the bottom of
+    # the spaced line, where the extra SetSpacing would make it read as the next line's.
     for diagnostic in data["diagnostics"]:
         line_index, start, end = locate(body, diagnostic["from"], diagnostic["to"])
-        y = text_y + TEXT_INSET_TOP + line_index * LINE_HEIGHT + LINE_HEIGHT - 1
-        x = text_x + TEXT_INSET_LEFT + start * advance
+        y = text_y + line_index * LINE_HEIGHT + FONT_SIZE + 1
+        x = text_x + start * advance
         width = max(advance, (end - start) * advance)
         colour = (1, 0.25, 0.25, 0.95) if diagnostic["severity"] == "error" else (1, 0.82, 0.2, 0.95)
         offset = 0
@@ -485,14 +552,25 @@ def locate(body, first, last):
 
 
 def draw_completion(canvas, completion, caret_column, text_x, text_y, text_w):
+    """The completion list, kept inside the code surface: mono label, muted trimmed help and a live value tag."""
     lines, caret = completion[:2]
     prefix = lines[caret][:caret_column]
-    x = text_x + TEXT_INSET_LEFT + canvas.text_width(prefix, MONO)
-    y = text_y + TEXT_INSET_TOP + caret * LINE_HEIGHT + LINE_HEIGHT
-    width = max(280, min(text_w, 560))
+    editor_x, editor_y, editor_w, editor_h = editor_geometry()
+    width = min(max(280, min(text_w, 560)), editor_w - 8)
     rows = min(POPUP_ROWS, len(completion[2]))
     height = rows * POPUP_ROW_HEIGHT + POPUP_INSET_TOP + POPUP_INSET_BOTTOM
-    canvas.draw(canvas.ui.atlas("common-dropdown-bg"), x, y, width, height, (1, 1, 1, 0.94))
+    x = text_x + canvas.text_width(prefix, MONO)
+    x = min(max(editor_x + 4, x), editor_x + editor_w - width - 4)
+    y = text_y + caret * LINE_HEIGHT + LINE_HEIGHT + 2
+    if y + height > editor_y + editor_h - 4:
+        y = text_y + caret * LINE_HEIGHT - height - 2
+    y = max(editor_y + 4, min(y, editor_y + editor_h - height - 4))
+    # A flat dark panel with a 1-unit white edge, from the client's white primitive rather than a tooltip file.
+    canvas.fill(x, y, width, height, (0.07, 0.07, 0.08, 0.98))
+    canvas.fill(x, y, width, 1, (1, 1, 1, 0.18))
+    canvas.fill(x, y + height - 1, width, 1, (1, 1, 1, 0.18))
+    canvas.fill(x, y, 1, height, (1, 1, 1, 0.18))
+    canvas.fill(x + width - 1, y, 1, height, (1, 1, 1, 0.18))
     items = completion[2][:rows]
     for index, item in enumerate(items):
         row_y = y + POPUP_INSET_TOP + index * POPUP_ROW_HEIGHT
@@ -500,45 +578,108 @@ def draw_completion(canvas, completion, caret_column, text_x, text_y, text_w):
         row_width = width - POPUP_INSET_LEFT - POPUP_INSET_RIGHT
         selected = completion[3] + index + 1 == completion[4]
         if selected:
-            canvas.fill(row_x, row_y, row_width, POPUP_ROW_HEIGHT, (1, 0.82, 0.2, 0.18))
-        # Every row has a badge slot, whether or not its neighbour uses the same badge.
+            canvas.fill(row_x, row_y, row_width, POPUP_ROW_HEIGHT, (1, 0.82, 0.2, 0.14))
+        canvas.text(x + POPUP_LABEL_X, row_y, item["label"], MONO, box_height=POPUP_ROW_HEIGHT)
+        live = item.get("live", "")
+        detail = item["detail"]
+        if live:
+            suffix = "  " + live
+            if detail.endswith(suffix):
+                detail = detail[: -len(suffix)]
+        help_width = width - POPUP_HELP_X - POPUP_TAG_RIGHT - POPUP_TAG_WIDTH - 6
         canvas.text(
-            row_x + 2,
+            x + POPUP_HELP_X,
             row_y,
-            BADGES.get(item["kind"], "?"),
+            fit(canvas, detail, FONTS["GameFontHighlightSmall"], help_width),
             FONTS["GameFontHighlightSmall"],
-            justify="CENTER",
-            width=14,
+            (0.6, 0.6, 0.6),
             box_height=POPUP_ROW_HEIGHT,
         )
-        label_font = (
-            MONO
-            if item["kind"] in {"secure", "command", "chat", "emote", "directive", "condition", "unit", "value"}
-            else FONTS["GameFontHighlight"]
-        )
-        canvas.text(row_x + 20, row_y, item["label"], label_font, box_height=POPUP_ROW_HEIGHT)
-        canvas.text(
-            row_x + row_width - 4 - 146,
-            row_y,
-            item["detail"],
-            FONTS["GameFontHighlightSmall"],
-            justify="RIGHT",
-            width=146,
-            box_height=POPUP_ROW_HEIGHT,
-        )
+        if live:
+            tag_x = x + width - POPUP_TAG_RIGHT - POPUP_TAG_WIDTH
+            tag_y = row_y + (POPUP_ROW_HEIGHT - (POPUP_ROW_HEIGHT - 8)) / 2
+            tag_colour = (0.2, 0.8, 0.4, 0.25) if live == "yes" else (1, 1, 1, 0.07)
+            text_colour = GREEN if live == "yes" else MUTED
+            canvas.fill(tag_x, tag_y, POPUP_TAG_WIDTH, POPUP_ROW_HEIGHT - 8, tag_colour)
+            canvas.text(
+                tag_x,
+                tag_y,
+                live,
+                FONTS["GameFontHighlightSmall"],
+                text_colour,
+                justify="CENTER",
+                width=POPUP_TAG_WIDTH,
+                box_height=POPUP_ROW_HEIGHT - 8,
+            )
+
+
+def status_bar(canvas, x, y, w, length, now, data):
+    """The strip under the code: problems left, the live result, then the character meter on the right."""
+    font = FONTS["GameFontHighlightSmall"]
+    label = f"{min(length, 255)}/255"
+    label_w = canvas.text_width(label, font)
+    if data["diagnostics"]:
+        # A problem takes the whole strip before the count: a red tint, the full first message, then Tab to fix.
+        first = data["diagnostics"][0]
+        canvas.fill(x, y, w, STATUS_HEIGHT, (0.25, 0.02, 0.02, 0.45))
+        canvas.fill(x, y, w, 1, (1, 0.25, 0.25, 0.5))
+        count = len(data["diagnostics"])
+        count_text = ("%d problem" if count == 1 else "%d problems") % count
+        cursor = x + 10
+        canvas.text(cursor, y, count_text, font, RED, box_height=STATUS_HEIGHT)
+        cursor += canvas.text_width(count_text, font) + 6
+        available = x + w - 10 - label_w - 8 - cursor
+        message = fit(canvas, first["message"], font, available)
+        canvas.text(cursor, y, message, font, WHITE, box_height=STATUS_HEIGHT)
+        cursor += canvas.text_width(message, font)
+        if first["fix"]:
+            fix = "Tab to fix"
+            if cursor + 6 + canvas.text_width(fix, font) <= x + w - 10 - label_w - 8:
+                canvas.text(cursor + 6, y, fix, font, MUTED, box_height=STATUS_HEIGHT)
+        canvas.text(x + w - 10 - label_w, y, label, font, MUTED, box_height=STATUS_HEIGHT)
+        return
+    canvas.fill(x, y, w, STATUS_HEIGHT, (0, 0, 0, 0.35))
+    canvas.fill(x, y, w, 1, RULE)
+    canvas.draw(canvas.ui.atlas("common-icon-checkmark"), x + 8, y + 5, 12, 12)
+    canvas.text(x + 24, y, "No problems", font, GREEN, box_height=STATUS_HEIGHT)
+    canvas.text(x + 112, y, "Now", font, MUTED, box_height=STATUS_HEIGHT)
+    now_x = x + 112 + canvas.text_width("Now", font) + 6
+    meter_w = 90
+    mx = x + w - 10 - label_w - 8 - meter_w
+    canvas.text(now_x, y, fit(canvas, now, font, mx - 8 - now_x), font, box_height=STATUS_HEIGHT)
+    canvas.fill(mx, y + 9, meter_w, 4, (1, 1, 1, 0.12))
+    canvas.fill(mx, y + 9, meter_w * min(length, 255) / 255, 4, (1, 0.82, 0.2, 0.9))
+    canvas.text(x + w - 10 - label_w, y, label, font, MUTED, box_height=STATUS_HEIGHT)
 
 
 def window(ui, *, body, current_line, caret_column, data, completion=None):
     canvas = ui.canvas(WINDOW_WIDTH + 2 * X, WINDOW_HEIGHT + 2 * Y)
     background(canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT)
-    # The list inset, its rows and its scroll bar.
+    # The search box sits beside the portrait; the list runs from below it down to the footer.
+    wowmock.search_box(
+        canvas,
+        X + INSET_LEFT + SEARCH_LEFT,
+        Y - SEARCH_TOP,
+        SEARCH_WIDTH,
+        SEARCH_HEIGHT,
+        instructions="Search macros",
+    )
+    canvas.text(
+        X + INSET_LEFT + LIST_WIDTH - COUNT_WIDTH,
+        Y - SEARCH_TOP,
+        f"{len(MACROS)}/{MAX_CHARACTER}",
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        justify="RIGHT",
+        width=COUNT_WIDTH,
+        box_height=SEARCH_HEIGHT,
+    )
     list_x = X + INSET_LEFT
     list_y = Y - LIST_TOP
-    list_w = WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT
-    inset(canvas, list_x, list_y, list_w, LIST_HEIGHT)
+    inset(canvas, list_x, list_y, LIST_WIDTH, LIST_HEIGHT)
     scroll_x = list_x + INSET_PADDING
     scroll_y = list_y + INSET_PADDING
-    scroll_w = list_w - INSET_PADDING - (SCROLL_WIDTH + SCROLL_GAP + SCROLL_RIGHT_PADDING)
+    scroll_w = LIST_WIDTH - INSET_PADDING - (SCROLL_WIDTH + SCROLL_GAP + SCROLL_RIGHT_PADDING)
     scroll_h = LIST_HEIGHT - INSET_PADDING * 2
     for index, (icon, name, _) in enumerate(MACROS):
         row_y = scroll_y + index * ROW_HEIGHT
@@ -561,15 +702,17 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         scroll_x + scroll_w + SCROLL_GAP,
         scroll_y,
         scroll_h,
-        visible=min(1.0, 7 / len(MACROS)),
+        visible=0.8,
     )
-    # The selected macro's header, below the list.
-    header_y = list_y + LIST_HEIGHT + GAP
+    # The selected macro's header on one line, beside the list.
+    header_x = X + INSET_LEFT + LIST_WIDTH + COLUMN_GAP
+    header_y = Y - HEADER_TOP
+    header_w = WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT - LIST_WIDTH - COLUMN_GAP
     name, icon = MACROS[SELECTED][1], MACROS[SELECTED][0]
     canvas.draw(
         ui.texture("interface/common/whiteiconframe.blp"),
-        X + INSET_LEFT + 10,
-        header_y + 8,
+        header_x,
+        header_y,
         HEADER_ICON_FRAME,
         HEADER_ICON_FRAME,
         GOLD,
@@ -577,47 +720,52 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
     draw_icon(
         canvas,
         f"interface/icons/{icon}.blp",
-        X + INSET_LEFT + 10 + (HEADER_ICON_FRAME - HEADER_ICON) // 2,
-        header_y + 8 + (HEADER_ICON_FRAME - HEADER_ICON) // 2,
+        header_x + (HEADER_ICON_FRAME - HEADER_ICON) // 2,
+        header_y + (HEADER_ICON_FRAME - HEADER_ICON) // 2,
         HEADER_ICON,
     )
-    canvas.text(X + INSET_LEFT + 10 + HEADER_ICON_FRAME + 8, header_y + 7, name, FONTS["GameFontNormalLarge"])
+    canvas.text(header_x + HEADER_ICON_FRAME + 8, header_y + 1, name, FONTS["GameFontNormalLarge"])
     canvas.text(
-        X + INSET_LEFT + 10 + HEADER_ICON_FRAME + 8,
-        header_y + 7 + 16 + 3,
-        f"Character macro · {len(MACROS)} of {MAX_CHARACTER}",
+        header_x + HEADER_ICON_FRAME + 8,
+        header_y + 20,
+        "Character macro",
         FONTS["GameFontHighlightSmall"],
         MUTED,
     )
     button(
         canvas,
-        X + WINDOW_WIDTH + INSET_RIGHT - 10 - CHANGE_WIDTH,
-        header_y + (HEADER_HEIGHT - BUTTON_HEIGHT) // 2,
-        CHANGE_WIDTH,
-        "Change Name/Icon",
+        header_x + header_w - RENAME_WIDTH,
+        header_y + (HEADER_HEIGHT - RENAME_HEIGHT) // 2,
+        RENAME_WIDTH,
+        "Rename",
+        h=RENAME_HEIGHT,
     )
-    # The editor inset and its contents.
-    editor_x, editor_y, editor_w, editor_h, *_ = line_geometry()
-    inset(canvas, editor_x, editor_y, editor_w, editor_h)
+    # The code surface, its gutter, the "What it does" panel at its bottom, and the status strip under it.
     text_x, text_y, text_w, _ = draw_editor(canvas, body, current_line, caret_column, data)
-    problem = "|cff33ff99No problems|r"
-    if data["diagnostics"]:
-        first = data["diagnostics"][0]
-        colour = "|cffff4040" if first["severity"] == "error" else "|cffffd100"
-        phrase = "%d problem · %s" if len(data["diagnostics"]) == 1 else "%d problems · %s"
-        problem = colour + (phrase % (len(data["diagnostics"]), first["message"])) + "|r"
-    status = (
-        problem
-        + "|cff9d9d9d  ·  |rNow: Arcane Shot on Defias Pillager"
-        + f"|cff9d9d9d  ·  |r|cffffd100{data['length']}/255|r"
-    )
-    canvas.text(editor_x + 10, editor_y + editor_h - 15, status, FONTS["GameFontHighlightSmall"], box_height=10)
+    editor_x, editor_y, editor_w, editor_h = editor_geometry()
+    cases = data.get("explain", [])
+    if cases and completion is None:
+        panel_h = EXPLAIN_ROW_TOP + len(cases) * EXPLAIN_ROW_HEIGHT + EXPLAIN_TITLE_TOP
+        panel_x = editor_x + EXPLAIN_INSET
+        panel_y = editor_y + editor_h - EXPLAIN_BOTTOM - panel_h
+        panel_w = editor_w - 2 * EXPLAIN_INSET
+        canvas.fill(panel_x, panel_y, panel_w, panel_h, SURFACE)
+        explain_panel(canvas, panel_x, panel_y, panel_w, cases)
+    status_x, status_y, status_w, _ = status_geometry()
+    status_bar(canvas, status_x, status_y, status_w, data["length"], "Arcane Shot on Defias Pillager", data)
     # The window's own buttons, with the edited macro treated as dirty so Save and Cancel are live.
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
-    button(canvas, X + 10, button_y, DELETE_WIDTH, "Delete")
-    button(canvas, X + 10 + DELETE_WIDTH + GAP, button_y, BUTTON_WIDTH, "New")
-    button(canvas, X + WINDOW_WIDTH - 10 - BUTTON_WIDTH, button_y, BUTTON_WIDTH, "Save")
-    button(canvas, X + WINDOW_WIDTH - 10 - BUTTON_WIDTH * 2 - GAP, button_y, BUTTON_WIDTH, "Cancel")
+    button(canvas, X + INSET_LEFT, button_y, BUTTON_WIDTH, "New", h=BUTTON_HEIGHT)
+    button(canvas, X + INSET_LEFT + BUTTON_WIDTH + FOOTER_GAP, button_y, DELETE_WIDTH, "Delete", h=BUTTON_HEIGHT)
+    button(canvas, X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH, button_y, BUTTON_WIDTH, "Save", h=BUTTON_HEIGHT)
+    button(
+        canvas,
+        X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH * 2 - FOOTER_GAP,
+        button_y,
+        BUTTON_WIDTH,
+        "Cancel",
+        h=BUTTON_HEIGHT,
+    )
     # The metal frame, portrait, title and close button sit over the contents; the side tabs join its right rail.
     wowmock.portrait_frame_art(
         canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT, "interface/icons/inv_misc_note_01.blp", "Macros"
@@ -640,40 +788,67 @@ def side_tab_extent(ui):
 
 
 def layout(ui):
-    editor_x, editor_y, editor_w, editor_h, *_ = line_geometry()
+    editor_x, editor_y, editor_w, editor_h = editor_geometry()
+    status_x, status_y, status_w, status_h = status_geometry()
+    header_x = X + INSET_LEFT + LIST_WIDTH + COLUMN_GAP
+    header_y = Y - HEADER_TOP
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
     rail_width, rail_height = side_tab_extent(ui)
     widgets = [
+        {
+            "name": "search",
+            "role": "input",
+            "x": X + INSET_LEFT + SEARCH_LEFT,
+            "y": Y - SEARCH_TOP,
+            "w": SEARCH_WIDTH,
+            "h": SEARCH_HEIGHT,
+        },
+        {
+            "name": "count",
+            "role": "text",
+            "x": X + INSET_LEFT + LIST_WIDTH - COUNT_WIDTH,
+            "y": Y - SEARCH_TOP,
+            "w": COUNT_WIDTH,
+            "h": SEARCH_HEIGHT,
+        },
         {
             "name": "list",
             "role": "list",
             "x": X + INSET_LEFT,
             "y": Y - LIST_TOP,
-            "w": WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT,
+            "w": LIST_WIDTH,
             "h": LIST_HEIGHT,
         },
         {
-            "name": "change",
+            "name": "rename",
             "role": "button",
-            "x": X + WINDOW_WIDTH + INSET_RIGHT - 10 - CHANGE_WIDTH,
-            "y": Y - LIST_TOP + LIST_HEIGHT + GAP + (HEADER_HEIGHT - BUTTON_HEIGHT) // 2,
-            "w": CHANGE_WIDTH,
-            "h": BUTTON_HEIGHT,
+            "x": header_x + WINDOW_WIDTH + INSET_RIGHT - INSET_LEFT - LIST_WIDTH - COLUMN_GAP - RENAME_WIDTH,
+            "y": header_y + (HEADER_HEIGHT - RENAME_HEIGHT) // 2,
+            "w": RENAME_WIDTH,
+            "h": RENAME_HEIGHT,
         },
         {"name": "editor", "role": "edit", "x": editor_x, "y": editor_y, "w": editor_w, "h": editor_h},
-        {"name": "delete", "role": "button", "x": X + 10, "y": button_y, "w": DELETE_WIDTH, "h": BUTTON_HEIGHT},
+        {"name": "status", "role": "status", "x": status_x, "y": status_y, "w": status_w, "h": status_h},
         {
             "name": "new",
             "role": "button",
-            "x": X + 10 + DELETE_WIDTH + GAP,
+            "x": X + INSET_LEFT,
             "y": button_y,
             "w": BUTTON_WIDTH,
             "h": BUTTON_HEIGHT,
         },
         {
+            "name": "delete",
+            "role": "button",
+            "x": X + INSET_LEFT + BUTTON_WIDTH + FOOTER_GAP,
+            "y": button_y,
+            "w": DELETE_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
             "name": "cancel",
             "role": "button",
-            "x": X + WINDOW_WIDTH - 10 - BUTTON_WIDTH * 2 - GAP,
+            "x": X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH * 2 - FOOTER_GAP,
             "y": button_y,
             "w": BUTTON_WIDTH,
             "h": BUTTON_HEIGHT,
@@ -681,7 +856,7 @@ def layout(ui):
         {
             "name": "save",
             "role": "button",
-            "x": X + WINDOW_WIDTH - 10 - BUTTON_WIDTH,
+            "x": X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH,
             "y": button_y,
             "w": BUTTON_WIDTH,
             "h": BUTTON_HEIGHT,
@@ -716,6 +891,7 @@ def main():
     window_data = {
         "lines": data["macro_lines"].get(SELECTED + 1, {}),
         "summary": data["summary"],
+        "explain": data["explain"].get(SELECTED + 1, []),
         "diagnostics": [],
         "length": len(MACROS[SELECTED][2]),
     }

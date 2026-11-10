@@ -5,6 +5,11 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **The macro window is split into a searchable list and a full-height editor.** Each row shows the macro icon, name
+  and summary on two lines, the selected row has a soft gold fill and left bar, and the count sits beside the search
+  box. A "What it does" panel at the bottom of the code surface reads each click and modifier branch from the parse.
+  The editor has a line-number gutter, a status bar that turns red with the full problem message and Tab to fix, and
+  completions kept inside the surface with live value tags.
 - **The caret, line highlight, wavy underlines and completions follow the real text and the editor's own word wrap.**
   Clicking to the right of a line keeps the cursor on that line, and the wavy underlines no longer block clicks; put
   the cursor on one to read it and press Tab to apply its fix.

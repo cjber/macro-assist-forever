@@ -6,6 +6,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIN_GAP = 8
+# The approved split layout puts the footer buttons 6 units apart, so these two pairs use their own gap.
+INTENTIONAL_GAPS = {
+    frozenset(("new", "delete")): 6,
+    frozenset(("cancel", "save")): 6,
+}
 
 
 def main():
@@ -31,10 +36,11 @@ def main():
         for second in interactive[index + 1 :]:
             dx = max(second["x"] - (first["x"] + first["w"]), first["x"] - (second["x"] + second["w"]), 0)
             dy = max(second["y"] - (first["y"] + first["h"]), first["y"] - (second["y"] + second["h"]), 0)
+            gap = INTENTIONAL_GAPS.get(frozenset((first["name"], second["name"])), MIN_GAP)
             if dx == 0 and dy == 0:
                 errors.append(f"{first['name']} overlaps {second['name']}")
-            elif dx < MIN_GAP and dy < MIN_GAP:
-                errors.append(f"{first['name']} and {second['name']} are less than {MIN_GAP} units apart")
+            elif dx < gap and dy < gap:
+                errors.append(f"{first['name']} and {second['name']} are less than {gap} units apart")
     for error in errors:
         print(f"visual_audit: {error}")
     print(f"visual_audit: {len(widgets)} widgets, {len(errors)} findings")

@@ -1,19 +1,20 @@
-Macro Assist Forever gives WoW: Forever a macro window of its own. Blizzard's macro panel still opens; this addon puts every macro in one list and opens the selected one in a mono-font editor below.
+Macro Assist Forever gives WoW: Forever a macro window of its own. Blizzard's macro panel still opens; this addon puts every macro in one searchable list and opens the selected one in a mono-font editor beside it.
 
 ## Features
 
-- **Every macro in one list.** General and character tabs show each macro with its icon, name and a one-line summary of what it does.
-- **A real editor.** The macro text uses JetBrains Mono, with line numbers, a highlight on the current line, and colour for commands, conditions, units and spells.
-- **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through the suggestions, Tab inserts one, and a tooltip explains the highlighted entry.
+- **Every macro in one searchable list.** General and character tabs show each macro with its icon, name and a summary of what it does, the selected row has a soft gold fill and left bar, and the count sits beside the search box, which filters by name or summary as you type.
+- **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
+- **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing it can explain.
+- **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through the suggestions, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
 - **Live conditions and spells.** Condition values come from the game right now, and the spellbook supplies your spell names and the ranks you know.
 - **Problems with a fix.** A wavy underline marks text the game cannot run. Hover it for the explanation, then press Tab or click it to apply the suggested fix.
-- **A status line that says what fires now.** It shows the first problem, the action the first matching line would take with your current target, and the character count out of 255.
-- **Name and icon, New, Save, Cancel and Delete.** Delete asks for a second click. Name and icon use the game's own picker, as does a new macro.
+- **A status bar that says what fires now.** It shows the first problem in full with Tab to fix, the action the first matching line would take with your current target, and the character count out of 255 with a meter.
+- **Rename, New, Save, Cancel and Delete.** Delete asks for a second click. Rename and New use the game's own name and icon picker.
 - **Safe to open in combat.** Every button that writes to your macros is turned off in combat, with a line in the status row saying why. Edits are saved when the window closes out of combat.
 
-![The macro list above the mono editor](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/window.png)
+![The macro list beside the mono editor](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/window.png)
 
-Every macro in one list, with the selected macro open in the editor below.
+The searchable macro list on the left, with the selected macro open in the editor on the right and the "What it does" panel below the code.
 
 ![Conditions offered with live values beside a problem in the macro](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/completion.png)
 
@@ -23,7 +24,7 @@ Conditions are offered with their live value, and a wavy underline marks a probl
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. The General tab holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it. New creates a macro after you choose its name and icon. Change Name/Icon renames the selected macro. Cancel puts the editor back to the saved text, and Save writes it immediately. Closing the window also saves your text when you are out of combat.
+Click a macro to edit it, or type in the search box to narrow the list by name or summary. New creates a macro after you choose its name and icon. Rename changes the selected macro's name and icon. Cancel puts the editor back to the saved text, and Save writes it immediately. Closing the window also saves your text when you are out of combat.
 
 <!-- forever-family:start -->
 

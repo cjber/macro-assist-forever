@@ -1,6 +1,6 @@
 -- The macro window (WFA-35): the player's way in through /macro (ShowMacroFrame, which the slash handler calls),
 -- /macroassist and the addon compartment, a cold /macroassist that never loads Blizzard_MacroUI, the list and both
--- tabs, editing and saving, completion and a fix, New, Change Name/Icon and Delete, closing by our X and the editor's
+-- tabs, editing and saving, completion and a fix, New, Rename and Delete, closing by our X and the editor's
 -- Escape, reopening, combat with the window open, the gamepad interface on and off, and an old saved file.
 -- luacheck: read globals scenario ADDON
 
@@ -125,12 +125,10 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	local window = openNamed(sim)
 	equal(#rows(window), 2, "the General tab lists only account macros")
 	equal(selectedRow(window).Name:GetText(), "General One", "the first account macro is selected")
-	equal(window.header.meta:GetText(), "General macro · 2 of 120", "the header counts account macros")
-	equal(
-		window.editor.status:GetText():find("Now: Arcane Shot", 1, true) ~= nil,
-		true,
-		"the status says what fires now"
-	)
+	check(selectedRow(window).SelectedBar:IsShown(), "the selected row has no gold bar")
+	equal(window.header.meta:GetText(), "General macro", "the header names the tab")
+	equal(window.count:GetText(), "2/120", "the count sits beside the search box")
+	equal(window.editor.now:GetText():find("Arcane Shot", 1, true) ~= nil, true, "the status says what fires now")
 
 	characterTab(sim, window)
 	check(window.Tabs[2].SelectedTexture:IsShown(), "the character tab is not checked")
@@ -140,18 +138,22 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(#rows(window), 5, "the character tab lists only character macros")
 	equal(selectedRow(window).Name:GetText(), "Arcane", "the first character macro is selected")
 	equal(window.header.name:GetText(), "Arcane", "the header shows the selected name")
-	equal(window.header.meta:GetText(), "Character macro · 5 of 30", "the header counts character macros")
+	equal(window.header.meta:GetText(), "Character macro", "the header names the tab")
+	equal(window.count:GetText(), "5/30", "the count follows the character tab")
 	equal(textOf(window), "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot", "the editor holds the body")
+	check(window.explainPanel:IsShown(), "the What it does panel is hidden")
+	equal(window.explainPanel.rows[1].key:GetText(), "Click", "the panel does not start with the click case")
 	equal(
-		window.editor.status:GetText():find("Now: Arcane Shot on Defias Pillager", 1, true),
+		window.explainPanel.rows[1].text:GetText(),
+		"Arcane Shot your mouseover enemy, otherwise your target",
+		"the panel does not read the click branch"
+	)
+	equal(
+		window.editor.now:GetText():find("on Defias Pillager", 1, true),
 		nil,
 		"the live line names no unit when the matching clause has none"
 	)
-	equal(
-		window.editor.status:GetText():find("Now: Arcane Shot", 1, true) ~= nil,
-		true,
-		"the live line still says what fires"
-	)
+	equal(window.editor.now:GetText():find("Arcane Shot", 1, true) ~= nil, true, "the live line still says what fires")
 	equal(arcane.Summary:GetText(), "Arcane Shot, mouseover first", "the row summarises the macro")
 
 	local trap = rowNamed(window, "Trap")
@@ -164,6 +166,50 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 		drag(trap)
 	end)
 	equal(sim.pickedMacro, trap.macroIndex, "dragging a row picks up its macro")
+end)
+
+scenario("the search box filters the list by name and summary", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	equal(window.searchBox.Instructions:GetText(), "Search macros", "the search box has no instructions")
+	local width, height = window:GetWidth(), window:GetHeight()
+
+	sim:input(function()
+		window.searchBox:SetText("fd")
+	end)
+	sim:advance(0.05)
+	equal(#rows(window), 1, "a name search did not narrow the list")
+	equal(rows(window)[1].Name:GetText(), "FD", "the name search kept the wrong macro")
+
+	sim:input(function()
+		window.searchBox:SetText("MOUSEOVER")
+	end)
+	sim:advance(0.05)
+	equal(#rows(window), 2, "a summary search was not case-insensitive")
+	local found = {}
+	for _, row in ipairs(rows(window)) do
+		found[row.Name:GetText()] = true
+	end
+	check(found["Arcane"] and found["Mark"], "the summary search missed a macro")
+
+	sim:input(function()
+		window.searchBox:SetText("no such macro")
+	end)
+	sim:advance(0.05)
+	equal(#rows(window), 0, "a search with no match still listed rows")
+
+	sim:input(function()
+		window.searchBox:SetText("")
+	end)
+	sim:advance(0.05)
+	equal(#rows(window), 5, "clearing the search did not restore the list")
+
+	sim:click(window.Tabs[1])
+	sim:advance(0.1)
+	equal(window:GetWidth(), width, "switching tabs changed the window width")
+	equal(window:GetHeight(), height, "switching tabs changed the window height")
+	sim:click(window.CloseButton)
+	sim:advance(0.2)
 end)
 
 scenario("the caret is one measured line, follows the cursor and shows only while focused", function(sim)
@@ -255,7 +301,7 @@ scenario("completion, a problem and its fix", function(sim)
 	check(not squiggle:IsMouseEnabled(), "the squiggle still takes the mouse from the text")
 	check(sim.G.GameTooltip:IsShown(), "moving the cursor into the problem shows no explanation")
 	check(
-		editor.status:GetText():find("Spell not in your spellbook", 1, true) ~= nil,
+		editor.problem:GetText():find("Spell not in your spellbook", 1, true) ~= nil,
 		"the status does not name the problem"
 	)
 
@@ -298,7 +344,7 @@ scenario("completion, a problem and its fix", function(sim)
 	setText(sim, window, original, false)
 end)
 
-scenario("Save, Cancel, New, Change Name/Icon and Delete", function(sim)
+scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)
 
@@ -333,12 +379,12 @@ scenario("Save, Cancel, New, Change Name/Icon and Delete", function(sim)
 	check(window.header.name:GetText() == "Fresh", "New did not select the created macro")
 	check(not window.iconSelector:IsShown(), "the name and icon frame stayed open")
 
-	sim:click(window.header.change)
+	sim:click(window.header.rename)
 	sim:advance(0.2)
 	window.iconSelector.BorderBox.IconSelectorEditBox:SetText("Renamed")
 	sim:click(window.iconSelector.BorderBox.OkayButton)
 	sim:advance(0.2)
-	check(window.header.name:GetText() == "Renamed", "Change Name/Icon did not rename the macro")
+	check(window.header.name:GetText() == "Renamed", "Rename did not rename the macro")
 	check(select(1, sim.G.GetMacroInfo(121 + before)) == "Renamed", "the rename was not written")
 
 	sim:click(window.deleteButton)
@@ -395,8 +441,8 @@ scenario("in combat the window stays open and refuses every write", function(sim
 	check(not window.saveButton:IsEnabled(), "Save is enabled in combat")
 	check(not window.newButton:IsEnabled(), "New is enabled in combat")
 	check(not window.deleteButton:IsEnabled(), "Delete is enabled in combat")
-	check(not window.header.change:IsEnabled(), "Change Name/Icon is enabled in combat")
-	check(editor.status:GetText():find("Saving is disabled in combat", 1, true) ~= nil, "the status does not say why")
+	check(not window.header.rename:IsEnabled(), "Rename is enabled in combat")
+	check(editor.problem:GetText():find("Saving is disabled in combat", 1, true) ~= nil, "the status does not say why")
 	sim:click(window.saveButton)
 	sim:click(window.deleteButton)
 	sim:advance(0.1)
