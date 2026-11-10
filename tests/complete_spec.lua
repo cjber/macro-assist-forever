@@ -66,6 +66,15 @@ yes(cast ~= nil, "/cast is offered")
 equal(cast.kind, "secure", "the item carries the command kind")
 equal(cast.label, "/cast", "the label is the text as typed")
 
+-- A command with no description shows a readable category, never the raw key from Data/Commands.lua.
+local all = ns.Complete("/", 2, ctx)
+for _, item in ipairs(all.items) do
+	yes(item.detail ~= nil and item.detail ~= "", item.label .. " has a detail")
+	equal(item.detail:match("^[A-Z][A-Z0-9_]*$"), nil, item.label .. " does not show a raw category key")
+end
+equal(find(all.items, "/ach").detail, "Achievement", "the achievement category reads as a word")
+equal(find(all.items, "/say").detail, "Chat", "the chat category reads as a word")
+
 -- A prefix match comes before a substring match, and the order is stable.
 result = ns.Complete("/spell", 7, ctx)
 equal(result.items[1].insert, "/spell", "the prefix match is first")

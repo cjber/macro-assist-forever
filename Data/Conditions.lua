@@ -135,7 +135,7 @@ ns.Conditions = {
 	{
 		name = "stance",
 		aliases = { "stance", "form" },
-		param = "required",
+		param = "optional",
 		form = "stance:0-5",
 		values = { "0", "1", "2", "3", "4", "5" },
 		no = true,
@@ -211,7 +211,7 @@ ns.Conditions = {
 	{
 		name = "pet",
 		aliases = { "pet" },
-		param = "required",
+		param = "optional",
 		form = "pet:<name or family>",
 		no = true,
 		description = L["The given pet is out."],

@@ -127,9 +127,14 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(window.header.meta:GetText(), "Character macro · 5 of 30", "the header counts character macros")
 	equal(textOf(window), "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot", "the editor holds the body")
 	equal(
-		window.editor.status:GetText():find("Now: Arcane Shot on Defias Pillager", 1, true) ~= nil,
+		window.editor.status:GetText():find("Now: Arcane Shot on Defias Pillager", 1, true),
+		nil,
+		"the live line names no unit when the matching clause has none"
+	)
+	equal(
+		window.editor.status:GetText():find("Now: Arcane Shot", 1, true) ~= nil,
 		true,
-		"the live line includes the target"
+		"the live line still says what fires"
 	)
 	equal(arcane.Summary:GetText(), "Arcane Shot, mouseover first", "the row summarises the macro")
 
@@ -197,6 +202,29 @@ scenario("completion, a problem and its fix", function(sim)
 	check(fixTab(editor.edit), "Tab did not consume the fix")
 	check(textOf(window) == "/stopcasting", "the fix did not replace the command")
 	sim:leave()
+
+	-- A spell inside a spellbook flyout is a spell the player knows; a slot the flyout marks unknown is not.
+	setText(sim, window, "/cast Call Pet", true)
+	equal(#editor.diagnostics, 0, "a spell inside a flyout was reported as not in the spellbook")
+
+	setText(sim, window, "/cast Call", true)
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	local offered = false
+	for _, item in ipairs(editor.completion.items) do
+		if item.label == "Call Pet" then
+			offered = true
+			break
+		end
+	end
+	check(offered, "completion did not offer a spell from a flyout")
+
+	setText(sim, window, "/cast Feed Pet", true)
+	check(
+		#editor.diagnostics == 1 and editor.diagnostics[1].code == "unknown-spell",
+		"a slot the flyout marks unknown was treated as known"
+	)
 	setText(sim, window, original, false)
 end)
 

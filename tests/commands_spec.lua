@@ -87,6 +87,17 @@ for _, command in ipairs(ns.Commands) do
 	end
 end
 
+-- Every category a command uses has a readable label, never the raw key.
+for _, command in ipairs(ns.Commands) do
+	local label = ns.CommandCategoryLabels[command.category]
+	yes(label ~= nil, "a label exists for " .. command.category)
+	if label then
+		equal(label:match("^[A-Z][A-Z0-9_]*$"), nil, "the label for " .. command.category .. " is not a raw key")
+	end
+end
+equal(ns.CommandCategoryLabels.CHAT, "Chat", "the CHAT category reads as Chat")
+equal(ns.CommandCategoryLabels.TARGETING, "Targeting", "the TARGETING category reads as Targeting")
+
 -- Every condition is well formed, unverified, and has a usable description.
 for _, condition in ipairs(ns.Conditions) do
 	checks = checks + 1
@@ -111,7 +122,8 @@ equal(ns.ConditionAliases.modifier.name, "mod", "modifier is an alias of mod")
 equal(ns.ConditionAliases.worn.name, "equipped", "worn is an alias of equipped")
 equal(ns.ConditionAliases.form.name, "stance", "form is an alias of stance")
 equal(ns.ConditionAliases.nodead, nil, "nodead is not a condition of its own; the no prefix makes it")
-equal(ns.ConditionAliases.pet.param, "required", "the pet condition needs a name or family")
+equal(ns.ConditionAliases.pet.param, "optional", "pet works with no name or family")
+equal(ns.ConditionAliases.stance.param, "optional", "stance and form work with no value")
 
 yes(ns.UnitSet.player, "player is a unit")
 yes(ns.UnitSet.mouseover, "mouseover is a unit")

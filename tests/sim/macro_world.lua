@@ -1,5 +1,5 @@
 -- The client's macro store and spellbook, which the simulator does not boot itself: the globals Blizzard_MacroUI and
--- this addon call, and a small spellbook with rank subtexts so completion and checks have real data.
+-- this addon call, and a small spellbook with rank subtexts and a flyout so completion and checks have real data.
 
 local M = {}
 
@@ -117,6 +117,18 @@ function M.install(sim)
 		{ name = "Serpent Sting", id = 1978 },
 		{ name = "Concussive Shot", id = 5116 },
 	}
+	-- A flyout last in the book, as Pet Utilities sits on the Beast Mastery tab. Call Pet is known; Feed Pet is not,
+	-- so only the first belongs in the addon's spell list.
+	local flyouts = {
+		{
+			id = 42,
+			name = "Pet Utilities",
+			slots = {
+				{ name = "Call Pet", id = 883, known = true },
+				{ name = "Feed Pet", id = 6991, known = false },
+			},
+		},
+	}
 	local subtext = {}
 	for _, spell in ipairs(spells) do
 		if spell.rank then
@@ -130,7 +142,12 @@ function M.install(sim)
 	end
 	sim.impl["C_SpellBook.GetSpellBookSkillLineInfo"] = function(index)
 		if index == 1 then
-			return { name = "General", itemIndexOffset = 0, numSpellBookItems = #spells, iconID = 134400 }
+			return {
+				name = "General",
+				itemIndexOffset = 0,
+				numSpellBookItems = #spells + #flyouts,
+				iconID = 134400,
+			}
 		end
 	end
 	sim.impl["C_SpellBook.GetSpellBookItemInfo"] = function(slot)
@@ -145,16 +162,48 @@ function M.install(sim)
 				iconID = 134400,
 			}
 		end
+		local flyout = flyouts[slot - #spells]
+		if flyout then
+			return {
+				name = flyout.name,
+				subName = "",
+				actionID = flyout.id,
+				itemType = G.Enum.SpellBookItemType.Flyout,
+				iconID = 134400,
+			}
+		end
 	end
 	sim.impl["C_SpellBook.GetSpellBookItemType"] = function(slot)
 		local spell = spells[slot]
 		if spell then
 			return "SPELL", spell.id
 		end
+		local flyout = flyouts[slot - #spells]
+		if flyout then
+			return "FLYOUT", flyout.id
+		end
 	end
 	sim.impl["C_SpellBook.GetSpellBookItemTexture"] = function(slot)
-		if spells[slot] then
+		if spells[slot] or flyouts[slot - #spells] then
 			return 134400
+		end
+	end
+	G.GetFlyoutInfo = function(flyoutID)
+		for _, flyout in ipairs(flyouts) do
+			if flyout.id == flyoutID then
+				return flyout.name, "", #flyout.slots, true, 134400
+			end
+		end
+	end
+	G.GetFlyoutSlotInfo = function(flyoutID, index)
+		for _, flyout in ipairs(flyouts) do
+			if flyout.id == flyoutID then
+				local slot = flyout.slots[index]
+				if slot then
+					return slot.id, nil, slot.known, slot.name
+				end
+				return nil
+			end
 		end
 	end
 	sim.impl["C_Spell.GetSpellSubtext"] = function(spellID)

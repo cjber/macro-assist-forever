@@ -97,13 +97,18 @@ lacks("/cast [harm] Flash Heal", ctx, "never-on-forever", "a normal condition ge
 lacks("/cast [known:Flash Heal] Flash Heal", ctx, "never-on-forever", "known can be true on Forever")
 
 -- A required parameter is missing; an optional one is not; an empty colon is missing either way.
-text = "/cast [stance] Flash Heal"
+text = "/cast [equipped] Flash Heal"
 diagnostic = has(text, ctx, "condition-missing-parameter")
-equal(diagnostic.from, text:find("stance", 1, true), "the missing parameter points at the condition")
-equal(diagnostic.to, text:find("stance", 1, true) + 5, "the missing parameter covers the name")
+equal(diagnostic.from, text:find("equipped", 1, true), "the missing parameter points at the condition")
+equal(diagnostic.to, text:find("equipped", 1, true) + 7, "the missing parameter covers the name")
 has("/cast [mod:] Flash Heal", ctx, "condition-missing-parameter", "an empty parameter is missing")
 lacks("/cast [stance:1] Flash Heal", ctx, "condition-missing-parameter", "a present parameter is not missing")
 lacks("/cast [mod] Flash Heal", ctx, "condition-missing-parameter", "an optional parameter may be absent")
+
+-- The bare forms the client accepts with no parameter.
+for _, bare in ipairs({ "[pet]", "[nopet]", "[form]", "[group]", "[mod]", "[channeling]" }) do
+	lacks("/cast " .. bare .. " Flash Heal", ctx, "condition-missing-parameter", bare .. " needs no parameter")
+end
 
 -- A condition with no parameter rejects one.
 text = "/cast [help:1] Flash Heal"

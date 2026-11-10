@@ -5,6 +5,20 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-10
+
+- **Spells behind a spellbook flyout now count as yours.** Call Pet, Aspect and the other spells inside a flyout
+  button appear in completion and are no longer flagged as "Spell not in your spellbook".
+- **Typing a condition no longer writes "Unknown macro option" to chat.** A half-typed or unknown condition stays in
+  the checker until it is complete, and the live value and "Now" line only ask the client about conditions it knows.
+- **`[pet]` and `[nopet]` work with no name**, as do the bare stance, form, group, modifier and channeling forms. Only
+  conditions that really need a value are flagged.
+- **Hovering a wavy underline shows its message again**, and moving the caret into a problem shows it too.
+- **The status row is accurate.** It says "Nothing fires now" when a macro has commands but none matches, names a unit
+  only when the macro targets one explicitly, and drops the `!` toggle guard from the shown spell.
+- **Command completions show a readable category instead of a raw key** such as `CHAT_COMMAND`, in both the detail
+  column and the tooltip.
+
 ## [0.1.0] - 2026-11-09
 
 <!-- discord-image: docs/screenshots/window.png -->

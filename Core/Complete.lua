@@ -325,7 +325,7 @@ local function Complete(text, cursor, ctx)
 		to = WordEnd(text, cursor)
 		typed = commandWord
 		for _, command in ipairs(ns.Commands) do
-			local detail = command.description or command.category
+			local detail = command.description or ns.CommandCategoryLabels[command.category]
 			for _, alias in ipairs(command.aliases) do
 				Add(items, seen, from, to, typed, "/" .. alias, "/" .. alias, command.kind, detail)
 			end
