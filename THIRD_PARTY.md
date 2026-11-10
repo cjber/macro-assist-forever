@@ -10,6 +10,9 @@
 | Forever Core | `cjber/forever-core`, a required addon the stores install alongside this one (`## Dependencies: ForeverCore`). Its development tooling is copied here and pinned by `tools/check_core_shared.py` and `.github/workflows/core-shared-drift.yml`. | GPL-3.0-or-later | No, a required addon |
 | forever_sim | `cjber/forever-core`, `.agents/skills/wow-forever-addon/tooling/forever_sim`, vendored as `tools/forever_sim/` and pinned by `tools/forever_sim/MANIFEST.json` at revision `d4f9420728efbe1f224134c341dd1a78d0bf3a13`. | GPL-3.0-or-later | No, test-only |
 | WoW: Forever client data | Read from the installed client at runtime; nothing is copied. | Blizzard Entertainment's game data | No separate data files |
+| Ko-fi's Support me on Ko-fi button | Its PNG render, `docs/kofi-button.png`, is the support button in the store description; rendered in forever-core from Ko-fi's `ko-fi.com/img/githubbutton_sm.svg`. No pin. | Ko-fi's brand asset, used as Ko-fi provides it for linking to a Ko-fi page | No |
+| `docs/github-sponsors-button.png` | The GitHub Sponsors button in the store description; drawn in forever-core to match the Ko-fi button, with the heart from GitHub's [Octicons](https://github.com/primer/octicons) and the Adwaita Sans font. No pin. | Octicons: MIT; Adwaita Sans: SIL OFL 1.1 | No |
+| `docs/discord-button.png` | The Discord button on the store page; drawn in forever-core with Discord's logo from [Simple Icons](https://simpleicons.org) and the Adwaita Sans font | Simple Icons: CC0; Adwaita Sans: SIL OFL 1.1; the logo is Discord's, used to link to a Discord server | No |
 
 ## Ideas and contributors
 

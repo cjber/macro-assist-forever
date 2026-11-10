@@ -26,6 +26,7 @@ fi
 
 python3 tools/forever_tools/sync.py check
 python3 tools/check_family.py
+python3 tools/check_store_page.py
 python3 tools/typecheck_coverage.py
 python3 tools/check_client_load.py
 python3 tools/check_menu_scroll.py
