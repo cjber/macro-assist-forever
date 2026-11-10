@@ -11,6 +11,7 @@ SCENES = {
         ROOT,
         [
             "tools/screenshots.py",
+            "MacroAssistForever.toc",
             "UI/MacroWindow.lua",
             "UI/MacroWindow.xml",
             "UI/Editor.lua",

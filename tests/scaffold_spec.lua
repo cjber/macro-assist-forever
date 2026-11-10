@@ -45,9 +45,17 @@ _G.ForeverCore = {
 
 local ns = {}
 local addonName = "MacroAssistForever"
+local metadata = {}
+
+-- C_AddOns.GetAddOnMetadata as the client answers it: a TOC field of the named addon.
+_G.C_AddOns = {
+	GetAddOnMetadata = function(name, key)
+		return name == addonName and metadata[key] or nil
+	end,
+}
 
 local toc = assert(io.open("MacroAssistForever.toc", "r"))
-local loaded, metadata = {}, {}
+local loaded = {}
 for line in toc:lines() do
 	local key, value = line:match("^##%s*([^:]+):%s*(.-)%s*$")
 	if key then
@@ -76,6 +84,8 @@ for _, shared in ipairs({ "Core/SafeCall.lua", "Core/Log.lua", "UI/Report.lua", 
 end
 equal(type(ns.L), "table", "the locale table is published")
 equal(ns.ReportTitle, "Macro Assist Forever report", "the report title is set")
+equal(ns.Icon, metadata["X-Forever-Icon"], "the identity icon is the TOC's X-Forever-Icon")
+assert(ns.Icon and ns.Icon ~= "", "the TOC declares no X-Forever-Icon")
 
 assert(registered, "the addon registered its ForeverCore services")
 equal(registered.name, addonName, "under its own folder name")
