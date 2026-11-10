@@ -82,11 +82,25 @@ local function textOf(window)
 	return window.editor.edit:GetText()
 end
 
+-- The client reports the EditBox's caret rect after a cursor or text change; the simulator stores the cursor but
+-- does not measure one, so the scenario reports the rect from the editor's own measured rows.
+local function reportCursor(editor, position)
+	editor.edit:SetCursorPosition(position)
+	local index = editor.RowAtCursor(editor.rows, position)
+	local row = index and editor.rows[index]
+	if not row then
+		return
+	end
+	local move = editor.edit:GetScript("OnCursorChanged")
+	move(editor.edit, editor.RowOffset(row, position, editor.textMeasure), -row.y, 1, editor.lineHeight)
+end
+
 local function setText(sim, window, text, edited)
 	sim:input(function()
-		window.editor.edit:SetText(text)
-		window.editor.edit:SetCursorPosition(#text)
-		window.editor:RefreshAll()
+		local editor = window.editor
+		editor.edit:SetText(text)
+		editor:RefreshAll()
+		reportCursor(editor, #text)
 	end)
 	if edited then
 		window.editor.onEdited()
@@ -165,17 +179,14 @@ scenario("the caret is one measured line, follows the cursor and shows only whil
 	check(editor.caret:IsShown(), "the editor shows no caret while it has focus")
 	equal(editor.caret:GetWidth(), 1, "the caret is not one unit wide")
 	equal(editor.caret:GetHeight(), editor.lineHeight, "the caret is not one line tall")
-	local move = editor.edit:GetScript("OnCursorChanged")
 	sim:input(function()
-		editor.edit:SetCursorPosition(3)
-		move(editor.edit)
+		reportCursor(editor, 3)
 	end)
 	sim:advance(0.05)
 	check(editor.caret:IsShown(), "moving the cursor hid the caret")
 	local before = editor.caret:GetLeft()
 	sim:input(function()
-		editor.edit:SetCursorPosition(#editor:GetText())
-		move(editor.edit)
+		reportCursor(editor, #editor:GetText())
 	end)
 	sim:advance(0.05)
 	check(editor.caret:GetLeft() > before, "the caret did not follow the cursor")
@@ -185,6 +196,31 @@ scenario("the caret is one measured line, follows the cursor and shows only whil
 	check(not editor.caret:IsShown(), "the caret stayed after the editor lost focus")
 	sim:click(window.CloseButton)
 	sim:advance(0.2)
+end)
+
+scenario("a click right of a line's end keeps the cursor on that line", function(sim)
+	local window = openNamed(sim)
+	local editor = window.editor
+	setText(sim, window, "/cast A\n/cast B\n/cast C", false)
+	sim:input(function()
+		-- The EditBox's own click handling put the cursor at the start of line 3; the pointer is on line 2, to
+		-- the right of its last character. Releasing must put the cursor at the end of line 2, before its newline.
+		local top = editor.edit:GetTop()
+		local left = editor.edit:GetLeft()
+		local scale = editor.edit:GetEffectiveScale()
+		local row = editor.rows[2]
+		sim.mouseX = (left + 500) * scale
+		sim.mouseY = (top - row.y - editor.lineHeight / 2) * scale
+		local down = editor.edit:GetScript("OnMouseDown")
+		down(editor.edit, "LeftButton")
+		local up = editor.edit:GetScript("OnMouseUp")
+		up(editor.edit, "LeftButton")
+	end)
+	local cursor
+	sim:input(function()
+		cursor = editor.edit:GetCursorPosition()
+	end)
+	equal(cursor, 15, "the click moved the cursor past line 2's newline")
 end)
 
 scenario("completion, a problem and its fix", function(sim)
@@ -216,9 +252,8 @@ scenario("completion, a problem and its fix", function(sim)
 		end
 	end
 	check(squiggle, "no squiggle was drawn")
-	sim:hover(squiggle)
-	check(sim.G.GameTooltip:IsShown(), "hovering the squiggle shows no explanation")
-	sim:leave()
+	check(not squiggle:IsMouseEnabled(), "the squiggle still takes the mouse from the text")
+	check(sim.G.GameTooltip:IsShown(), "moving the cursor into the problem shows no explanation")
 	check(
 		editor.status:GetText():find("Spell not in your spellbook", 1, true) ~= nil,
 		"the status does not name the problem"
@@ -234,11 +269,9 @@ scenario("completion, a problem and its fix", function(sim)
 		end
 	end
 	check(fixSquiggle, "the mistyped command has no squiggle")
-	sim:hover(fixSquiggle)
 	local fixTab = editor.edit:GetScript("OnTabPressed")
 	check(fixTab(editor.edit), "Tab did not consume the fix")
 	check(textOf(window) == "/stopcasting", "the fix did not replace the command")
-	sim:leave()
 
 	-- A spell inside a spellbook flyout is a spell the player knows; a slot the flyout marks unknown is not.
 	setText(sim, window, "/cast Call Pet", true)
