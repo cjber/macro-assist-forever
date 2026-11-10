@@ -9,9 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   deadcode:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -20,6 +25,7 @@ jobs:
 
   check:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     env:
       FOREVER_CORE: forever-core
     steps:
@@ -47,7 +53,7 @@ jobs:
             "luajit=$LUAJIT" "libluajit-5.1-2=$LUAJIT" "libluajit-5.1-common=$LUAJIT" "lua-check=$LUACHECK"
       - run: luacheck .
       - run: python3 -m tools.forever_tools.assets
-      - run: for spec in tests/*_spec.lua; do luajit "$spec" || exit 1; done
+      - run: python3 -m tools.forever_tools.specs
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: tools/.cache/forever_sim
@@ -66,6 +72,7 @@ jobs:
 
   python:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -77,6 +84,7 @@ jobs:
 
   typecheck:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     env:
       FOREVER_CORE: forever-core
     steps:
@@ -112,6 +120,7 @@ jobs:
 
   project-rules:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -122,6 +131,7 @@ jobs:
 
   workflows:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -133,6 +143,7 @@ jobs:
   # Secret scan over the whole history, exactly as the released suite does it.
   secrets:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -156,6 +167,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          # Every commit and tag for the version, without old file contents.
+          filter: blob:none
           persist-credentials: false
       - name: Read the ForeverCore ref
         id: forever-core-ref
