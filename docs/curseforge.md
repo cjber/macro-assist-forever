@@ -1,6 +1,8 @@
 Macro Assist Forever gives WoW: Forever a macro window of its own. Blizzard's macro panel still opens; this addon puts every macro in one searchable list and opens the selected one in a mono-font editor beside it.
 
-Free, with nothing locked behind it. If it saves you time, you can [sponsor me on GitHub](https://github.com/sponsors/cjber), which takes no fees, or [buy me a coffee on Ko-fi](https://ko-fi.com/cjber).
+Free, with nothing locked behind it. If it saves you time, you can [sponsor me on GitHub](https://github.com/sponsors/cjber), which takes no fees, or [buy me a coffee on Ko-fi](https://ko-fi.com/cjber). For help and each day's release notes, [join me on Discord](https://discord.gg/FpHugGxRJY).
+
+[![Join me on Discord](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/discord-button.png)](https://discord.gg/FpHugGxRJY) [![Sponsor me on GitHub](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/github-sponsors-button.png)](https://github.com/sponsors/cjber) [![Support me on Ko-fi](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/kofi-button.png)](https://ko-fi.com/cjber)
 
 ## Features
 
@@ -59,5 +61,3 @@ For help, ideas and each day's release notes, join [cjber's Workshop on Discord]
 Source is on [GitHub](https://github.com/cjber/macro-assist-forever). GPL-3.0-or-later. World of Warcraft is a trademark of Blizzard Entertainment, Inc. This addon is not affiliated with or endorsed by Blizzard Entertainment.
 
 Built with AI assistance.
-
-[![Sponsor me on GitHub](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/github-sponsors-button.png)](https://github.com/sponsors/cjber) [![Support me on Ko-fi](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/kofi-button.png)](https://ko-fi.com/cjber)
