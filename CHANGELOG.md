@@ -5,6 +5,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-11
+
 - **The icon picker lives in the macro window.** Clicking the header icon, or Rename, swaps the code surface for one
   scrolling grid: the macro's Automatic icon and what it casts, your spellbook, and every client icon with a count.
   Search by icon file name or by your own spells and items, filter by class, spell school or item slot, and hover an
