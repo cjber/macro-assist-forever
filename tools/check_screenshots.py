@@ -64,7 +64,9 @@ def scene():
     )
 
 
-SCENES = {name: scene for name in (
+SCENES = {
+    name: scene
+    for name in (
         "window.png",
         "completion.png",
         "recipes.png",
@@ -72,7 +74,8 @@ SCENES = {name: scene for name in (
         "import.png",
         "shorten.png",
         "picker.png",
-    )}
+    )
+}
 
 if __name__ == "__main__":
     raise SystemExit(main(ROOT / "docs" / "screenshots", SCENES))
