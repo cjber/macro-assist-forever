@@ -97,6 +97,54 @@ equal(
 )
 equal(change("same", "same"), "No change", "an unchanged snapshot says so")
 
+-- The line diff behind the preview: one row per line of the older body, then one row for each line the newer body
+-- adds. A row says whether the line is the same, changed or added or removed, its 1-based line number, and the text.
+local diff = ns.History.LineDiff("one\ntwo\nthree", "one\nTWO\nthree")
+equal(#diff, 3, "an equal-length diff has one row per line")
+equal(diff[1].kind, "same", "an unchanged line reads as the same")
+equal(diff[1].line, 1, "the first row is line 1")
+equal(diff[1].old, "one", "a same row keeps the old text")
+equal(diff[1].new, "one", "a same row keeps the new text")
+equal(diff[2].kind, "changed", "a changed line reads as changed")
+equal(diff[2].line, 2, "a changed row names its line")
+equal(diff[2].old, "two", "a changed row keeps the old text")
+equal(diff[2].new, "TWO", "a changed row keeps the new text")
+equal(diff[3].kind, "same", "the line after a change can be the same")
+
+-- A shorter or longer newer body adds rows after the lines the two bodies share.
+diff = ns.History.LineDiff("one\ntwo", "one\ntwo\nthree\nfour")
+equal(#diff, 4, "the added lines each get a row")
+equal(diff[3].kind, "added", "a line only the newer body has is added")
+equal(diff[3].line, 3, "the first added line is line 3")
+equal(diff[3].old, nil, "an added row has no old text")
+equal(diff[3].new, "three", "an added row keeps the new text")
+equal(diff[4].line, 4, "the second added line is line 4")
+diff = ns.History.LineDiff("one\ntwo\nthree\nfour", "one\ntwo")
+equal(#diff, 4, "the removed lines each get a row")
+equal(diff[3].kind, "removed", "a line only the older body has is removed")
+equal(diff[3].line, 3, "the first removed line is line 3")
+equal(diff[3].old, "three", "a removed row keeps the old text")
+equal(diff[3].new, nil, "a removed row has no new text")
+equal(diff[4].kind, "removed", "the last removed line is removed")
+
+-- A moved line is a plain change at its new position, not a match elsewhere.
+diff = ns.History.LineDiff("one\ntwo", "two\none")
+equal(diff[1].kind, "changed", "a moved line is a change, not a match")
+equal(diff[1].old, "one", "the moved row keeps the old first line")
+equal(diff[1].new, "two", "the moved row keeps the new first line")
+
+-- A body with no lines is empty, and a missing body is the same as an empty one.
+diff = ns.History.LineDiff(nil, "one\ntwo")
+equal(#diff, 2, "a nil body contributes no rows")
+equal(diff[1].kind, "added", "every line of a new body is added")
+equal(diff[1].line, 1, "the first added row is line 1")
+diff = ns.History.LineDiff("one\ntwo", nil)
+equal(#diff, 2, "a nil newer body removes every line")
+equal(diff[1].kind, "removed", "every line of a removed body is removed")
+equal(diff[2].line, 2, "the last removed row is line 2")
+equal(#ns.History.LineDiff("", ""), 0, "two empty bodies have no rows")
+equal(ns.History.LineDiff("one\ntwo", "one\ntwo")[2].kind, "same", "an unchanged body is all the same")
+
 -- Restore edits a live macro through the given write, with the snapshot's name, icon and body.
 local calls = {}
 local snapshot = ns.History.Entries(db, "Arcane Shot")[1]
