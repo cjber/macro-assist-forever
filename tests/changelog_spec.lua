@@ -24,8 +24,9 @@ local function Releases(text)
 end
 
 -- The newest release with a `- **...**` lead, skipping a maintenance entry above it.
+-- The packager ships text files with CRLF line endings, so the packaged CHANGELOG.md is read the same way.
 local function Headline(text)
-	for _, release in ipairs(Releases("\n" .. text)) do
+	for _, release in ipairs(Releases("\n" .. (text:gsub("\r\n", "\n")))) do
 		local headline = release.body:match("%-%s*%*%*(.-)%*%*")
 		if headline then
 			return release.version, headline
