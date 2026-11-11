@@ -11,7 +11,7 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parent.parent
 POLICY = package.Policy(
-    addons=("MacroAssistForever", "ForeverCore"),
+    addons=("MacroAssistForever",),
     specs=tuple(sorted(path.relative_to(ROOT).as_posix() for path in ROOT.glob("tests/*_spec.lua"))),
 )
 
