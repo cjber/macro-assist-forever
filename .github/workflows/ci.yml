@@ -81,6 +81,7 @@ jobs:
       - run: uvx ruff@0.16.8 check tools
       - run: uvx ruff@0.16.8 format --check tools
       - run: python3 tools/gen_commands.py --check
+      - run: python3 tools/gen_icon_names.py --check
 
   typecheck:
     runs-on: ubuntu-24.04

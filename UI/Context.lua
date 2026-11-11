@@ -87,7 +87,14 @@ ctx.evaluate = Evaluate
 ---@param spellName string
 ---@param spellID any
 ---@param subName any?
-local function AddSpell(spells, byName, spellName, spellID, subName)
+---@param icon any?
+local function AddSpell(spells, byName, spellName, spellID, subName, icon)
+	if icon == nil and spellID and type(C_Spell) == "table" and type(C_Spell.GetSpellTexture) == "function" then
+		local textureOk, texture = pcall(C_Spell.GetSpellTexture, spellID)
+		if textureOk then
+			icon = texture
+		end
+	end
 	local rank
 	if spellID and type(C_Spell) == "table" and type(C_Spell.GetSpellSubtext) == "function" then
 		local subOk, sub = pcall(C_Spell.GetSpellSubtext, spellID)
@@ -100,6 +107,7 @@ local function AddSpell(spells, byName, spellName, spellID, subName)
 	local key = spellName:lower()
 	local existing = byName[key]
 	if existing then
+		existing.icon = existing.icon or icon
 		if number then
 			existing.ranks = existing.ranks or {}
 			local found = false
@@ -117,6 +125,7 @@ local function AddSpell(spells, byName, spellName, spellID, subName)
 		local entry = {
 			name = spellName,
 			ranks = number and { number } or nil,
+			icon = icon,
 			learned = true,
 		}
 		byName[key] = entry

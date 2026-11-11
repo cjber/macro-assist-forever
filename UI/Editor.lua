@@ -1100,11 +1100,14 @@ function Editor:StopCaret()
 	self.caret:Hide()
 end
 
+-- The live result before the status strip names a unit: the action the macro would run now, plus whether it has any
+-- command line. The picker reads this raw form so its Automatic line can name the spell #showtooltip resolves to.
 ---@return string? now
 ---@return boolean hasCommands
-function Editor:NowText()
+---@return string? unit
+function Editor:NowRaw()
 	if type(SecureCmdOptionParse) ~= "function" or not self.parsed then
-		return nil, false
+		return nil, false, nil
 	end
 	local function evaluate(text)
 		local ok, result = pcall(SecureCmdOptionParse, text)
@@ -1113,7 +1116,13 @@ function Editor:NowText()
 		end
 		return nil
 	end
-	local result, hasCommands, unit = ns.Now(self.parsed, evaluate)
+	return ns.Now(self.parsed, evaluate)
+end
+
+---@return string? now
+---@return boolean hasCommands
+function Editor:NowText()
+	local result, hasCommands, unit = self:NowRaw()
 	if result and unit and unit ~= "" and unit ~= "player" and unit ~= "none" then
 		local name = ns.Readable(UnitName(unit))
 		if name then

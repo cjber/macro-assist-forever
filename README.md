@@ -18,7 +18,8 @@
 - **Live conditions and spells.** Condition values come from the game right now, and the spellbook supplies your spell names and the ranks you know.
 - **Problems with a fix.** A wavy underline marks text the game cannot run. Hover it for the explanation, then press Tab or click it to apply the suggested fix.
 - **A status bar that says what fires now.** It shows the first problem in full with Tab to fix, the action the first matching line would take with your current target, and the character count out of 255 with a meter.
-- **Rename, New, Save, Cancel and Delete.** Delete asks for a second click. Rename and New use the game's own name and icon picker. Drag a row or the header icon to an action bar to place the macro there.
+- **An icon picker in the window.** Click the header icon or Rename and the code gives way to one grid: the macro's Automatic icon and the icons of what it casts first, then your spellbook, then every icon in the game. Search by icon file name or by your own spells and items, or filter by class, spell school or item slot. The name is editable in the header, a pick shows at once, and Save keeps it.
+- **Rename, New, Save, Cancel and Delete.** Delete asks for a second click. New adds a macro and opens the picker with its name ready to type. Drag a row or the header icon to an action bar to place the macro there.
 - **History with Restore.** Every save, rename and delete keeps the macro's previous name, icon and text, the newest 20 for each macro. History lists them with their time and what changed, and Restore puts one back. Deleted macros stay in a Deleted section until you restore them.
 - **Safe to open in combat.** Every button that writes to your macros is turned off in combat, Restore included, with a line in the status row saying why. Edits are saved when the window closes out of combat.
 
@@ -34,6 +35,10 @@ Conditions are offered with their live value, and a wavy underline marks a probl
 
 History keeps the previous versions of each macro, with a Deleted section for macros that can be restored.
 
+<p align="center"><img src="docs/screenshots/picker.png" alt="The icon picker in place of the editor, with the macro's own icons first"></p>
+
+The icon picker: the macro's Automatic icon and what it casts, your spellbook, then every icon, with search and filters.
+
 ## Install
 
 Put the `MacroAssistForever` folder in `World of Warcraft/_forever_/Interface/AddOns`, or install it from CurseForge. Then type `/reload`.
@@ -44,7 +49,7 @@ Macro Assist Forever needs [Forever Core](https://www.curseforge.com/wow/addons/
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. The General tab holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it, or type in the search box to narrow the list by name or summary. New creates a macro after you choose its name and icon. Rename changes the selected macro's name and icon. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing the window also saves your text when you are out of combat.
+Click a macro to edit it, or type in the search box to narrow the list by name or summary. New creates a macro and opens the icon picker with its name ready to type. Rename, or a click on the header icon, opens the picker for the selected macro; Back to code returns to the editor. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing the window also saves your text when you are out of combat.
 
 ## Works alongside
 

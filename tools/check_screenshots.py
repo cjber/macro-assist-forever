@@ -14,6 +14,7 @@ SCENES = {
             "MacroAssistForever.toc",
             "UI/MacroWindow.lua",
             "UI/MacroWindow.xml",
+            "UI/IconSelector.lua",
             "UI/Editor.lua",
             "UI/History.lua",
             "UI/Context.lua",
@@ -31,7 +32,7 @@ SCENES = {
             "media/squiggle.tga",
         ],
     )
-    for name in ("window.png", "completion.png", "history.png")
+    for name in ("window.png", "completion.png", "history.png", "picker.png")
 }
 
 if __name__ == "__main__":

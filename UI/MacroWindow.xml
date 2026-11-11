@@ -20,6 +20,15 @@
 				</Texture>
 				<Texture parentKey="Highlight" atlas="auctionhouse-ui-row-highlight" alpha="0.22" alphaMode="ADD" setAllPoints="true" hidden="true"/>
 			</Layer>
+			<Layer level="BORDER">
+				<Texture parentKey="IconFrame" file="Interface\Common\WhiteIconFrame">
+					<Size x="32" y="32"/>
+					<Anchors>
+						<Anchor point="LEFT" x="3" y="0"/>
+					</Anchors>
+					<Color r="0.45" g="0.45" b="0.45" a="1"/>
+				</Texture>
+			</Layer>
 			<Layer level="ARTWORK">
 				<Texture parentKey="Icon">
 					<Size x="26" y="26"/>
@@ -79,4 +88,57 @@
 			</Layer>
 		</Layers>
 	</Button>
+
+	<!-- One icon in the picker: a 36-unit picture inside a 40-unit hit rect, the header's gold WhiteIconFrame when the
+	     icon is selected, and ButtonHilight-Square on hover. The picker builds these into each grid row. -->
+	<Button name="MacroAssistIconTemplate" virtual="true">
+		<Size x="40" y="40"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="Gold" file="Interface\Common\WhiteIconFrame" hidden="true" setAllPoints="true"/>
+			</Layer>
+			<Layer level="ARTWORK">
+				<Texture parentKey="Icon">
+					<Size x="36" y="36"/>
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+				</Texture>
+				<FontString parentKey="Label" inherits="NumberFontNormal" justifyH="CENTER" wordwrap="false" hidden="true">
+					<Anchors>
+						<Anchor point="BOTTOM" x="0" y="1"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+			<Layer level="HIGHLIGHT">
+				<Texture parentKey="Highlight" file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD" hidden="true">
+					<Size x="36" y="36"/>
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+	</Button>
+
+	<!-- One row of the picker's scroll box: a section heading, or one row of icon buttons. The row owns its headings;
+	     the picker creates and hides the icon buttons as the column count changes. -->
+	<Frame name="MacroAssistIconRowTemplate" virtual="true">
+		<Size y="24"/>
+		<Layers>
+			<Layer level="ARTWORK">
+				<FontString parentKey="Title" inherits="GameFontNormal" justifyH="LEFT" wordwrap="false">
+					<Anchors>
+						<Anchor point="TOPLEFT"/>
+						<Anchor point="RIGHT" x="-6" y="0"/>
+					</Anchors>
+				</FontString>
+				<FontString parentKey="Note" inherits="GameFontHighlightSmall" justifyH="RIGHT" wordwrap="false">
+					<Anchors>
+						<Anchor point="TOPRIGHT" x="0" y="1"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+	</Frame>
 </Ui>

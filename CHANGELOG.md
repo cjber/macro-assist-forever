@@ -5,6 +5,16 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **The icon picker lives in the macro window.** Clicking the header icon, or Rename, swaps the code surface for one
+  scrolling grid: the macro's Automatic icon and what it casts, your spellbook, and every client icon with a count.
+  Search by icon file name or by your own spells and items, filter by class, spell school or item slot, and hover an
+  icon for its name and file name. The header name is editable in place, a pick previews in the header and list row,
+  and Save keeps it while Cancel restores the old one.
+- **List row icons wear the same frame as the header icon**, neutral grey on a normal row and gold on the selected
+  row, so the row reads like the header instead of a bare picture.
+
+<!-- discord-image: docs/screenshots/picker.png -->
+
 ## [0.2.3] - 2026-11-11
 
 - **Forever Core now installs alongside it.** Forever Core is on CurseForge, so the CurseForge app installs and updates it with this addon instead of the addon carrying its own copy. On Wago, install Forever Core from its own page.
