@@ -7,17 +7,15 @@ end
 -- Lossless rewrites for a macro over the 255-character limit. Every rewrite comes from the parse tree or from the
 -- command data, never from a guess about the words:
 --
---   * line ends and the spaces between a command, its conditions and its arguments are trimmed, while spaces inside a
---     spell or item name and inside a condition's parameter stay exactly as typed;
---   * a command is written with its shortest known alias, from the same Data/Commands.lua entry, so /spell becomes
---     /cast and /use stays /use;
---   * clauses the checker reports as unreachable are dropped, and an empty trailing clause is collapsed.
+--   * a secure command is written with its shortest known alias, from the same Data/Commands.lua entry, and its
+--     conditions and arguments are trimmed and rejoined the way the macro syntax reads them;
+--   * on a secure command, clauses the checker reports as unreachable are dropped, and an empty trailing clause is
+--     collapsed;
+--   * every other line keeps its text byte for byte. Only a command's alias may change on a chat, script or plain
+--     command line, because a `;` or `,` there is the player's own text, not macro syntax.
 --
--- The result is the best single rewrite: applying all three is lossless and saves at least as much as any one alone.
-
-local function Trim(text)
-	return (text:gsub("^%s+", ""):gsub("%s+$", ""))
-end
+-- The result is the best single rewrite: applying the secure rewrites is lossless and saves at least as much as any
+-- one alone.
 
 ---@param clause MacroAssistClause
 ---@return integer from
@@ -117,14 +115,14 @@ local function LineText(text, line, unreachable)
 	if line.kind == "empty" then
 		return ""
 	end
-	if line.kind == "text" then
-		return Trim(text:sub(line.from, line.to))
+	if line.kind == "text" or line.kind == "directive" then
+		return text:sub(line.from, line.to)
 	end
-	local prefix
-	if line.kind == "directive" then
-		prefix = text:sub(line.directiveFrom, line.directiveTo)
-	else
-		prefix = (line.bang and "!" or "") .. "/" .. CommandName(line)
+	local prefix = (line.bang and "!" or "") .. "/" .. CommandName(line)
+	local entry = line.command and ns.CommandAliases[line.command.nameLower]
+	if not entry or entry.kind ~= "secure" then
+		-- The line is not macro syntax: everything after the command word is the player's own text, kept as typed.
+		return prefix .. text:sub(line.command.nameTo + 1)
 	end
 	local clauses = {}
 	for _, clause in ipairs(line.clauses) do

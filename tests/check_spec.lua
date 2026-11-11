@@ -157,6 +157,22 @@ has(
 	"condition order does not matter"
 )
 
+-- A non-secure command does not read `;` as a clause separator, so nothing after it is unreachable: a /run line is
+-- Lua, and chat text can contain a semicolon. Only a secure command takes clause analysis.
+lacks(
+	"/run local x = 1; print(x)",
+	ctx,
+	"unreachable-clause",
+	"a /run statement after a semicolon is not an unreachable clause"
+)
+lacks("/say hello; how are you", ctx, "unreachable-clause", "chat text after a semicolon is not an unreachable clause")
+lacks(
+	"/script SetCVar('x', 1); SetCVar('y', 2)",
+	ctx,
+	"unreachable-clause",
+	"a /script statement after a semicolon is not an unreachable clause"
+)
+
 -- The 255-character limit, counted in characters rather than UTF-8 bytes.
 text = string.rep("a", 256)
 diagnostic = has(text, ctx, "too-long")
