@@ -8,6 +8,9 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 - **Each macro says where it sits on your action bars and which key presses it.** The header names every slot the
   selected macro is on, with the key bound to that slot, and a macro on no bar is marked in the list as "Not on a bar"
   so it cannot be lost.
+- **Import a macro by pasting it.** Addons have no network access, so Import takes text from wago.io or another
+  character and checks it with the same parser and diagnostics as the editor before it is saved. Prose, MySlot exports
+  and text over 255 characters are refused with the reason, and a good macro opens the name and icon picker.
 
 ## [0.3.1] - 2026-11-11
 

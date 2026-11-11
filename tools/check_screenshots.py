@@ -17,12 +17,14 @@ SCENES = {
             "UI/IconSelector.lua",
             "UI/Editor.lua",
             "UI/History.lua",
+            "UI/Import.lua",
             "UI/Context.lua",
             "Core/Explain.lua",
             "Core/Highlight.lua",
             "Core/Check.lua",
             "Core/Complete.lua",
             "Core/Bars.lua",
+            "Core/Import.lua",
             "Core/Lexer.lua",
             "Core/Parser.lua",
             "Core/Length.lua",
@@ -33,7 +35,7 @@ SCENES = {
             "media/squiggle.tga",
         ],
     )
-    for name in ("window.png", "completion.png", "history.png", "picker.png")
+    for name in ("window.png", "completion.png", "history.png", "import.png", "picker.png")
 }
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ SOURCE = (ROOT / "UI" / "MacroWindow.lua").read_text(encoding="utf-8")
 PICKER = (ROOT / "UI" / "IconSelector.lua").read_text(encoding="utf-8")
 EDITOR = (ROOT / "UI" / "Editor.lua").read_text(encoding="utf-8")
 HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
+IMPORT = (ROOT / "UI" / "Import.lua").read_text(encoding="utf-8")
 XML = (ROOT / "UI" / "MacroWindow.xml").read_text(encoding="utf-8")
 FONT_FILE = ROOT / "media" / "fonts" / "JetBrainsMono-Regular.ttf"
 SQUIGGLE = Image.open(ROOT / "media" / "squiggle.tga").convert("RGBA")
@@ -76,6 +77,7 @@ BUTTON_HEIGHT = number("BUTTON_HEIGHT")
 BUTTON_WIDTH = number("BUTTON_WIDTH")
 DELETE_WIDTH = number("DELETE_WIDTH")
 HISTORY_WIDTH = number("HISTORY_WIDTH")
+IMPORT_WIDTH = number("IMPORT_WIDTH")
 FOOTER_GAP = number("FOOTER_GAP")
 RENAME_WIDTH = number("RENAME_WIDTH")
 RENAME_HEIGHT = number("RENAME_HEIGHT")
@@ -103,6 +105,17 @@ HISTORY_SCROLL_GAP = number("SCROLL_GAP", HISTORY)
 HISTORY_SCROLL_WIDTH = number("SCROLL_WIDTH", HISTORY)
 HISTORY_SCROLL_RIGHT = number("SCROLL_RIGHT_PADDING", HISTORY)
 HISTORY_BOTTOM = number("BOTTOM", HISTORY)
+# The Import box's own numbers, from UI/Import.lua.
+IMPORT_PANEL_WIDTH = number("WIDTH", IMPORT)
+IMPORT_PANEL_HEIGHT = number("HEIGHT", IMPORT)
+IMPORT_PANEL_INSET = number("INSET_PADDING", IMPORT)
+IMPORT_HINT_TOP = number("HINT_TOP", IMPORT)
+IMPORT_HINT_HEIGHT = number("HINT_HEIGHT", IMPORT)
+IMPORT_BOX_BOTTOM = number("BOX_BOTTOM", IMPORT)
+IMPORT_STATUS_BOTTOM = number("STATUS_BOTTOM", IMPORT)
+IMPORT_BOTTOM = number("BOTTOM", IMPORT)
+IMPORT_BUTTON_WIDTH = number("BUTTON_WIDTH", IMPORT)
+IMPORT_BUTTON_HEIGHT = number("BUTTON_HEIGHT", IMPORT)
 ROW_ICON_SIZE = 26
 ROW_ICON_INSET = 6
 ROW_TEXT_X = 40
@@ -1028,6 +1041,14 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
         "History",
         h=BUTTON_HEIGHT,
     )
+    button(
+        canvas,
+        X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + FOOTER_GAP * 3,
+        button_y,
+        IMPORT_WIDTH,
+        "Import",
+        h=BUTTON_HEIGHT,
+    )
     button(canvas, X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH, button_y, BUTTON_WIDTH, "Save", h=BUTTON_HEIGHT)
     button(
         canvas,
@@ -1118,6 +1139,14 @@ def window_layout(ui):
             "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + FOOTER_GAP * 2,
             "y": button_y,
             "w": HISTORY_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "import",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + FOOTER_GAP * 3,
+            "y": button_y,
+            "w": IMPORT_WIDTH,
             "h": BUTTON_HEIGHT,
         },
         {
@@ -1258,6 +1287,114 @@ def history_layout():
     }
 
 
+# The Import box's sample text: a short macro already pasted and checked, so the scene shows the ready line and count.
+IMPORT_BODY = "/cast [@mouseover,harm,nodead][] Arcane Shot\n/startattack"
+
+
+def import_geometry():
+    x = X + (WINDOW_WIDTH - IMPORT_PANEL_WIDTH) // 2
+    y = Y + (WINDOW_HEIGHT - IMPORT_PANEL_HEIGHT) // 2
+    return x, y, IMPORT_PANEL_WIDTH, IMPORT_PANEL_HEIGHT
+
+
+def draw_import(canvas):
+    """The Import box over the macro window: a pasted, checked macro with the panel's Import and Cancel buttons."""
+    x, y, w, h = import_geometry()
+    background(canvas, x, y, w, h)
+    canvas.text(
+        x + 12,
+        y + IMPORT_HINT_TOP,
+        "Paste a macro from wago.io or another character.",
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        width=w - 24,
+    )
+    box_x = x + 10
+    box_y = y + IMPORT_HINT_TOP + IMPORT_HINT_HEIGHT + 8
+    box_w = w - 20
+    box_h = h - (IMPORT_HINT_TOP + IMPORT_HINT_HEIGHT + 8) - IMPORT_BOX_BOTTOM
+    inset(canvas, box_x, box_y, box_w, box_h)
+    line_y = box_y + IMPORT_PANEL_INSET + 4
+    for line in IMPORT_BODY.split("\n"):
+        canvas.text(
+            box_x + IMPORT_PANEL_INSET + 2,
+            line_y,
+            line,
+            FONTS["GameFontHighlight"],
+            WHITE,
+            width=box_w - IMPORT_PANEL_INSET * 2 - 4,
+        )
+        line_y += 18
+    canvas.text(
+        x + 12,
+        y + h - IMPORT_STATUS_BOTTOM - 6,
+        "Ready to import.",
+        FONTS["GameFontHighlightSmall"],
+        (0.2, 1, 0.6),
+    )
+    canvas.text(
+        x + w - 70,
+        y + h - IMPORT_STATUS_BOTTOM - 6,
+        f"{len(IMPORT_BODY)}/255",
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        width=58,
+        justify="RIGHT",
+    )
+    button(
+        canvas,
+        x + w - 10 - IMPORT_BUTTON_WIDTH,
+        y + h - IMPORT_BOTTOM - IMPORT_BUTTON_HEIGHT,
+        IMPORT_BUTTON_WIDTH,
+        "Import",
+        h=IMPORT_BUTTON_HEIGHT,
+    )
+    button(
+        canvas,
+        x + w - 10 - IMPORT_BUTTON_WIDTH * 2 - 6,
+        y + h - IMPORT_BOTTOM - IMPORT_BUTTON_HEIGHT,
+        IMPORT_BUTTON_WIDTH,
+        "Cancel",
+        h=IMPORT_BUTTON_HEIGHT,
+    )
+    wowmock.portrait_frame_art(canvas, x, y, w, h, IDENTITY_ICON, "Import macro")
+    return x, y, w, h
+
+
+def import_layout():
+    x, y, w, h = import_geometry()
+    box_y = y + IMPORT_HINT_TOP + IMPORT_HINT_HEIGHT + 8
+    return {
+        "frame": {"x": x, "y": y, "w": w, "h": h},
+        "widgets": [
+            {
+                "name": "import-input",
+                "role": "input",
+                "x": x + 10,
+                "y": box_y,
+                "w": w - 20,
+                "h": h - (IMPORT_HINT_TOP + IMPORT_HINT_HEIGHT + 8) - IMPORT_BOX_BOTTOM,
+            },
+            {
+                "name": "import-cancel",
+                "role": "button",
+                "x": x + w - 10 - IMPORT_BUTTON_WIDTH * 2 - 6,
+                "y": y + h - IMPORT_BOTTOM - IMPORT_BUTTON_HEIGHT,
+                "w": IMPORT_BUTTON_WIDTH,
+                "h": IMPORT_BUTTON_HEIGHT,
+            },
+            {
+                "name": "import-button",
+                "role": "button",
+                "x": x + w - 10 - IMPORT_BUTTON_WIDTH,
+                "y": y + h - IMPORT_BOTTOM - IMPORT_BUTTON_HEIGHT,
+                "w": IMPORT_BUTTON_WIDTH,
+                "h": IMPORT_BUTTON_HEIGHT,
+            },
+        ],
+    }
+
+
 def picker_layout(ui):
     editor_x, editor_y, editor_w, editor_h = editor_geometry()
     status_x, status_y, status_w, status_h = status_geometry()
@@ -1310,6 +1447,14 @@ def picker_layout(ui):
             "h": BUTTON_HEIGHT,
         },
         {
+            "name": "import",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + FOOTER_GAP * 3,
+            "y": button_y,
+            "w": IMPORT_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
             "name": "cancel",
             "role": "button",
             "x": X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH * 2 - FOOTER_GAP,
@@ -1343,6 +1488,7 @@ def layout(ui):
         "scenes": [
             window_layout(ui),
             history_layout(),
+            import_layout(),
             picker_layout(ui),
         ]
     }
@@ -1389,6 +1535,17 @@ def main():
     draw_history(history_canvas)
     wowmock.scene(ui, [(history_canvas, 0, 0)]).save(output / "history.png")
     print(output / "history.png")
+
+    import_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data=window_data,
+    )
+    draw_import(import_canvas)
+    wowmock.scene(ui, [(import_canvas, 0, 0)]).save(output / "import.png")
+    print(output / "import.png")
 
     picker_canvas = window(
         ui,

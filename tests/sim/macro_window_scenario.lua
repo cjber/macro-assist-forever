@@ -140,6 +140,13 @@ local function characterTab(sim, window)
 	return window
 end
 
+local function paste(sim, panel, text)
+	sim:input(function()
+		panel.edit:SetText(text)
+	end)
+	sim:advance(0.05)
+end
+
 local function openNamed(sim)
 	world.install(sim)
 	sim.world.units.target = { name = "Defias Pillager", level = 12, friendly = false }
@@ -522,6 +529,69 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	check(not window.picker:IsShown(), "the picker is open after deleting")
 end)
 
+scenario("Import checks pasted text, creates the macro and opens the picker", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local panel = window.importPanel
+	check(panel, "the window did not build the Import box")
+	check(not panel:IsShown(), "the Import box is shown before it is asked for")
+
+	sim:click(window.importButton)
+	sim:advance(0.1)
+	check(panel:IsShown(), "Import did not open the box")
+	equal(panel.status:GetText(), "Paste a macro to import.", "an empty box says what to do")
+	check(not panel.importButton:IsEnabled(), "Import is enabled with nothing pasted")
+
+	paste(sim, panel, "I like pets and healing")
+	equal(panel.status:GetText(), "Not a macro: no line starts with / or #.", "prose is refused")
+	check(not panel.importButton:IsEnabled(), "Import is enabled for prose")
+
+	paste(sim, panel, "!MySlot:AAAABBBBCCCC")
+	equal(panel.status:GetText(), "This is a MySlot export, not a macro.", "a MySlot export is named")
+	check(not panel.importButton:IsEnabled(), "Import is enabled for a MySlot export")
+
+	paste(sim, panel, string.rep("/cast Arcane Shot\n", 20))
+	check(
+		panel.status:GetText():find("the limit is 255", 1, true) ~= nil,
+		"text over the limit does not show its problem before saving"
+	)
+	check(not panel.importButton:IsEnabled(), "Import is enabled over the limit")
+
+	paste(sim, panel, "/cast Arcane Shot\n/startattack")
+	equal(panel.status:GetText(), "Ready to import.", "a checked macro is ready")
+	check(panel.importButton:IsEnabled(), "Import is disabled for a checked macro")
+	equal(panel.length:GetText(), "30/255", "the box counts the pasted characters")
+
+	local before = select(2, sim.G.GetNumMacros())
+	sim:click(panel.importButton)
+	sim:advance(0.2)
+	check(not panel:IsShown(), "Import left the box open")
+	check(window.picker:IsShown(), "Import did not open the picker for the name and icon")
+	check(select(2, sim.G.GetNumMacros()) == before + 1, "Import did not create a character macro")
+	local actual = 121 + before
+	equal(
+		select(3, sim.G.GetMacroInfo(actual)),
+		"/cast Arcane Shot\n/startattack",
+		"Import did not keep the pasted body"
+	)
+	equal(window.header.nameEdit:GetText(), "New macro", "the picker did not start on a free name")
+
+	window.header.nameEdit:SetText("Imported")
+	sim:click(window.saveButton)
+	sim:advance(0.2)
+	equal(window.header.name:GetText(), "Imported", "the imported macro did not take the chosen name")
+	equal(select(1, sim.G.GetMacroInfo(actual)), "Imported", "the chosen name was not written")
+
+	-- Cancel closes the box without writing anything.
+	sim:click(window.importButton)
+	sim:advance(0.1)
+	paste(sim, panel, "/cast Wing Clip")
+	sim:click(panel.cancelButton)
+	sim:advance(0.1)
+	check(not panel:IsShown(), "Cancel left the Import box open")
+	equal(select(2, sim.G.GetNumMacros()), before + 1, "Cancel imported a macro")
+end)
+
 scenario("the icon picker previews, searches and keeps a pick through Save", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)
@@ -813,6 +883,7 @@ scenario("in combat the window stays open and refuses every write", function(sim
 	sim:advance(0.1)
 	check(not window.saveButton:IsEnabled(), "Save is enabled in combat")
 	check(not window.newButton:IsEnabled(), "New is enabled in combat")
+	check(not window.importButton:IsEnabled(), "Import is enabled in combat")
 	check(not window.deleteButton:IsEnabled(), "Delete is enabled in combat")
 	check(not window.header.rename:IsEnabled(), "Rename is enabled in combat")
 	check(editor.problem:GetText():find("Saving is disabled in combat", 1, true) ~= nil, "the status does not say why")

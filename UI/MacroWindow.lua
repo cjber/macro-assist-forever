@@ -37,6 +37,7 @@ local BUTTON_HEIGHT = 24
 local BUTTON_WIDTH = 90
 local DELETE_WIDTH = 90
 local HISTORY_WIDTH = 90
+local IMPORT_WIDTH = 90
 local FOOTER_GAP = 6
 local RENAME_WIDTH = 110
 local RENAME_HEIGHT = 22
@@ -152,10 +153,12 @@ local ACTION_SLOTS = 120
 ---@field empty FontString
 ---@field deleteButton Button
 ---@field historyButton Button
+---@field importButton Button
 ---@field newButton Button
 ---@field saveButton Button
 ---@field cancelButton Button
 ---@field Tabs MacroAssistTab[]
+---@field importPanel MacroAssistImportPanel
 
 ---@class MacroAssistWindow
 ---@field frame MacroAssistFrame
@@ -447,6 +450,10 @@ function Window.Create()
 	history:SetSize(HISTORY_WIDTH, BUTTON_HEIGHT)
 	history:SetPoint("LEFT", delete, "RIGHT", FOOTER_GAP, 0)
 	history:SetText(L["History"])
+	local import = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
+	import:SetSize(IMPORT_WIDTH, BUTTON_HEIGHT)
+	import:SetPoint("LEFT", history, "RIGHT", FOOTER_GAP, 0)
+	import:SetText(L["Import"])
 	local save = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	save:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
 	save:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, 8)
@@ -458,6 +465,7 @@ function Window.Create()
 
 	frame.deleteButton = delete
 	frame.historyButton = history
+	frame.importButton = import
 	frame.newButton = new
 	frame.saveButton = save
 	frame.cancelButton = cancel
@@ -479,6 +487,9 @@ function Window.Create()
 	frame.explainPanel = BuildExplainPanel(editorSurface)
 	frame.editor = ns.Editor.Create(editorSurface, statusBar)
 	frame.history = ns.HistoryPanel.Create(frame)
+	frame.importPanel = ns.ImportPanel.Create(frame, function(body)
+		Window:ImportMacro(body)
+	end)
 	local lastWidth
 	editorSurface:SetScript("OnSizeChanged", function(_, width)
 		if width > 1 and width ~= lastWidth and frame:IsShown() then
@@ -524,6 +535,9 @@ function Window.Create()
 	end)
 	history:SetScript("OnClick", function()
 		Window:OpenHistory()
+	end)
+	import:SetScript("OnClick", function()
+		Window:OpenImport()
 	end)
 	new:SetScript("OnClick", function()
 		Window:New()
@@ -1162,6 +1176,7 @@ function Window:UpdateButtons()
 	self.frame.deleteButton:SetEnabled(hasMacro and not combat)
 	self.frame.deleteButton:SetText(self.deleteArmed and L["Click again to delete"] or L["Delete"])
 	self.frame.historyButton:SetEnabled(true)
+	self.frame.importButton:SetEnabled((self.count or 0) < (self.maximum or 0) and not combat)
 	self.frame.newButton:SetEnabled((self.count or 0) < (self.maximum or 0) and not combat)
 	self.frame.saveButton:SetEnabled(changed and not combat)
 	self.frame.cancelButton:SetEnabled(changed)
@@ -1169,6 +1184,9 @@ function Window:UpdateButtons()
 	self.frame.header.rename:SetText(self.picking and L["Back to code"] or L["Rename"])
 	if self.frame.history:IsShown() then
 		self.frame.history:UpdateButtons()
+	end
+	if self.frame.importPanel then
+		ns.ImportPanel.SetCombat(self.frame.importPanel, combat)
 	end
 end
 
@@ -1321,6 +1339,50 @@ function Window.LiveMacroNames(_)
 	return live
 end
 
+-- The Import box only reads and checks pasted text. The macro itself is created through WriteCreate, with the same
+-- snapshot and combat refusal as New, and then the icon picker opens for its name and icon.
+function Window:OpenImport()
+	local frame = self.frame
+	if not frame or not frame.importPanel or InCombatLockdown() then
+		return
+	end
+	if not self:SaveCurrent() then
+		return
+	end
+	if self.picking then
+		self:LeavePicker()
+	end
+	ns.ImportPanel.Open(frame.importPanel)
+end
+
+---@param body string
+function Window:ImportMacro(body)
+	if InCombatLockdown() then
+		return
+	end
+	local classified = ns.Import.Classify(body)
+	if classified.kind ~= "macro" or ns.Length(classified.body) > ns.MacroLimit then
+		return
+	end
+	if not self:SaveCurrent() then
+		return
+	end
+	if self.picking then
+		self:LeavePicker()
+	end
+	local actual = self:WriteCreate(self:FreeName(), 134400, classified.body, self.tab == 2)
+	if not actual then
+		return
+	end
+	self.drafts[actual] = nil
+	self.selected = actual
+	self.dirty = false
+	self.desiredPosition = actual - (self.base or 0)
+	self:LoadSelected()
+	self:RefreshList()
+	self:OpenPicker(true)
+end
+
 function Window:OpenHistory()
 	local frame = self.frame
 	if not frame or not frame.history then
@@ -1438,6 +1500,9 @@ function Window:OnHide()
 	end
 	if frame.history then
 		frame.history:Hide()
+	end
+	if frame.importPanel and frame.importPanel:IsShown() then
+		ns.ImportPanel.Close(frame.importPanel)
 	end
 end
 
