@@ -5,11 +5,11 @@ local M = {}
 
 local ICONS = {
 	"INV_Misc_QuestionMark",
-	"Ability_Hunter_Quickshot",
-	"Spell_Shadow_DeathCoil",
-	"Spell_Frost_FrostNova",
-	"Ability_Hunter_SniperShot",
-	"Ability_Hunter_RunningShot",
+	132204,
+	136145,
+	135848,
+	132212,
+	132208,
 	"Ability_Hunter_Pet_Wolf",
 }
 
@@ -26,15 +26,15 @@ function M.install(sim)
 	local character = {
 		{
 			name = "Arcane",
-			icon = "Ability_Hunter_Quickshot",
+			icon = 132204,
 			body = "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot",
 		},
 		{ name = "Pet", icon = "Ability_Hunter_Pet_Wolf", body = "/cast Mend Pet; Revive Pet" },
-		{ name = "FD", icon = "Spell_Shadow_DeathCoil", body = "/cast Feign Death\n/stopattack" },
-		{ name = "Trap", icon = "Spell_Frost_FrostNova", body = "/cast Freezing Trap" },
+		{ name = "FD", icon = 136145, body = "/cast Feign Death\n/stopattack" },
+		{ name = "Trap", icon = 135848, body = "/cast Freezing Trap" },
 		{
 			name = "Mark",
-			icon = "Ability_Hunter_SniperShot",
+			icon = 132212,
 			body = "/cast [@mouseover,harm,nodead][] Hunter's Mark\n/petattack [@mouseover,harm,nodead][]",
 		},
 	}
@@ -105,17 +105,17 @@ function M.install(sim)
 	G.GetMacroItemIcons = function() end
 
 	local spells = {
-		{ name = "Arcane Shot", rank = 4, id = 3044 },
-		{ name = "Wing Clip", rank = 2, id = 2974 },
-		{ name = "Raptor Strike", rank = 5, id = 2973 },
-		{ name = "Mend Pet", id = 136 },
-		{ name = "Revive Pet", id = 982 },
-		{ name = "Feign Death", id = 5384 },
-		{ name = "Freezing Trap", id = 1499 },
-		{ name = "Hunter's Mark", id = 1130 },
-		{ name = "Aspect of the Cheetah", id = 5118 },
-		{ name = "Serpent Sting", id = 1978 },
-		{ name = "Concussive Shot", id = 5116 },
+		{ name = "Arcane Shot", rank = 4, id = 3044, icon = 132204 },
+		{ name = "Wing Clip", rank = 2, id = 2974, icon = 132208 },
+		{ name = "Raptor Strike", rank = 5, id = 2973, icon = 132212 },
+		{ name = "Mend Pet", id = 136, icon = 132179 },
+		{ name = "Revive Pet", id = 982, icon = 136081 },
+		{ name = "Feign Death", id = 5384, icon = 136145 },
+		{ name = "Freezing Trap", id = 1499, icon = 135848 },
+		{ name = "Hunter's Mark", id = 1130, icon = 132212 },
+		{ name = "Aspect of the Cheetah", id = 5118, icon = 132242 },
+		{ name = "Serpent Sting", id = 1978, icon = 132208 },
+		{ name = "Concussive Shot", id = 5116, icon = 135860 },
 	}
 	-- A flyout last in the book, as Pet Utilities sits on the Beast Mastery tab. Call Pet is known; Feed Pet is not,
 	-- so only the first belongs in the addon's spell list.
@@ -159,7 +159,7 @@ function M.install(sim)
 				spellID = spell.id,
 				actionID = spell.id,
 				itemType = G.Enum.SpellBookItemType.Spell,
-				iconID = 134400,
+				iconID = spell.icon or 134400,
 			}
 		end
 		local flyout = flyouts[slot - #spells]
@@ -184,7 +184,11 @@ function M.install(sim)
 		end
 	end
 	sim.impl["C_SpellBook.GetSpellBookItemTexture"] = function(slot)
-		if spells[slot] or flyouts[slot - #spells] then
+		local spell = spells[slot]
+		if spell then
+			return spell.icon or 134400
+		end
+		if flyouts[slot - #spells] then
 			return 134400
 		end
 	end
@@ -209,8 +213,32 @@ function M.install(sim)
 	sim.impl["C_Spell.GetSpellSubtext"] = function(spellID)
 		return subtext[spellID] or ""
 	end
-	sim.impl["C_Spell.GetSpellTexture"] = function()
-		return 134400
+	local spellByID = {}
+	local spellByName = {}
+	for _, spell in ipairs(spells) do
+		spellByID[spell.id] = spell
+		spellByName[spell.name:lower()] = spell
+	end
+	for _, flyout in ipairs(flyouts) do
+		for _, slot in ipairs(flyout.slots) do
+			spellByID[slot.id] = slot
+			spellByName[slot.name:lower()] = slot
+		end
+	end
+	sim.impl["C_Spell.GetSpellTexture"] = function(spellID)
+		local spell = spellByID[spellID]
+		return spell and spell.icon or 134400
+	end
+	sim.impl["C_Spell.GetSpellInfo"] = function(name)
+		local spell = type(name) == "number" and spellByID[name] or spellByName[tostring(name):lower()]
+		if spell then
+			return {
+				name = spell.name,
+				iconID = spell.icon or 134400,
+				originalIconID = spell.icon or 134400,
+				spellID = spell.id,
+			}
+		end
 	end
 	-- Blizzard's Mainline icon provider also walks talent groups, which the simulator does not boot.
 	G.GetNumSpecGroups = function()

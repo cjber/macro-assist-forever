@@ -132,6 +132,105 @@
           "h": 24
         }
       ]
+    },
+    {
+      "frame": {
+        "x": 24,
+        "y": 24,
+        "w": 860,
+        "h": 500
+      },
+      "widgets": [
+        {
+          "name": "picker-search",
+          "role": "input",
+          "x": 308,
+          "y": 108,
+          "w": 434,
+          "h": 20
+        },
+        {
+          "name": "picker-filter",
+          "role": "button",
+          "x": 752,
+          "y": 108,
+          "w": 110,
+          "h": 18
+        },
+        {
+          "name": "picker-list",
+          "role": "list",
+          "x": 308,
+          "y": 140,
+          "w": 532,
+          "h": 308
+        },
+        {
+          "name": "picker-status",
+          "role": "status",
+          "x": 299,
+          "y": 460,
+          "w": 572,
+          "h": 22
+        },
+        {
+          "name": "rename",
+          "role": "button",
+          "x": 764,
+          "y": 60,
+          "w": 110,
+          "h": 22
+        },
+        {
+          "name": "new",
+          "role": "button",
+          "x": 34,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "delete",
+          "role": "button",
+          "x": 130,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "history",
+          "role": "button",
+          "x": 226,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "cancel",
+          "role": "button",
+          "x": 688,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "save",
+          "role": "button",
+          "x": 784,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "tabs",
+          "role": "tabs",
+          "edge": "outside-right",
+          "x": 884,
+          "y": 84,
+          "w": 55.0,
+          "h": 112.0
+        }
+      ]
     }
   ]
 }

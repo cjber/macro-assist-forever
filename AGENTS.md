@@ -27,6 +27,7 @@ python3 tools/check_menu_scroll.py
 bash tools/typecheck.sh
 python3 tools/deadcode.py --check
 python3 tools/changelog.py --check
+python3 tools/gen_icon_names.py --check
 ruff check tools && ruff format --check tools
 ```
 

@@ -80,6 +80,13 @@ equal(unit, nil, "a later group's unit is not reported when an earlier group mat
 now = ns.Now(ns.Parser.Parse("/cast !Auto Shot"), evaluate)
 equal(now, "Auto Shot", "a leading ! is stripped from the shown result")
 
+-- The picker's Automatic line uses this same result when #showtooltip names no spell: a directive with no argument
+-- shows whatever action the client would run, which is exactly ns.Now's answer, without the unit suffix.
+now = ns.Now(ns.Parser.Parse("#showtooltip\n/cast Aspect of the Hawk"), evaluate)
+equal(now, "Aspect of the Hawk", "a bare showtooltip follows the action that fires")
+now = ns.Now(ns.Parser.Parse("#showtooltip\n/use Roasted Quail"), evaluate)
+equal(now, "Roasted Quail", "an item in a bare showtooltip macro is the live action")
+
 -- A line with an unknown condition never reaches the evaluator.
 calls = {}
 now, hasCommands = ns.Now(ns.Parser.Parse("/cast [har] Auto Shot"), evaluate)

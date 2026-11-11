@@ -23,6 +23,7 @@ import wowmock  # noqa: E402
 
 TOC = (ROOT / "MacroAssistForever.toc").read_text(encoding="utf-8-sig")
 SOURCE = (ROOT / "UI" / "MacroWindow.lua").read_text(encoding="utf-8")
+PICKER = (ROOT / "UI" / "IconSelector.lua").read_text(encoding="utf-8")
 EDITOR = (ROOT / "UI" / "Editor.lua").read_text(encoding="utf-8")
 HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
 XML = (ROOT / "UI" / "MacroWindow.xml").read_text(encoding="utf-8")
@@ -133,6 +134,18 @@ POPUP_TAG_RIGHT = number("POPUP_TAG_RIGHT", EDITOR)
 MAX_ACCOUNT = 120
 MAX_CHARACTER = 30
 
+# The icon picker's own numbers, from UI/IconSelector.lua, so the scene follows the addon when they move.
+PICKER_PADDING = number("PICKER_PADDING", PICKER)
+PICKER_SEARCH_HEIGHT = number("SEARCH_HEIGHT", PICKER)
+PICKER_SEARCH_GAP = number("SEARCH_GAP", PICKER)
+PICKER_ROW_TOP_GAP = number("ROW_TOP_GAP", PICKER)
+ICON_SIZE = number("ICON_SIZE", PICKER)
+ICON_GAP = number("ICON_GAP", PICKER)
+ICON_PITCH = ICON_SIZE + ICON_GAP
+SECTION_HEIGHT = number("SECTION_HEIGHT", PICKER)
+PICKER_SCROLL_GAP = number("SCROLL_GAP", PICKER)
+PICKER_SCROLL_WIDTH = number("SCROLL_WIDTH", PICKER)
+
 X, Y = 24, 24
 MARGIN = 24
 MONO = wowmock.Font(str(FONT_FILE), FONT_SIZE, wowmock.WHITE, None)
@@ -188,6 +201,72 @@ MACROS = [
 SELECTED = 0
 CURRENT_LINE = 1
 TAB_SELECTED = 1
+
+# The picker scene's sample data. The Arcane macro's saved icon is Automatic, as a #showtooltip macro starts, so the
+# header, the list row and the selected grid cell all show the question mark.
+PICKER_ICON = "inv_misc_questionmark"
+PICKER_FROM_MACRO = ["inv_misc_questionmark", "ability_impalingbolt", "spell_frost_stun"]
+PICKER_SPELLBOOK = [
+    "ability_hunter_snipershot",
+    "ability_hunter_quickshot",
+    "ability_upgrademoonglaive",
+    "ability_hunter_mendpet",
+    "ability_hunter_beastcall",
+    "ability_rogue_feigndeath",
+    "spell_nature_ravenform",
+    "ability_rogue_trip",
+    "spell_frost_chainsofice",
+    "ability_hunter_runningshot",
+    "spell_nature_spiritwolf",
+    "ability_hunter_aspectofthemonkey",
+    "ability_hunter_beasttaming",
+    "ability_hunter_pet_wolf",
+    "ability_physical_taunt",
+    "ability_whirlwind",
+    "ability_mount_jungletiger",
+]
+PICKER_ALL = [
+    "inv_misc_food_19",
+    "inv_misc_bandage_15",
+    "inv_misc_note_01",
+    "inv_misc_book_09",
+    "inv_spear_07",
+    "inv_sword_04",
+    "inv_axe_09",
+    "inv_mace_01",
+    "inv_weapon_bow_02",
+    "inv_weapon_rifle_01",
+    "inv_staff_08",
+    "inv_potion_51",
+    "inv_potion_54",
+    "inv_misc_gem_pearl_05",
+    "inv_misc_herb_01",
+    "inv_misc_bag_10",
+    "inv_chest_leather_01",
+    "inv_helmet_01",
+    "inv_boots_05",
+    "inv_gauntlets_04",
+    "inv_shield_06",
+    "spell_holy_flashheal",
+    "spell_fire_fireball02",
+    "spell_shadow_shadowbolt",
+    "spell_nature_lightning",
+    "spell_holy_renew",
+    "spell_arcane_blink",
+    "spell_nature_healingtouch",
+    "spell_fire_flamebolt",
+    "spell_shadow_curseofsargeras",
+    "inv_misc_head_dragon_01",
+    "inv_jewelry_ring_03",
+    "inv_misc_coin_01",
+    "inv_misc_key_03",
+    "inv_misc_rune_01",
+    "inv_letter_15",
+    "inv_drink_07",
+    "inv_misc_fish_02",
+    "inv_ore_copper_01",
+    "inv_fabric_linen_01",
+]
 
 # The completion scene: a short Hunter macro with one mistyped command on a line above the caret, and a new
 # `/cast [` being typed on the last line, so the popup opens below every line of text.
@@ -449,6 +528,14 @@ def draw_row(canvas, x, y, width, icon, name, summary, selected, height=ROW_HEIG
         canvas.fill(x, y, width, height, (1, 0.82, 0.2, 0.10))
         canvas.fill(x, y + 3, 2, height - 6, (1, 0.82, 0.2, 1))
     icon_y = y + (height - ROW_ICON_SIZE) / 2
+    canvas.draw(
+        canvas.ui.texture("interface/common/whiteiconframe.blp"),
+        x + ROW_ICON_INSET - 3,
+        icon_y - 3,
+        ROW_ICON_SIZE + 6,
+        ROW_ICON_SIZE + 6,
+        GOLD if selected else (0.45, 0.45, 0.45),
+    )
     draw_icon(canvas, f"interface/icons/{icon}.blp", x + ROW_ICON_INSET, icon_y, ROW_ICON_SIZE)
     text_x = x + ROW_TEXT_X
     text_width = x + width - ROW_TEXT_RIGHT - text_x
@@ -675,7 +762,144 @@ def status_bar(canvas, x, y, w, length, now, data):
     canvas.text(x + w - 10 - label_w, y, label, font, MUTED, box_height=STATUS_HEIGHT)
 
 
-def window(ui, *, body, current_line, caret_column, data, completion=None):
+def picker_icon(canvas, name, x, y, selected=False, label=None):
+    """One 36-unit icon with the header's gold white frame when selected and the Auto label over Automatic."""
+    draw_icon(canvas, f"interface/icons/{name}.blp", x, y, ICON_SIZE)
+    if selected:
+        canvas.draw(
+            canvas.ui.texture("interface/common/whiteiconframe.blp"),
+            x - 2,
+            y - 2,
+            ICON_SIZE + 4,
+            ICON_SIZE + 4,
+            GOLD,
+        )
+    if label:
+        canvas.text(
+            x,
+            y + ICON_SIZE - 14,
+            label,
+            FONTS["NumberFontNormal"],
+            justify="CENTER",
+            width=ICON_SIZE,
+        )
+
+
+def picker_section(canvas, x, y, w, title, note=""):
+    canvas.text(x, y + 3, title, FONTS["GameFontNormal"])
+    if note:
+        canvas.text(x, y + 4, note, FONTS["GameFontHighlightSmall"], MUTED, justify="RIGHT", width=w)
+    return y + SECTION_HEIGHT
+
+
+def picker_grid(canvas, names, x, y, w, bottom, selected=None, labels=None):
+    columns = max(1, (w + ICON_GAP) // ICON_PITCH)
+    for index, name in enumerate(names):
+        row, col = divmod(index, columns)
+        row_y = y + row * ICON_PITCH
+        if row_y + ICON_SIZE > bottom:
+            break
+        picker_icon(
+            canvas,
+            name,
+            x + col * ICON_PITCH,
+            row_y,
+            selected=name == selected,
+            label=(labels or {}).get(name),
+        )
+
+
+def picker_filter_dropdown(canvas, right, top, text):
+    """WowStyle1FilterDropdownTemplate with the picker's one change: its Text is re-anchored TOP (0, 1), so the
+    label's centre sits on the button face's centre instead of the template's 20-unit box hanging 1 unit low."""
+    font = FONTS["GameFontNormal"]
+    width, height = canvas.text_width(text, font) + 60, 18
+    x = right - width
+    canvas.draw(canvas.ui.atlas("common-dropdown-b-button"), x - 4, top - 4, width + 8, height + 8)
+    canvas.text(x, top - 1, text, font, justify="CENTER", width=width, box_height=20)
+    return x, top, width, height
+
+
+def draw_picker(canvas, icon=PICKER_ICON):
+    """The picker in the editor's rectangle: search and filter, one scrolling grid, and its own status strip."""
+    x, y, w, h = editor_geometry()
+    canvas.fill(x, y, w, h, SURFACE)
+    canvas.fill(x, y, w, 1, EDGE)
+    canvas.fill(x, y + h - 1, w, 1, EDGE)
+    canvas.fill(x, y, 1, h, EDGE)
+    canvas.fill(x + w - 1, y, 1, h, EDGE)
+
+    left = x + PICKER_PADDING
+    top = y + PICKER_PADDING
+    filter_x, _, _, _ = picker_filter_dropdown(canvas, x + w - PICKER_PADDING, top + 1, "All icons")
+    search_w = filter_x - PICKER_SEARCH_GAP - left
+    wowmock.search_box(
+        canvas,
+        left,
+        top,
+        search_w,
+        PICKER_SEARCH_HEIGHT,
+        instructions="Search icons, spells and items",
+    )
+
+    grid_x = left
+    grid_y = top + PICKER_SEARCH_HEIGHT + PICKER_ROW_TOP_GAP
+    grid_w = w - 2 * PICKER_PADDING - (PICKER_SCROLL_WIDTH + PICKER_SCROLL_GAP)
+    bottom = y + h - PICKER_PADDING
+    columns = max(1, (grid_w + ICON_GAP) // ICON_PITCH)
+    row_y = picker_section(canvas, grid_x, grid_y, grid_w, "From this macro")
+    picker_grid(
+        canvas,
+        PICKER_FROM_MACRO,
+        grid_x,
+        row_y,
+        grid_w,
+        bottom,
+        selected=icon,
+        labels={PICKER_FROM_MACRO[0]: "Auto"},
+    )
+    row_y += ((len(PICKER_FROM_MACRO) + columns - 1) // columns) * ICON_PITCH
+    row_y = picker_section(canvas, grid_x, row_y, grid_w, "Spellbook", "Hunter")
+    picker_grid(canvas, PICKER_SPELLBOOK, grid_x, row_y, grid_w, bottom, selected=icon)
+    row_y += ((len(PICKER_SPELLBOOK) + columns - 1) // columns) * ICON_PITCH
+    row_y = picker_section(canvas, grid_x, row_y, grid_w, "All icons", f"{len(PICKER_ALL):,}")
+    picker_grid(canvas, PICKER_ALL, grid_x, row_y, grid_w, bottom, selected=icon)
+
+    wowmock.minimal_scrollbar(
+        canvas,
+        grid_x + grid_w + PICKER_SCROLL_GAP,
+        grid_y,
+        bottom - grid_y,
+        visible=0.4,
+    )
+
+    status_x, status_y, status_w, _ = status_geometry()
+    canvas.fill(status_x, status_y, status_w, STATUS_HEIGHT, (0, 0, 0, 0.35))
+    canvas.fill(status_x, status_y, status_w, 1, RULE)
+    font = FONTS["GameFontHighlightSmall"]
+    automatic = "Automatic"
+    canvas.text(status_x + 10, status_y, automatic, font, GREEN, box_height=STATUS_HEIGHT)
+    cursor = status_x + 10 + canvas.text_width(automatic, font) + 4
+    canvas.text(
+        cursor,
+        status_y,
+        "shows the icon of the spell #showtooltip picks: Arcane Shot",
+        font,
+        box_height=STATUS_HEIGHT,
+    )
+    canvas.text(
+        status_x,
+        status_y,
+        "Click to pick, Save to keep",
+        font,
+        MUTED,
+        justify="RIGHT",
+        width=status_w - 10,
+        box_height=STATUS_HEIGHT,
+    )
+
+
+def window(ui, *, body, current_line, caret_column, data, completion=None, picker=False, picker_icon=None):
     rail_width, _ = side_tab_extent(ui)
     canvas = ui.canvas(WINDOW_WIDTH + 2 * X + rail_width, WINDOW_HEIGHT + 2 * Y)
     background(canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -706,6 +930,8 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
     scroll_w = LIST_WIDTH - INSET_PADDING - (SCROLL_WIDTH + SCROLL_GAP + SCROLL_RIGHT_PADDING)
     scroll_h = LIST_HEIGHT - INSET_PADDING * 2
     for index, (icon, name, _) in enumerate(MACROS):
+        if picker and index == SELECTED:
+            icon = picker_icon or PICKER_ICON
         row_y = scroll_y + index * ROW_HEIGHT
         height = min(ROW_HEIGHT, scroll_y + scroll_h - row_y)
         if height <= 0:
@@ -733,6 +959,8 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
     header_y = Y - HEADER_TOP
     header_w = WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP
     name, icon = MACROS[SELECTED][1], MACROS[SELECTED][0]
+    if picker:
+        icon = picker_icon or PICKER_ICON
     canvas.draw(
         ui.texture("interface/common/whiteiconframe.blp"),
         header_x,
@@ -761,22 +989,26 @@ def window(ui, *, body, current_line, caret_column, data, completion=None):
         header_x + header_w - RENAME_WIDTH,
         header_y + (HEADER_HEIGHT - RENAME_HEIGHT) // 2,
         RENAME_WIDTH,
-        "Rename",
+        "Back to code" if picker else "Rename",
         h=RENAME_HEIGHT,
     )
-    # The full-height code surface, its gutter, the "What it does" panel at its bottom, and the status strip under it.
-    text_x, text_y, text_w, _ = draw_editor(canvas, body, current_line, caret_column, data)
-    editor_x, editor_y, editor_w, editor_h = editor_geometry()
-    cases = data.get("explain", [])
-    if cases and completion is None:
-        panel_h = EXPLAIN_ROW_TOP + len(cases) * EXPLAIN_ROW_HEIGHT + EXPLAIN_TITLE_TOP
-        panel_x = editor_x + EXPLAIN_INSET
-        panel_y = editor_y + editor_h - EXPLAIN_BOTTOM - panel_h
-        panel_w = editor_w - 2 * EXPLAIN_INSET
-        canvas.fill(panel_x, panel_y, panel_w, panel_h, SURFACE)
-        explain_panel(canvas, panel_x, panel_y, panel_w, cases)
-    status_x, status_y, status_w, _ = status_geometry()
-    status_bar(canvas, status_x, status_y, status_w, data["length"], "Arcane Shot on Defias Pillager", data)
+    if picker:
+        draw_picker(canvas, picker_icon or PICKER_ICON)
+        text_x = text_y = text_w = None
+    else:
+        # The full-height code surface, its gutter, the "What it does" panel at its bottom, and the status strip.
+        text_x, text_y, text_w, _ = draw_editor(canvas, body, current_line, caret_column, data)
+        editor_x, editor_y, editor_w, editor_h = editor_geometry()
+        cases = data.get("explain", [])
+        if cases and completion is None:
+            panel_h = EXPLAIN_ROW_TOP + len(cases) * EXPLAIN_ROW_HEIGHT + EXPLAIN_TITLE_TOP
+            panel_x = editor_x + EXPLAIN_INSET
+            panel_y = editor_y + editor_h - EXPLAIN_BOTTOM - panel_h
+            panel_w = editor_w - 2 * EXPLAIN_INSET
+            canvas.fill(panel_x, panel_y, panel_w, panel_h, SURFACE)
+            explain_panel(canvas, panel_x, panel_y, panel_w, cases)
+        status_x, status_y, status_w, _ = status_geometry()
+        status_bar(canvas, status_x, status_y, status_w, data["length"], "Arcane Shot on Defias Pillager", data)
     # The window's own buttons, with the edited macro treated as dirty so Save and Cancel are live.
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
     button(canvas, X + LIST_LEFT, button_y, BUTTON_WIDTH, "New", h=BUTTON_HEIGHT)
@@ -1019,11 +1251,92 @@ def history_layout():
     }
 
 
+def picker_layout(ui):
+    editor_x, editor_y, editor_w, editor_h = editor_geometry()
+    status_x, status_y, status_w, status_h = status_geometry()
+    left = editor_x + PICKER_PADDING
+    top = editor_y + PICKER_PADDING
+    filter_w = 110
+    filter_x = editor_x + editor_w - PICKER_PADDING - filter_w
+    search_w = filter_x - PICKER_SEARCH_GAP - left
+    grid_y = top + PICKER_SEARCH_HEIGHT + PICKER_ROW_TOP_GAP
+    grid_w = editor_w - 2 * PICKER_PADDING - (PICKER_SCROLL_WIDTH + PICKER_SCROLL_GAP)
+    button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
+    header_x = X + LIST_LEFT + LIST_WIDTH + COLUMN_GAP
+    header_y = Y - HEADER_TOP
+    rail_width, rail_height = side_tab_extent(ui)
+    widgets = [
+        {"name": "picker-search", "role": "input", "x": left, "y": top, "w": search_w, "h": PICKER_SEARCH_HEIGHT},
+        {"name": "picker-filter", "role": "button", "x": filter_x, "y": top, "w": filter_w, "h": 18},
+        {
+            "name": "picker-list",
+            "role": "list",
+            "x": left,
+            "y": grid_y,
+            "w": grid_w,
+            "h": editor_y + editor_h - PICKER_PADDING - grid_y,
+        },
+        {"name": "picker-status", "role": "status", "x": status_x, "y": status_y, "w": status_w, "h": status_h},
+        {
+            "name": "rename",
+            "role": "button",
+            "x": header_x + WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP - RENAME_WIDTH,
+            "y": header_y + (HEADER_HEIGHT - RENAME_HEIGHT) // 2,
+            "w": RENAME_WIDTH,
+            "h": RENAME_HEIGHT,
+        },
+        {"name": "new", "role": "button", "x": X + LIST_LEFT, "y": button_y, "w": BUTTON_WIDTH, "h": BUTTON_HEIGHT},
+        {
+            "name": "delete",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + FOOTER_GAP,
+            "y": button_y,
+            "w": DELETE_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "history",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + FOOTER_GAP * 2,
+            "y": button_y,
+            "w": HISTORY_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "cancel",
+            "role": "button",
+            "x": X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH * 2 - FOOTER_GAP,
+            "y": button_y,
+            "w": BUTTON_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "save",
+            "role": "button",
+            "x": X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH,
+            "y": button_y,
+            "w": BUTTON_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "tabs",
+            "role": "tabs",
+            "edge": "outside-right",
+            "x": X + WINDOW_WIDTH + SIDE_TAB_X,
+            "y": Y + SIDE_TAB_TOP,
+            "w": rail_width,
+            "h": rail_height,
+        },
+    ]
+    return {"frame": {"x": X, "y": Y, "w": WINDOW_WIDTH, "h": WINDOW_HEIGHT}, "widgets": widgets}
+
+
 def layout(ui):
     return {
         "scenes": [
             window_layout(ui),
             history_layout(),
+            picker_layout(ui),
         ]
     }
 
@@ -1069,6 +1382,17 @@ def main():
     draw_history(history_canvas)
     wowmock.scene(ui, [(history_canvas, 0, 0)]).save(output / "history.png")
     print(output / "history.png")
+
+    picker_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data={**window_data, "explain": []},
+        picker=True,
+    )
+    wowmock.scene(ui, [(picker_canvas, 0, 0)]).save(output / "picker.png")
+    print(output / "picker.png")
 
     completion = completion_data(data)
     completion_scene = {

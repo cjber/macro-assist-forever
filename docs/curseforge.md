@@ -18,6 +18,10 @@ Conditions are offered with their live value, and a wavy underline marks a probl
 
 History keeps the previous versions of each macro, with a Deleted section for macros that can be restored.
 
+![The icon picker in place of the editor, with the macro's own icons first](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/picker.png)
+
+The icon picker: the macro's Automatic icon and what it casts, your spellbook, then every icon, with search and filters.
+
 These images are generated previews of the Macro Assist UI.
 
 ## Features
@@ -27,7 +31,7 @@ These images are generated previews of the Macro Assist UI.
 - **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing it can explain.
 - **Completions with live values.** Type `/` for a command, `[` for a condition, `@` for a unit or a spell name; Up and Down move the suggestions, Tab inserts one, and each shows its value in the game right now. The spellbook supplies your spell names and the ranks you know.
 - **Problems with a fix.** A wavy underline marks text the game cannot run: hover it for the explanation, then press Tab or click it to apply the suggested fix. The status bar shows the first problem, what the first matching line would do with your current target, and the character count out of 255.
-- **Rename, New, Save, Cancel and Delete.** Rename and New use the game's name and icon picker, and Delete asks for a second click. Drag a row or the header icon to an action bar.
+- **Rename, New, Save, Cancel and Delete, with an icon picker in the window.** Rename or the header icon opens it: the macro's own icons first, then your spellbook and every icon, with search and filters by class, spell school or item slot. New opens it with the name ready to type, and Delete asks for a second click.
 - **History with Restore.** Every save, rename and delete keeps the previous name, icon and text, the newest 20 for each macro, listed with their time and what changed. Restore puts one back, and deleted macros stay restorable in a Deleted section.
 - **Safe to open in combat.** Every write is turned off in combat, Restore included, with a line saying why. Edits are saved when the window closes out of combat.
 
@@ -35,7 +39,7 @@ These images are generated previews of the Macro Assist UI.
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. General holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it, or type in the search box to narrow the list. New creates a macro after you choose its name and icon. Rename changes the selected macro's name and icon. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing also saves your text out of combat.
+Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Rename, or a click on the header icon, opens the picker; Back to code returns to the editor. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing also saves your text out of combat.
 
 For a bug report, paste `/macroassist report`.
 

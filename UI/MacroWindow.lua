@@ -70,6 +70,7 @@ local ROW_MUTED = { 0.6, 0.6, 0.6 }
 -- Icon art carries a baked-in border. The client's item buttons crop 8% off every edge, so every spell or item
 -- icon we draw does the same and its frame never shows a second border inside ours.
 local ICON_TEXCOORD = { 0.08, 0.92, 0.08, 0.92 }
+ns.ICON_TEXCOORD = ICON_TEXCOORD
 
 -- Blizzard's MacroUI reads the slot limits as Constants.MacroConsts.MAX_* on this build; the client no longer
 -- defines the old MAX_ACCOUNT_MACROS and MAX_CHARACTER_MACROS globals.
@@ -88,6 +89,7 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field iconButton Button
 ---@field icon Texture
 ---@field name FontString
+---@field nameEdit EditBox
 ---@field meta FontString
 ---@field rename Button
 
@@ -97,6 +99,7 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@class MacroAssistRow : Button
 ---@field macroIndex integer
 ---@field Icon Texture
+---@field IconFrame Texture
 ---@field Name FontString
 ---@field Summary FontString
 ---@field Selected Texture
@@ -140,7 +143,7 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field statusBar Frame
 ---@field explainPanel MacroAssistExplainPanel
 ---@field editor MacroAssistEditor
----@field iconSelector MacroAssistIconSelector
+---@field picker MacroAssistIconPicker
 ---@field history MacroAssistHistoryFrame
 ---@field scrollBox MacroAssistScrollBox
 ---@field scrollBar Frame
@@ -163,6 +166,9 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field selected integer?
 ---@field historySelected table?
 ---@field combat boolean
+---@field picking boolean
+---@field pendingName string?
+---@field pendingIcon any
 ---@field count integer?
 ---@field base integer?
 ---@field maximum integer?
@@ -213,6 +219,19 @@ local function BuildHeader(frame)
 	name:SetJustifyH("LEFT")
 	name:SetWordWrap(false)
 	header.name = name
+	-- In picker mode the same line is the macro's name field, so Rename keeps renaming in place.
+	local nameEdit = CreateFrame("EditBox", nil, header)
+	nameEdit:SetPoint("TOPLEFT", button, "TOPRIGHT", 8, 0)
+	nameEdit:SetPoint("RIGHT", header, "RIGHT", -RENAME_WIDTH - GAP, 0)
+	nameEdit:SetHeight(20)
+	nameEdit:SetFontObject("GameFontNormalLarge")
+	nameEdit:SetAutoFocus(false)
+	nameEdit:SetMaxLetters(16)
+	nameEdit:SetTextInsets(0, 0, 0, 0)
+	nameEdit:SetJustifyH("LEFT")
+	nameEdit:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+	nameEdit:Hide()
+	header.nameEdit = nameEdit
 	local meta = header:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	meta:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -3)
 	meta:SetPoint("RIGHT", header, "RIGHT", -RENAME_WIDTH - GAP, 0)
@@ -228,6 +247,9 @@ local function BuildHeader(frame)
 		if Window.selected then
 			PickupMacro(Window.selected)
 		end
+	end)
+	button:SetScript("OnClick", function()
+		Window:TogglePicker()
 	end)
 	button:SetScript("OnEnter", function()
 		GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
@@ -447,6 +469,9 @@ function Window.Create()
 	Window.selected = nil
 	Window.historySelected = nil
 	Window.combat = false
+	Window.picking = false
+	Window.pendingName = nil
+	Window.pendingIcon = nil
 
 	frame.explainPanel = BuildExplainPanel(editorSurface)
 	frame.editor = ns.Editor.Create(editorSurface, statusBar)
@@ -467,10 +492,29 @@ function Window.Create()
 	frame.editor.onEscape = function()
 		Window.ClosePanel()
 	end
-	frame.iconSelector = ns.IconSelector.Create(frame)
+	frame.picker = ns.IconPicker.Create(frame, editorSurface, frame.editor)
+	frame.picker.onPick = function(icon)
+		Window:SetPendingIcon(icon)
+	end
+	frame.picker.onEscape = function()
+		Window:LeavePicker()
+	end
+	header.nameEdit:SetScript("OnTextChanged", function(edit)
+		Window:OnNameEdited(edit:GetText() or "")
+	end)
+	header.nameEdit:SetScript("OnEscapePressed", function()
+		Window:LeavePicker()
+	end)
+	header.nameEdit:SetScript("OnEnterPressed", function(edit)
+		edit:ClearFocus()
+	end)
 
 	header.rename:SetScript("OnClick", function()
-		Window:OpenNameAndIcon()
+		if Window.picking then
+			Window:LeavePicker()
+		else
+			Window:OpenPicker(true)
+		end
 	end)
 	delete:SetScript("OnClick", function()
 		Window:Delete()
@@ -541,6 +585,11 @@ function Window:InitializeRow(row, data)
 	local selected = data.index == self.selected
 	row.Selected:SetShown(selected)
 	row.SelectedBar:SetShown(selected)
+	row.IconFrame:SetVertexColor(
+		selected and NORMAL_FONT_COLOR.r or 0.45,
+		selected and NORMAL_FONT_COLOR.g or 0.45,
+		selected and NORMAL_FONT_COLOR.b or 0.45
+	)
 	if selected then
 		row.Name:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 	else
@@ -566,6 +615,9 @@ end
 function Window:SelectTab(index)
 	if index == self.tab then
 		return
+	end
+	if self.picking then
+		self:LeavePicker()
 	end
 	local scrollBox = self.frame and self.frame.scrollBox
 	if scrollBox and scrollBox.GetDerivedScrollOffset then
@@ -638,6 +690,11 @@ function Window:RefreshList(keepScrollOffset)
 		self.deleteArmed = false
 		self.selected = nil
 		self.dirty = false
+		self.pendingName = nil
+		self.pendingIcon = nil
+		if self.picking then
+			self:LeavePicker()
+		end
 		self.frame.editor:SetText("")
 	else
 		local newSelected = base + position
@@ -655,6 +712,9 @@ function Window:RefreshList(keepScrollOffset)
 		local actual = base + index
 		local name, icon, body = GetMacroInfo(actual)
 		local summary = name and ns.ExplainSummary(body or "") or ""
+		if actual == self.selected and self.pendingIcon ~= nil then
+			icon = self.pendingIcon
+		end
 		if name and (needle == "" or name:lower():find(needle, 1, true) or summary:lower():find(needle, 1, true)) then
 			provider:Insert({
 				index = actual,
@@ -675,6 +735,11 @@ function Window:RefreshList(keepScrollOffset)
 			local selected = row.macroIndex == self.selected
 			row.Selected:SetShown(selected)
 			row.SelectedBar:SetShown(selected)
+			row.IconFrame:SetVertexColor(
+				selected and NORMAL_FONT_COLOR.r or 0.45,
+				selected and NORMAL_FONT_COLOR.g or 0.45,
+				selected and NORMAL_FONT_COLOR.b or 0.45
+			)
 			if selected then
 				row.Name:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 			else
@@ -695,6 +760,8 @@ function Window:RefreshList(keepScrollOffset)
 end
 
 function Window:LoadSelected()
+	self.pendingName = nil
+	self.pendingIcon = nil
 	if not self.selected then
 		self.dirty = false
 		self.frame.editor:SetText("")
@@ -817,14 +884,26 @@ function Window:WriteDelete(index)
 end
 
 function Window:SaveCurrent()
-	if not self.dirty or not self.selected then
+	if not self.selected then
 		return true
 	end
-	if not self:WriteMacro(self.selected, nil, nil, self.frame.editor:GetText()) then
+	local pending = self:HasPending()
+	if not self.dirty and not pending then
+		return true
+	end
+	local name, icon, body = GetMacroInfo(self.selected)
+	if pending then
+		name = self:PendingName() or name
+		icon = self.pendingIcon
+	end
+	if not self:WriteMacro(self.selected, name, icon, self.dirty and self.frame.editor:GetText() or body) then
 		return false
 	end
 	self.drafts[self.selected] = nil
 	self.dirty = false
+	self.pendingName = nil
+	self.pendingIcon = nil
+	self:UpdateHeader()
 	self:UpdateButtons()
 	return true
 end
@@ -833,6 +912,9 @@ end
 function Window:SelectMacro(actual)
 	if actual == self.selected then
 		return
+	end
+	if self.picking then
+		self:LeavePicker()
 	end
 	self:LeaveSelected()
 	self.selected = actual
@@ -844,16 +926,125 @@ function Window:UpdateHeader()
 	local frame = self.frame
 	local header = frame.header
 	frame.count:SetText(L["%d/%d"]:format(self.count or 0, self.maximum or 0))
+	header.rename:SetText(self.picking and L["Back to code"] or L["Rename"])
 	if not self.selected then
 		header.icon:SetTexture(nil)
 		header.name:SetText(L["No macro selected"])
+		header.nameEdit:Hide()
+		header.name:Show()
 		header.meta:SetText("")
 		return
 	end
 	local name, icon = GetMacroInfo(self.selected)
+	if self.pendingIcon ~= nil then
+		icon = self.pendingIcon
+	end
+	local shownName = self.pendingName or name or L["No macro selected"]
 	header.icon:SetTexture(icon)
-	header.name:SetText(name or L["No macro selected"])
+	header.name:SetText(shownName)
 	header.meta:SetText(self.tab == 1 and L["General macro"] or L["Character macro"])
+	if self.picking then
+		header.name:Hide()
+		header.nameEdit:Show()
+		if header.nameEdit:GetText() ~= shownName then
+			header.nameEdit:SetText(shownName)
+		end
+	else
+		header.nameEdit:Hide()
+		header.name:Show()
+	end
+end
+
+-- The macro's name as it will be saved: the client forbids a quote in a macro name, as the old picker did.
+---@return string?
+function Window:PendingName()
+	local name = self.pendingName
+	if type(name) ~= "string" then
+		return nil
+	end
+	return (name:gsub('"', ""))
+end
+
+---@return boolean
+function Window:HasPending()
+	if not self.selected then
+		return false
+	end
+	local name, icon = GetMacroInfo(self.selected)
+	if name and self:PendingName() and self:PendingName() ~= name then
+		return true
+	end
+	return self.pendingIcon ~= nil and not ns.Icons.Same(self.pendingIcon, icon)
+end
+
+---@param icon any
+function Window:SetPendingIcon(icon)
+	if not self.selected then
+		return
+	end
+	self.pendingIcon = icon
+	self.frame.header.icon:SetTexture(icon)
+	self.frame.picker:SetSelected(icon)
+	self.frame.scrollBox:ForEachFrame(function(row)
+		---@cast row MacroAssistRow
+		if row.macroIndex == self.selected then
+			row.Icon:SetTexture(icon)
+		end
+	end)
+	self:UpdateButtons()
+end
+
+---@param text string
+function Window:OnNameEdited(text)
+	self.pendingName = type(text) == "string" and text or ""
+	self:UpdateButtons()
+end
+
+function Window:OpenPicker(focusName)
+	if not self.selected or InCombatLockdown() then
+		return
+	end
+	local name, icon = GetMacroInfo(self.selected)
+	if not name then
+		return
+	end
+	if self.pendingName == nil then
+		self.pendingName = name
+	end
+	if self.pendingIcon == nil then
+		self.pendingIcon = icon
+	end
+	self.picking = true
+	local className = UnitClass("player")
+	self.frame.picker:Open(self.pendingIcon, self.frame.editor:GetText(), className)
+	self.frame.editorSurface:Hide()
+	self:UpdateHeader()
+	self:UpdateButtons()
+	if focusName then
+		self.frame.header.nameEdit:SetFocus()
+		self.frame.header.nameEdit:HighlightText()
+	end
+end
+
+-- Back to code and Escape leave the picker but keep the pending name and icon, as an edited body is kept.
+function Window:LeavePicker()
+	if not self.picking then
+		return
+	end
+	self.picking = false
+	self.frame.picker:Close()
+	self.frame.editorSurface:Show()
+	self.frame.editor:Focus()
+	self:UpdateHeader()
+	self:UpdateButtons()
+end
+
+function Window:TogglePicker()
+	if self.picking then
+		self:LeavePicker()
+	else
+		self:OpenPicker()
+	end
 end
 
 -- Fill the "What it does" panel from the current text. No cases means no panel at all, never an empty one. The panel
@@ -904,13 +1095,16 @@ function Window:UpdateButtons()
 	end
 	local combat = self.combat == true
 	local hasMacro = self.selected ~= nil
+	local pending = self:HasPending()
+	local changed = self.dirty or pending
 	self.frame.deleteButton:SetEnabled(hasMacro and not combat)
 	self.frame.deleteButton:SetText(self.deleteArmed and L["Click again to delete"] or L["Delete"])
 	self.frame.historyButton:SetEnabled(true)
 	self.frame.newButton:SetEnabled((self.count or 0) < (self.maximum or 0) and not combat)
-	self.frame.saveButton:SetEnabled(self.dirty and not combat)
-	self.frame.cancelButton:SetEnabled(self.dirty)
+	self.frame.saveButton:SetEnabled(changed and not combat)
+	self.frame.cancelButton:SetEnabled(changed)
 	self.frame.header.rename:SetEnabled(hasMacro and not combat)
+	self.frame.header.rename:SetText(self.picking and L["Back to code"] or L["Rename"])
 	if self.frame.history:IsShown() then
 		self.frame.history:UpdateButtons()
 	end
@@ -934,7 +1128,13 @@ function Window:Cancel()
 	end
 	self.dirty = false
 	self.deleteArmed = false
+	self.pendingName = nil
+	self.pendingIcon = nil
+	if self.picking then
+		self:LeavePicker()
+	end
 	self:LoadSelected()
+	self:RefreshList()
 	self:UpdateButtons()
 end
 
@@ -947,14 +1147,50 @@ function Window:Delete()
 		self:UpdateButtons()
 		return
 	end
+	if self.picking then
+		self:LeavePicker()
+	end
 	local oldPosition = self.selected - (self.base or 0)
 	self:WriteDelete(self.selected)
 	self.drafts[self.selected] = nil
 	self.selected = nil
 	self.dirty = false
+	self.pendingName = nil
+	self.pendingIcon = nil
 	self.deleteArmed = false
 	self.desiredPosition = oldPosition
 	self:RefreshList()
+end
+
+-- The name New starts from, made unique against every macro on both tabs so the history key stays one macro.
+---@return string
+function Window.FreeName(_)
+	local names = {}
+	local account, character = GetNumMacros()
+	account, character = account or 0, character or 0
+	for index = 1, account do
+		local name = GetMacroInfo(index)
+		if name then
+			names[name] = true
+		end
+	end
+	for index = MAX_ACCOUNT + 1, MAX_ACCOUNT + character do
+		local name = GetMacroInfo(index)
+		if name then
+			names[name] = true
+		end
+	end
+	local base = L["New macro"]
+	if not names[base] then
+		return base
+	end
+	for suffix = 2, 999 do
+		local candidate = base .. " " .. suffix
+		if not names[candidate] then
+			return candidate
+		end
+	end
+	return base
 end
 
 function Window:New()
@@ -964,43 +1200,21 @@ function Window:New()
 	if not self:SaveCurrent() then
 		return
 	end
+	if self.picking then
+		self:LeavePicker()
+	end
 	local base = self.base or 0
-	self.frame.iconSelector:Open("", "Interface\\Icons\\INV_Misc_QuestionMark", function(name, icon)
-		if InCombatLockdown() then
-			return
-		end
-		local actual = self:WriteCreate(name, icon, nil, self.tab == 2)
-		if not actual then
-			return
-		end
-		self.drafts[actual] = nil
-		self.selected = actual
-		self.dirty = false
-		self.desiredPosition = actual - base
-		self:LoadSelected()
-		self:RefreshList()
-		self.frame.editor:Focus()
-	end)
-end
-
-function Window:OpenNameAndIcon()
-	if not self.selected or InCombatLockdown() then
+	local actual = self:WriteCreate(self:FreeName(), 134400, "", self.tab == 2)
+	if not actual then
 		return
 	end
-	if not self:SaveCurrent() then
-		return
-	end
-	local name, icon = GetMacroInfo(self.selected)
-	if not name then
-		return
-	end
-	self.frame.iconSelector:Open(name, icon, function(newName, newIcon)
-		if InCombatLockdown() then
-			return
-		end
-		self:WriteMacro(self.selected, newName, newIcon)
-		self:RefreshList()
-	end)
+	self.drafts[actual] = nil
+	self.selected = actual
+	self.dirty = false
+	self.desiredPosition = actual - base
+	self:LoadSelected()
+	self:RefreshList()
+	self:OpenPicker(true)
 end
 
 ---@param _ MacroAssistWindow
@@ -1102,6 +1316,11 @@ function Window:RestoreSnapshot(key, entry)
 	self.selected = actual
 	self.dirty = false
 	self.deleteArmed = false
+	self.pendingName = nil
+	self.pendingIcon = nil
+	if self.picking then
+		self:LeavePicker()
+	end
 	self.desiredPosition = actual - (tab == 1 and 0 or MAX_ACCOUNT)
 	self:LoadSelected()
 	self:RefreshList()
@@ -1129,8 +1348,13 @@ end
 
 function Window:OnHide()
 	local frame = self.frame
-	if self.dirty then
+	if self.dirty or self:HasPending() then
 		self:SaveCurrent()
+	end
+	if self.picking then
+		self.picking = false
+		frame.picker:Close()
+		frame.editorSurface:Show()
 	end
 	frame:UnregisterEvent("UPDATE_MACROS")
 	frame:UnregisterEvent("PLAYER_REGEN_DISABLED")
@@ -1142,8 +1366,8 @@ function Window:OnHide()
 	frame:UnregisterEvent("UNIT_PORTRAIT_UPDATE")
 	frame.editor:ClearFocus()
 	frame.editor:HideCompletion()
-	if frame.iconSelector then
-		frame.iconSelector:Hide()
+	if frame.picker then
+		frame.picker:Close()
 	end
 	if frame.history then
 		frame.history:Hide()
@@ -1166,6 +1390,9 @@ function Window:OnEvent(event, ...)
 	elseif event == "SPELLS_CHANGED" then
 		ns.Context.Rebuild()
 		frame.editor:RefreshAll()
+		if frame.picker and frame.picker:IsShown() then
+			frame.picker:Refresh()
+		end
 		if frame.editor.popup:IsShown() then
 			frame.editor:RefreshCompletions()
 		end
