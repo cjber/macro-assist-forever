@@ -5,6 +5,15 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **Deleting the last macro no longer errors.** The window keeps the deleted macro's index while the client refreshes
+  the list, so the delete clears its draft and leaves the tab empty.
+- **Delete's armed label fits its button.** The label reads Confirm, the tooltip says a second click deletes, and the
+  fixed width keeps History in place.
+- **The icon picker opens without a frame drop.** Its All icons rows and labels are cached per column count and kind
+  filter, so reopening it walks only what changed.
+- **The icon picker's status line stays readable.** The editor's status text and counter hide while the picker is
+  open, and its left text truncates before the right hint.
+
 ## [0.3.1] - 2026-11-11
 
 - **Works again after updating.** Updating to the last version could leave the addon switched off in the game's AddOns list with "ForeverCore: missing", because the update did not bring Forever Core with it. Forever Core now comes inside this addon's download again, from CurseForge, Wago or GitHub alike, so updating is all it takes (cjber/shortest-path-forever#731).
