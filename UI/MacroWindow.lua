@@ -78,8 +78,9 @@ ns.ICON_TEXCOORD = ICON_TEXCOORD
 local MACRO_CONSTS = Constants and Constants.MacroConsts
 local MAX_ACCOUNT = MACRO_CONSTS and MACRO_CONSTS.MAX_ACCOUNT_MACROS or 120
 local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
--- GetActionInfo reads an action slot, and the client's bars use the first 120 of them.
-local ACTION_SLOTS = 120
+-- GetActionInfo reads an action slot, and the client's bars use the first 180 of them: MultiBar7 is page 15, whose
+-- last slot is 15 * 12.
+local ACTION_SLOTS = 180
 
 ---@class MacroAssistTab : Button
 ---@field Icon Texture
