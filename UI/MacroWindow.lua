@@ -818,8 +818,9 @@ function Window:LeaveSelected()
 	if self.dirty then
 		if InCombatLockdown() then
 			self.drafts[self.selected] = self.frame.editor:GetText()
-		else
-			self:SaveCurrent()
+		elseif not self:SaveCurrent() then
+			-- The write was refused, so the edit stays a draft instead of disappearing with the selection.
+			self.drafts[self.selected] = self.frame.editor:GetText()
 		end
 	end
 end
@@ -851,6 +852,16 @@ end
 ---@return boolean
 function Window:WriteMacro(index, name, icon, body)
 	if InCombatLockdown() then
+		return false
+	end
+	-- The client stores at most 255 characters and silently cuts a longer body, so a write it would truncate is
+	-- refused here and the editor says why. An edit of the name or icon alone passes no body and is unaffected.
+	if type(body) == "string" and ns.Length(body) > ns.MacroLimit then
+		if self.frame and self.frame.editor then
+			self.frame.editor:Notice(
+				L["Macro is %d characters; the limit is %d. Nothing was saved."]:format(ns.Length(body), ns.MacroLimit)
+			)
+		end
 		return false
 	end
 	local oldName, oldIcon, oldBody = GetMacroInfo(index)

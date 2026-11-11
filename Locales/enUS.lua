@@ -132,6 +132,7 @@ ns.L = {
 	["This clause can never run: an earlier clause always matches."] = true,
 	["This clause can never run: its conditions repeat an earlier clause."] = true,
 	["Macro is %d characters; the limit is %d."] = true,
+	["Macro is %d characters; the limit is %d. Nothing was saved."] = true,
 	["Empty line in the middle of the macro."] = true,
 	["A condition is missing its closing bracket."] = true,
 	["Unexpected character in a condition."] = true,

@@ -1168,6 +1168,26 @@ function Editor:NowText()
 	return result, hasCommands
 end
 
+-- A refusal the player must see now, such as a macro the store would truncate. The next edit's UpdateStatus replaces
+-- it.
+---@param text string
+function Editor:Notice(text)
+	if not self.problem then
+		return
+	end
+	local parent = self.problem:GetParent()
+	self.problem:ClearAllPoints()
+	self.problem:SetPoint("LEFT", parent, "LEFT", 10, 0)
+	self.problem:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
+	self.problem:SetText(COLOUR_RED .. text .. COLOUR_CLOSE)
+	self.statusBackground:SetColorTexture(0.25, 0.02, 0.02, 0.45)
+	self.statusRule:SetColorTexture(1, 0.25, 0.25, 0.5)
+	self.check:Hide()
+	self.nowLabel:Hide()
+	self.now:Hide()
+	self.meter:Hide()
+end
+
 function Editor:UpdateStatus()
 	if not self.problem then
 		return

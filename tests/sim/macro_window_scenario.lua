@@ -568,6 +568,34 @@ scenario("a macro over the limit offers a shorter rewrite, previews it and appli
 	equal(select(3, sim.G.GetMacroInfo(121)), expected, "Save did not keep the shortened macro")
 end)
 
+scenario("a body over the limit is refused and kept as a draft", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local original = "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot"
+	local long = string.rep("/cast Arcane Shot\n", 16)
+	check(#long > 255, "the sample body is not over the limit")
+
+	setText(sim, window, long, true)
+	check(window.saveButton:IsEnabled(), "Save is disabled with an over-limit edit")
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(121)), original, "Save wrote a body over the limit")
+	check(
+		window.editor.problem:GetText():find("Nothing was saved", 1, true) ~= nil,
+		"the refused write is not in the status line"
+	)
+	check(window.saveButton:IsEnabled(), "Save stayed disabled after it refused the write")
+
+	-- Switching tabs saves too, so the same refusal applies and the edit stays a draft on this macro.
+	sim:click(window.Tabs[1])
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(121)), original, "switching tabs wrote a body over the limit")
+	sim:click(window.Tabs[2])
+	sim:advance(0.1)
+	equal(textOf(window), long, "the refused edit did not come back as a draft")
+	check(window.saveButton:IsEnabled(), "the draft is not marked dirty")
+end)
+
 scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)
