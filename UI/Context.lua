@@ -235,18 +235,27 @@ local function PlayerClass()
 end
 
 -- The recipes this character can use, each already rendered with its spell names. A class recipe is left out until
--- UnitClass names the player's class, and a recipe whose spell the client does not know is left out entirely.
+-- UnitClass names the player's class, and a recipe whose spell the client does not know is left out entirely. The
+-- resolved names stay beside the body so completion can match the player's own word for the spell.
 ---@return table[]
 local function AvailableRecipes()
 	local class = PlayerClass()
 	local list = {}
 	for _, recipe in ipairs(ns.Recipes.List) do
 		if recipe.class == nil or recipe.class == class then
-			local body = ns.Recipes.Render(recipe, SpellName)
+			local spells = {}
+			local body = ns.Recipes.Render(recipe, function(spellID)
+				local name = SpellName(spellID)
+				if name then
+					spells[#spells + 1] = name
+				end
+				return name
+			end)
 			if body then
 				list[#list + 1] = {
 					words = recipe.words,
 					title = L[recipe.title] or recipe.title,
+					spells = spells,
 					body = body,
 				}
 			end

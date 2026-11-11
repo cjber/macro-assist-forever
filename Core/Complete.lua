@@ -110,17 +110,29 @@ local function Finish(items)
 	return result
 end
 
--- The best rank one recipe's words give the typed text, or nil when none of them match.
+-- The best rank one recipe gives the typed text, or nil when none of them match. A recipe is found by its intent
+-- words, its localized title and the resolved, localized name of each spell it casts, so a player who types the spell
+-- name in their own language finds it without the data file repeating spell names.
 ---@param typed string
 ---@param recipe table
 ---@return integer?
 local function RecipeRank(typed, recipe)
 	local best
-	for _, words in ipairs(recipe.words or {}) do
-		local rank = Match(typed, words)
+	local function Consider(label)
+		if type(label) ~= "string" then
+			return
+		end
+		local rank = Match(typed, label)
 		if rank and (not best or rank < best) then
 			best = rank
 		end
+	end
+	for _, words in ipairs(recipe.words or {}) do
+		Consider(words)
+	end
+	Consider(recipe.title)
+	for _, name in ipairs(recipe.spells or {}) do
+		Consider(name)
 	end
 	return best
 end

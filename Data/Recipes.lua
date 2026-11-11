@@ -5,13 +5,15 @@ if ns.broken then
 end
 
 -- Recipes the completion list offers when the player types plain words on a line, such as "pet" or "heal mouseover".
--- Every recipe is checked by tests/recipes_spec.lua before it ships: its rendered body has no diagnostics and fits the
--- 255-character limit. A body writes a spell name as `%s`, with the spell IDs in `spells` in the same order, so the
--- client's language decides the name. `title` is a key in Locales/enUS.lua, and `class` is the UnitClass token the
--- recipe belongs to; a recipe with no class is offered to every player.
+-- A typed word matches a recipe's localized title and the resolved, localized name of every spell the recipe casts, so
+-- the data never repeats a spell name. `words` holds only the intent words that are not spell names, such as "pet",
+-- "kick" or "sheep". Every recipe is checked by tests/recipes_spec.lua before it ships: its rendered body has no
+-- diagnostics and fits the 255-character limit. A body writes a spell name as `%s`, with the spell IDs in `spells` in
+-- the same order, so the client's language decides the name. `title` is a key in Locales/enUS.lua, and `class` is the
+-- UnitClass token the recipe belongs to; a recipe with no class is offered to every player.
 
 ---@class MacroAssistRecipe
----@field words string[] the plain words that offer this recipe
+---@field words string[] intent words that are not spell names
 ---@field title string the Locales key for the row's label
 ---@field class string? UnitClass token, or nil for every class
 ---@field body string the macro text, with `%s` for each spell in `spells`
@@ -45,116 +47,102 @@ local recipes = {
 		spells = {},
 	},
 	{
-		words = { "pet", "heal pet", "mend pet", "pet heal" },
+		words = { "pet", "heal pet", "pet heal" },
 		title = "Heal the pet",
 		class = "HUNTER",
 		body = "#showtooltip\n/cast [@pet,nodead] %s",
 		spells = { 136 },
 	},
 	{
-		words = { "pet", "revive pet", "pet revive" },
+		words = { "pet", "pet revive" },
 		title = "Revive the pet",
 		class = "HUNTER",
 		body = "#showtooltip\n/cast [@pet,dead] %s",
 		spells = { 982 },
 	},
 	{
-		words = { "mark", "mark pet", "pet mark", "hunter's mark" },
+		words = { "mark", "mark pet", "pet mark" },
 		title = "Mark and send the pet",
 		class = "HUNTER",
 		body = "#showtooltip\n/cast [@mouseover,harm,nodead][] %s\n/petattack [@mouseover,harm,nodead][]",
 		spells = { 1130 },
 	},
 	{
-		words = { "trap", "trap mouseover", "freezing trap" },
+		words = { "trap", "trap mouseover" },
 		title = "Trap your mouseover",
 		class = "HUNTER",
 		body = "#showtooltip\n/cast [@mouseover,harm,nodead][] %s",
 		spells = { 1499 },
 	},
 	{
-		words = { "heal", "heal mouseover", "flash heal" },
+		words = { "heal", "heal mouseover" },
 		title = "Heal your mouseover",
 		class = "PRIEST",
 		body = "#showtooltip\n/cast [@mouseover,help,nodead][] %s",
 		spells = { 2061 },
 	},
 	{
-		words = { "shield", "shield mouseover", "power word shield" },
+		words = { "shield", "shield mouseover" },
 		title = "Shield your mouseover",
 		class = "PRIEST",
 		body = "#showtooltip\n/cast [@mouseover,help,nodead][] %s",
 		spells = { 17 },
 	},
 	{
-		words = { "polymorph", "sheep", "polymorph mouseover" },
+		words = { "sheep", "polymorph mouseover" },
 		title = "Polymorph your mouseover",
 		class = "MAGE",
 		body = "#showtooltip\n/cast [@mouseover,harm,nodead][] %s",
 		spells = { 118 },
 	},
 	{
-		words = { "interrupt", "counterspell", "kick" },
+		words = { "interrupt", "kick" },
 		title = "Interrupt your mouseover",
 		class = "MAGE",
 		body = "#showtooltip\n/cast [@mouseover,harm,nodead][] %s",
 		spells = { 2139 },
 	},
 	{
-		words = { "heal", "heal mouseover", "healing touch" },
+		words = { "heal", "heal mouseover" },
 		title = "Heal your mouseover",
 		class = "DRUID",
 		body = "#showtooltip\n/cast [@mouseover,help,nodead][] %s",
 		spells = { 5185 },
 	},
 	{
-		words = { "heal", "heal mouseover", "healing wave" },
+		words = { "heal", "heal mouseover" },
 		title = "Heal your mouseover",
 		class = "SHAMAN",
 		body = "#showtooltip\n/cast [@mouseover,help,nodead][] %s",
 		spells = { 331 },
 	},
 	{
-		words = { "heal", "heal mouseover", "holy light" },
+		words = { "heal", "heal mouseover" },
 		title = "Heal your mouseover",
 		class = "PALADIN",
 		body = "#showtooltip\n/cast [@mouseover,help,nodead][] %s",
 		spells = { 635 },
 	},
 	{
-		words = { "fear", "fear mouseover" },
+		words = { "fear mouseover" },
 		title = "Fear your mouseover",
 		class = "WARLOCK",
 		body = "#showtooltip\n/cast [@mouseover,harm,nodead][] %s",
 		spells = { 5782 },
 	},
 	{
-		words = { "sap", "sap mouseover" },
+		words = { "sap mouseover" },
 		title = "Sap your mouseover",
 		class = "ROGUE",
 		body = "#showtooltip\n/cast [@mouseover,harm,nodead][] %s",
 		spells = { 6770 },
 	},
 	{
-		words = { "blind", "blind mouseover" },
+		words = { "blind mouseover" },
 		title = "Blind your mouseover",
 		class = "ROGUE",
 		body = "#showtooltip\n/cast [@mouseover,harm,nodead][] %s",
 		spells = { 2094 },
-	},
-	{
-		words = { "intervene", "intervene mouseover" },
-		title = "Intervene on your mouseover",
-		class = "WARRIOR",
-		body = "#showtooltip\n/cast [@mouseover,help,nodead][] %s",
-		spells = { 3411 },
-	},
-	{
-		words = { "death grip", "grip", "grip mouseover" },
-		title = "Death Grip your mouseover",
-		class = "DEATHKNIGHT",
-		body = "#showtooltip\n/cast [@mouseover,harm,nodead][] %s",
-		spells = { 49576 },
 	},
 }
 

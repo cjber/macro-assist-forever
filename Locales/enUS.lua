@@ -77,8 +77,6 @@ ns.L = {
 	["Fear your mouseover"] = true,
 	["Sap your mouseover"] = true,
 	["Blind your mouseover"] = true,
-	["Intervene on your mouseover"] = true,
-	["Death Grip your mouseover"] = true,
 
 	-- Command categories (Data/Commands.lua), shown when a command has no description.
 	["Achievement"] = true,

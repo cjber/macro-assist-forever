@@ -34,11 +34,9 @@ local names = {
 	[2061] = "Flash Heal",
 	[2094] = "Blind",
 	[2139] = "Counterspell",
-	[3411] = "Intervene",
 	[5185] = "Healing Touch",
 	[5782] = "Fear",
 	[6770] = "Sap",
-	[49576] = "Death Grip",
 }
 
 local spellList = {}
@@ -72,6 +70,18 @@ for index, recipe in ipairs(ns.Recipes.List) do
 	local label = ("recipe %d (%s)"):format(index, recipe.title or "no title")
 	assert(type(recipe.title) == "string" and ns.L[recipe.title], label .. " has no locale title")
 	assert(type(recipe.words) == "table" and #recipe.words > 0, label .. " has no words")
+	-- A word here is an intent word, never a spell name: the resolved spell name is matched on its own.
+	for _, word in ipairs(recipe.words) do
+		for _, id in ipairs(recipe.spells or {}) do
+			if names[id] then
+				checks = checks + 1
+				assert(
+					word:lower() ~= names[id]:lower(),
+					label .. " repeats the spell name " .. names[id] .. " in its words"
+				)
+			end
+		end
+	end
 	if recipe.class then
 		assert(knownClasses[recipe.class], label .. " names an unknown class " .. tostring(recipe.class))
 	end
@@ -82,6 +92,14 @@ for index, recipe in ipairs(ns.Recipes.List) do
 	assert(#diagnostics == 0, label .. " has a diagnostic: " .. (diagnostics[1] and diagnostics[1].message or ""))
 	checks = checks + 1
 	assert(ns.Length(body) <= ns.MacroLimit, label .. " is over the 255-character limit")
+end
+
+-- Forever's spell table has neither Intervene (3411) nor Death Grip (49576), so no recipe may offer them.
+for _, recipe in ipairs(ns.Recipes.List) do
+	for _, id in ipairs(recipe.spells or {}) do
+		checks = checks + 1
+		assert(id ~= 3411 and id ~= 49576, (recipe.title or "a recipe") .. " uses a spell Forever does not have")
+	end
 end
 
 -- The spell IDs fill the placeholders in order, and a missing name refuses the recipe rather than leaving a gap.
