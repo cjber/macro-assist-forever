@@ -10,6 +10,7 @@ checks:
   - { name: specs, run: "for s in tests/*_spec.lua; do luajit \"$s\" || exit 1; done", tests: true }
   - { name: assets, run: "python3 -m tools.forever_tools.assets" }
   - { name: tools, run: "ruff format --check tools && ruff check tools" }
+  - { name: credits, run: "python3 tools/forever_tools/credits.py --check" }
 focus: [Core/**, UI/**, Locales/**]
 ignore: [tools/forever_tools/**]
 guards: { maxFiles: 8, maxLines: 400 }

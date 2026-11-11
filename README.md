@@ -63,6 +63,12 @@ Run `stylua --check .`, `luacheck .`, and every `tests/*_spec.lua` under LuaJIT.
 
 Thanks to the JetBrains Mono project for the bundled mono font, used under the SIL Open Font License, and to warcraft.wiki.gg for the macro conditional reference. [THIRD_PARTY.md](THIRD_PARTY.md) lists every input and its licence.
 
+<!-- forever-credits:start -->
+
+Thanks to everyone who reports a bug or asks for a feature.
+
+<!-- forever-credits:end -->
+
 ## Licence
 
 GPL-3.0-or-later. See [LICENSE](LICENSE). World of Warcraft is a trademark of Blizzard Entertainment, Inc. This addon is not affiliated with or endorsed by Blizzard Entertainment.

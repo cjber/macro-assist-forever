@@ -21,6 +21,7 @@ Core\Require.lua
 Data\Commands.lua
 Data\Conditions.lua
 Data\IconNames.lua
+Data\Credits.lua
 Core\Lexer.lua
 Core\Parser.lua
 Core\Icons.lua
