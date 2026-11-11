@@ -8,6 +8,14 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 ## [0.3.2] - 2026-11-11
 
 - **Tells you which addon to update.** If another Forever addon you have installed is older than this one and stops it starting, the message now names that addon, so you know exactly what to update.
+- **Deleting the last macro no longer errors.** The window keeps the deleted macro's index while the client refreshes
+  the list, so the delete clears its draft and leaves the tab empty.
+- **Delete's armed label fits its button.** The label reads Confirm, the tooltip says a second click deletes, and the
+  fixed width keeps History in place.
+- **The icon picker opens without a frame drop.** Its All icons rows and labels are cached per column count and kind
+  filter, so reopening it walks only what changed.
+- **The icon picker's status line stays readable.** The editor's status text and counter hide while the picker is
+  open, and its left text truncates before the right hint.
 
 ## [0.3.1] - 2026-11-11
 
