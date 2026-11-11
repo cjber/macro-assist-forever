@@ -38,16 +38,22 @@ def scene():
                 "UI/IconSelector.lua",
                 "UI/Editor.lua",
                 "UI/History.lua",
+                "UI/Import.lua",
+                "UI/Shorten.lua",
                 "UI/Context.lua",
                 "Core/Explain.lua",
                 "Core/Highlight.lua",
                 "Core/Check.lua",
                 "Core/Complete.lua",
+                "Core/Bars.lua",
+                "Core/Import.lua",
+                "Core/Shorten.lua",
                 "Core/Lexer.lua",
                 "Core/Parser.lua",
                 "Core/Length.lua",
                 "Data/Commands.lua",
                 "Data/Conditions.lua",
+                "Data/Recipes.lua",
                 "Locales/enUS.lua",
                 "media/fonts/JetBrainsMono-Regular.ttf",
                 "media/squiggle.tga",
@@ -58,7 +64,18 @@ def scene():
     )
 
 
-SCENES = {name: scene for name in ("window.png", "completion.png", "history.png", "picker.png")}
+SCENES = {
+    name: scene
+    for name in (
+        "window.png",
+        "completion.png",
+        "recipes.png",
+        "history.png",
+        "import.png",
+        "shorten.png",
+        "picker.png",
+    )
+}
 
 if __name__ == "__main__":
     raise SystemExit(main(ROOT / "docs" / "screenshots", SCENES))

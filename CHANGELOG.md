@@ -5,7 +5,29 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-11
+
+<!-- discord-image: docs/screenshots/import.png -->
+
+- **Each macro says where it sits on your action bars and which key presses it.** The header names every slot the
+  selected macro is on, with the key bound to that slot, and a macro on no bar is marked in the list as "Not on a bar"
+  so it cannot be lost.
+- **Import a macro by pasting it.** Addons have no network access, so Import takes text from wago.io or another
+  character and checks it with the same parser and diagnostics as the editor before it is saved. Prose, MySlot exports
+  and text over 255 characters are refused with the reason, and a good macro opens the name and icon picker.
+- **Shorten a macro over 255 characters.** The status line offers Shorten when a lossless rewrite exists. The preview
+  shows only the changed lines, with the old line in red and the new one in green, and Apply puts the rewrite in the
+  editor without saving. It trims whitespace the macro does not need, uses each command's shortest alias, collapses an
+  empty trailing clause and drops the clauses the checker calls unreachable.
+- **Recipes found by typing plain words.** A line such as `pet` or `heal mouseover` offers checked recipes for your
+  class in the completion list, with every spell name resolved in your client's language. Tab replaces the line with
+  the whole macro. Each recipe is checked when it ships for a clean parse and a body within the 255-character limit,
+  and a recipe whose spell this client does not know is left out.
+
+## [0.3.4] - 2026-11-11
+
 - **The players who helped are on the Thanks page.** Settings, Forever addons, Thanks lists everyone whose report or idea shipped in Macro Assist Forever, ranked by how much they gave. (#98)
+
 ## [0.3.3] - 2026-11-11
 
 <!-- forever-core-sync -->

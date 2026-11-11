@@ -47,7 +47,7 @@ end
 ---@class MacroAssistCompletionItem
 ---@field label string
 ---@field insert string
----@field kind string secure, command, chat, emote, condition, unit, spell, directive or value
+---@field kind string secure, command, chat, emote, condition, unit, spell, directive, recipe or value
 ---@field detail string
 ---@field live string? the condition's live value, when one was asked for
 
@@ -108,6 +108,33 @@ local function Finish(items)
 		}
 	end
 	return result
+end
+
+-- The best rank one recipe gives the typed text, or nil when none of them match. A recipe is found by its intent
+-- words, its localized title and the resolved, localized name of each spell it casts, so a player who types the spell
+-- name in their own language finds it without the data file repeating spell names.
+---@param typed string
+---@param recipe table
+---@return integer?
+local function RecipeRank(typed, recipe)
+	local best
+	local function Consider(label)
+		if type(label) ~= "string" then
+			return
+		end
+		local rank = Match(typed, label)
+		if rank and (not best or rank < best) then
+			best = rank
+		end
+	end
+	for _, words in ipairs(recipe.words or {}) do
+		Consider(words)
+	end
+	Consider(recipe.title)
+	for _, name in ipairs(recipe.spells or {}) do
+		Consider(name)
+	end
+	return best
 end
 
 ---@param parsed MacroAssistParse
@@ -339,6 +366,34 @@ local function Complete(text, cursor, ctx)
 			end
 		end
 		return { from = from, to = to, items = Finish(items) }
+	end
+
+	-- Plain words on a line offer the recipes whose words match them. The insert is the whole recipe body and the range
+	-- is the whole line, so Tab replaces what the player typed with a ready macro.
+	if line.kind == "text" and not prefix:find("^%s*[%@%[]") then
+		typed = prefix:match("^%s*(.-)%s*$")
+		if typed ~= "" then
+			from = line.from
+			to = line.to
+			for _, recipe in ipairs(ctx.recipes or {}) do
+				local rank = RecipeRank(typed, recipe)
+				if rank and type(recipe.body) == "string" and not seen[recipe.body] then
+					seen[recipe.body] = true
+					items[#items + 1] = {
+						label = recipe.title or "",
+						insert = recipe.body,
+						kind = "recipe",
+						detail = L["Recipe"],
+						rank = rank,
+						from = from,
+						to = to,
+					}
+				end
+			end
+			if #items > 0 then
+				return { from = from, to = to, items = Finish(items) }
+			end
+		end
 	end
 
 	local clause = ClauseAt(line, cursor)

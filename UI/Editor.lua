@@ -22,6 +22,8 @@ local TEXT_INSET_RIGHT = 2
 local TEXT_INSET_TOP = 0
 local SQUIGGLE_HEIGHT = 4
 local STATUS_METER_WIDTH = 90
+local SHORTEN_WIDTH = 70
+local SHORTEN_HEIGHT = 18
 local POPUP_ROWS = 8
 local POPUP_ROW_HEIGHT = 22
 -- The popup is a flat dark panel with a 1-unit white edge, drawn from the client's white primitive instead of the
@@ -32,8 +34,8 @@ local POPUP_INSET_TOP = 4
 local POPUP_INSET_RIGHT = 4
 local POPUP_INSET_BOTTOM = 4
 local POPUP_LABEL_X = 10
-local POPUP_LABEL_WIDTH = 108
-local POPUP_HELP_X = 130
+local POPUP_LABEL_WIDTH = 180
+local POPUP_HELP_X = 194
 local POPUP_TAG_WIDTH = 34
 local POPUP_TAG_RIGHT = 10
 
@@ -102,6 +104,8 @@ end
 ---@field nowLabel FontString
 ---@field now FontString
 ---@field length FontString
+---@field shorten Button
+---@field shortenText string?
 ---@field check Texture
 ---@field statusBackground Texture
 ---@field statusRule Texture
@@ -110,6 +114,7 @@ end
 ---@field meterFill Texture
 ---@field popup MacroAssistCompletionPopup
 ---@field popupMeasure FontString
+---@field labelMeasure FontString
 ---@field lineFonts FontString[]
 ---@field numberFonts FontString[]
 ---@field squiggles MacroAssistSquiggle[]
@@ -132,6 +137,7 @@ end
 ---@field onEdited? fun()
 ---@field onExplain? fun()
 ---@field onEscape? fun()
+---@field onShorten? fun()
 local Editor = {}
 
 -- The byte offset of every UTF-8 character start, plus a final sentinel at #text + 1, so a cursor position can
@@ -463,7 +469,9 @@ function Editor.Create(parent, statusParent)
 	self.edit:SetPoint("BOTTOMRIGHT", self.textArea, "BOTTOMRIGHT", -TEXT_INSET_RIGHT, TEXT_INSET_TOP)
 	self.edit:SetMultiLine(true)
 	self.edit:SetAutoFocus(false)
-	self.edit:SetMaxLetters(ns.MacroLimit)
+	-- No SetMaxLetters here. A macro already over the limit, from an older save or another addon, must load whole so
+	-- the checker can report it and Shorten can offer a rewrite; capping the EditBox would cut the text before either
+	-- could see it. The counter and the checker still report the 255 limit, and the macro store applies its own.
 	self.edit:SetCountInvisibleLetters(true)
 	self.edit:SetTextInsets(0, 0, 0, 0)
 	self.edit:SetFontObject(FONT_NAME)
@@ -554,6 +562,32 @@ function Editor.Create(parent, statusParent)
 	self.length:SetJustifyH("RIGHT")
 	self.length:SetWordWrap(false)
 
+	-- The offer to shorten an over-limit macro. It sits beside the character count and only shows when a lossless
+	-- rewrite exists; the status line owns the rest of the row.
+	local shorten = CreateFrame("Button", nil, statusParent)
+	shorten:SetSize(SHORTEN_WIDTH, SHORTEN_HEIGHT)
+	shorten:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
+	local shortenBackground = shorten:CreateTexture(nil, "BACKGROUND")
+	shortenBackground:SetAllPoints(shorten)
+	shortenBackground:SetColorTexture(1, 1, 1, 0.08)
+	local shortenLabel = shorten:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	shortenLabel:SetPoint("CENTER", shorten, "CENTER", 0, 0)
+	shortenLabel:SetText(L["Shorten"])
+	shortenLabel:SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+	shorten:SetScript("OnEnter", function()
+		shortenBackground:SetColorTexture(1, 0.82, 0.2, 0.18)
+	end)
+	shorten:SetScript("OnLeave", function()
+		shortenBackground:SetColorTexture(1, 1, 1, 0.08)
+	end)
+	shorten:SetScript("OnClick", function()
+		if self.onShorten then
+			self.onShorten()
+		end
+	end)
+	shorten:Hide()
+	self.shorten = shorten
+
 	self.meter = CreateFrame("Frame", nil, statusParent)
 	self.meter:SetSize(STATUS_METER_WIDTH, 4)
 	self.meter:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
@@ -639,6 +673,8 @@ function Editor.Create(parent, statusParent)
 	end
 	self.popupMeasure = self.popup:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	self.popupMeasure:SetAlpha(0)
+	self.labelMeasure = self.popup:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
+	self.labelMeasure:SetAlpha(0)
 
 	self.edit:SetScript("OnTextChanged", function(_, userInput)
 		self.click = nil
@@ -1132,12 +1168,41 @@ function Editor:NowText()
 	return result, hasCommands
 end
 
+-- A refusal the player must see now, such as a macro the store would truncate. The next edit's UpdateStatus replaces
+-- it.
+---@param text string
+function Editor:Notice(text)
+	if not self.problem then
+		return
+	end
+	local parent = self.problem:GetParent()
+	self.problem:ClearAllPoints()
+	self.problem:SetPoint("LEFT", parent, "LEFT", 10, 0)
+	self.problem:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
+	self.problem:SetText(COLOUR_RED .. text .. COLOUR_CLOSE)
+	self.statusBackground:SetColorTexture(0.25, 0.02, 0.02, 0.45)
+	self.statusRule:SetColorTexture(1, 0.25, 0.25, 0.5)
+	self.check:Hide()
+	self.nowLabel:Hide()
+	self.now:Hide()
+	self.meter:Hide()
+end
+
 function Editor:UpdateStatus()
 	if not self.problem then
 		return
 	end
 	local parent = self.problem:GetParent()
-	local length = ns.Length(self:GetText())
+	local source = self:GetText()
+	local length = ns.Length(source)
+	self.shortenText = nil
+	if length > ns.MacroLimit then
+		local result = ns.Shorten(source)
+		if result.text ~= source then
+			self.shortenText = result.text
+		end
+	end
+	self.shorten:SetShown(self.shortenText ~= nil)
 	self.length:SetText(COLOUR_MUTED .. L["%d/%d"]:format(length, ns.MacroLimit) .. COLOUR_CLOSE)
 	self.meterFill:SetWidth(STATUS_METER_WIDTH * math.min(length, ns.MacroLimit) / ns.MacroLimit)
 	local suffix = ""
@@ -1160,7 +1225,11 @@ function Editor:UpdateStatus()
 		self.statusBackground:SetColorTexture(0.25, 0.02, 0.02, 0.45)
 		self.statusRule:SetColorTexture(1, 0.25, 0.25, 0.5)
 		self.problem:SetPoint("LEFT", parent, "LEFT", 10, 0)
-		self.problem:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
+		if self.shortenText then
+			self.problem:SetPoint("RIGHT", self.shorten, "LEFT", -8, 0)
+		else
+			self.problem:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
+		end
 		self.check:Hide()
 		self.nowLabel:Hide()
 		self.now:Hide()
@@ -1172,6 +1241,8 @@ function Editor:UpdateStatus()
 	self.statusRule:SetColorTexture(1, 1, 1, 0.08)
 	self.problem:SetPoint("LEFT", parent, "LEFT", 24, 0)
 	self.problem:SetPoint("RIGHT", self.nowLabel, "LEFT", -8, 0)
+	self.shorten:Hide()
+	self.shortenText = nil
 	self.check:Show()
 	self.nowLabel:Show()
 	self.now:Show()
@@ -1318,7 +1389,7 @@ function Editor:RenderCompletion()
 		if item then
 			row:SetID(index)
 			row:Show()
-			row.label:SetText(item.label)
+			row.label:SetText(TrimToWidth(item.label, self.labelMeasure, POPUP_LABEL_WIDTH))
 			local detail = item.detail or ""
 			local live = item.live
 			if live and live ~= "" then
