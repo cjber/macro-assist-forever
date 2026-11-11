@@ -5,12 +5,12 @@ local addonName, ns = ...
 ns.Icon = C_AddOns.GetAddOnMetadata(addonName, "X-Forever-Icon")
 
 -- The game refuses to load this addon when ForeverCore is absent (## Dependencies), but an older ForeverCore still
--- loads. Its API version says whether it has everything this addon calls, so an out-of-date one stops the addon's own
--- files here with one line on screen, never a chat message.
-if ForeverCore == nil or (ForeverCore.API or 0) < 1 then
-	ns.broken = true
-	local errors = rawget(_G, "UIErrorsFrame")
-	if errors then
-		errors:AddMessage(ns.L["Macro Assist Forever needs ForeverCore, which is missing or too old."], 1, 0.1, 0.1)
-	end
-end
+-- loads. Its members say whether it has everything this addon calls, so an out-of-date one stops the addon's own
+-- files here. The warning itself is Core/ForeverRequire.lua, shared by every Forever addon. It names the addon to
+-- update, never ForeverCore.
+--
+-- Register is the one ForeverCore member this addon calls directly: Core/Core.lua uses it for the report window, the
+-- journal and the log. No member this addon calls arrived after API 1, so its presence is the whole check.
+local ready = ForeverCore ~= nil and type(ForeverCore.Register) == "function"
+
+ns.ForeverRequire(ready)

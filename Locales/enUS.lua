@@ -3,7 +3,9 @@ local _, ns = ...
 ---@type table<string, string | boolean>
 ns.L = {
 	["Macro Assist Forever report"] = true,
-	["Macro Assist Forever needs ForeverCore, which is missing or too old."] = true,
+	["%s could not start. Reinstall %s to fix this."] = true,
+	["%s: %s is out of date. Update it to fix this."] = true,
+	["%s: %s are out of date. Update them to fix this."] = true,
 
 	-- Macro conditions (Data/Conditions.lua).
 	["The unit exists."] = true,

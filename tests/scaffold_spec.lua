@@ -75,7 +75,8 @@ toc:close()
 
 equal(metadata["Dependencies"], "ForeverCore", "the TOC requires ForeverCore")
 equal(loaded[1], "Locales/enUS.lua", "the locale loads first")
-equal(loaded[2], "Core/Require.lua", "the API floor follows it, before any addon code")
+equal(loaded[2], "Core/ForeverRequire.lua", "the shared warning follows it")
+equal(loaded[3], "Core/Require.lua", "the feature check follows that, before any addon code")
 equal(loaded[#loaded], "Core/Core.lua", "the core loads last")
 for _, shared in ipairs({ "Core/SafeCall.lua", "Core/Log.lua", "UI/Report.lua", "UI/ForeverFamily.lua" }) do
 	for _, entry in ipairs(loaded) do
