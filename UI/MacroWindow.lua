@@ -159,6 +159,7 @@ local ACTION_SLOTS = 120
 ---@field cancelButton Button
 ---@field Tabs MacroAssistTab[]
 ---@field importPanel MacroAssistImportPanel
+---@field shortenPanel MacroAssistShortenPanel
 
 ---@class MacroAssistWindow
 ---@field frame MacroAssistFrame
@@ -490,6 +491,9 @@ function Window.Create()
 	frame.importPanel = ns.ImportPanel.Create(frame, function(body)
 		Window:ImportMacro(body)
 	end)
+	frame.shortenPanel = ns.ShortenPanel.Create(frame, function(text)
+		Window:ApplyShorten(text)
+	end)
 	local lastWidth
 	editorSurface:SetScript("OnSizeChanged", function(_, width)
 		if width > 1 and width ~= lastWidth and frame:IsShown() then
@@ -502,6 +506,9 @@ function Window.Create()
 	end
 	frame.editor.onExplain = function()
 		Window:UpdateExplain()
+	end
+	frame.editor.onShorten = function()
+		Window:OpenShorten()
 	end
 	frame.editor.onEscape = function()
 		Window.ClosePanel()
@@ -1383,6 +1390,38 @@ function Window:ImportMacro(body)
 	self:OpenPicker(true)
 end
 
+-- Shorten is an edit, not a write: the preview shows the diff, Apply changes the editor text and marks it dirty, and
+-- Save still goes through the usual macro write. Nothing here is refused in combat, because Save refuses on its own.
+function Window:OpenShorten()
+	local frame = self.frame
+	if not frame or not frame.shortenPanel then
+		return
+	end
+	if frame.importPanel and frame.importPanel:IsShown() then
+		ns.ImportPanel.Close(frame.importPanel)
+	end
+	if self.picking then
+		self:LeavePicker()
+	end
+	local old = frame.editor:GetText()
+	local result = ns.Shorten(old)
+	if result.text == old then
+		return
+	end
+	ns.ShortenPanel.Open(frame.shortenPanel, old, result.text)
+end
+
+---@param text string
+function Window:ApplyShorten(text)
+	local editor = self.frame and self.frame.editor
+	if not editor then
+		return
+	end
+	editor:SetText(text)
+	editor:Focus()
+	self:OnTextEdited()
+end
+
 function Window:OpenHistory()
 	local frame = self.frame
 	if not frame or not frame.history then
@@ -1503,6 +1542,9 @@ function Window:OnHide()
 	end
 	if frame.importPanel and frame.importPanel:IsShown() then
 		ns.ImportPanel.Close(frame.importPanel)
+	end
+	if frame.shortenPanel and frame.shortenPanel:IsShown() then
+		ns.ShortenPanel.Close(frame.shortenPanel)
 	end
 end
 

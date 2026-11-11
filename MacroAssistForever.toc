@@ -31,12 +31,14 @@ Core\History.lua
 Core\Import.lua
 Core\Complete.lua
 Core\Check.lua
+Core\Shorten.lua
 Core\Secret.lua
 UI\Context.lua
 UI\Editor.lua
 UI\IconSelector.lua
 UI\History.lua
 UI\Import.lua
+UI\Shorten.lua
 UI\MacroWindow.xml
 UI\MacroWindow.lua
 Core\Core.lua

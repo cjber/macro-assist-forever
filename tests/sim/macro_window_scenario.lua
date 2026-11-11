@@ -471,6 +471,54 @@ scenario("completion, a problem and its fix", function(sim)
 	setText(sim, window, original, false)
 end)
 
+scenario("a macro over the limit offers a shorter rewrite, previews it and applies it", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local line = "/spell    [harm, nodead]   Arcane Shot; [harm] Arcane Shot"
+	local long = table.concat({ line, line, line, line, line }, "\n")
+	local expected = table.concat({
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+	}, "\n")
+	check(#long > 255, "the sample macro is not over the limit")
+
+	setText(sim, window, long, true)
+	check(window.editor.shorten:IsShown(), "an over-limit macro does not offer Shorten")
+	check(window.editor.shortenText == expected, "Shorten did not keep the lossless rewrite")
+
+	sim:click(window.editor.shorten)
+	sim:advance(0.1)
+	local panel = window.shortenPanel
+	check(panel:IsShown(), "Shorten did not open the preview")
+	check(panel.diff:GetText():find("-" .. line, 1, true) ~= nil, "the preview does not show the old line")
+	check(
+		panel.diff:GetText():find("+/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot", 1, true) ~= nil,
+		"the preview does not show the new line"
+	)
+	check(panel.status:GetText():find("now 254/255", 1, true) ~= nil, "the preview does not count the new length")
+
+	sim:click(panel.cancelButton)
+	sim:advance(0.1)
+	check(not panel:IsShown(), "Cancel left the preview open")
+	equal(textOf(window), long, "Cancel changed the editor")
+
+	sim:click(window.editor.shorten)
+	sim:advance(0.1)
+	sim:click(panel.applyButton)
+	sim:advance(0.1)
+	check(not panel:IsShown(), "Apply left the preview open")
+	equal(textOf(window), expected, "Apply did not put the rewrite in the editor")
+	check(not window.editor.shorten:IsShown(), "Shorten is still offered after the rewrite")
+	check(window.saveButton:IsEnabled(), "the rewrite did not mark the macro dirty")
+
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(121)), expected, "Save did not keep the shortened macro")
+end)
+
 scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)

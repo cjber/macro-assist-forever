@@ -27,6 +27,7 @@ PICKER = (ROOT / "UI" / "IconSelector.lua").read_text(encoding="utf-8")
 EDITOR = (ROOT / "UI" / "Editor.lua").read_text(encoding="utf-8")
 HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
 IMPORT = (ROOT / "UI" / "Import.lua").read_text(encoding="utf-8")
+SHORTEN = (ROOT / "UI" / "Shorten.lua").read_text(encoding="utf-8")
 XML = (ROOT / "UI" / "MacroWindow.xml").read_text(encoding="utf-8")
 FONT_FILE = ROOT / "media" / "fonts" / "JetBrainsMono-Regular.ttf"
 SQUIGGLE = Image.open(ROOT / "media" / "squiggle.tga").convert("RGBA")
@@ -116,6 +117,17 @@ IMPORT_STATUS_BOTTOM = number("STATUS_BOTTOM", IMPORT)
 IMPORT_BOTTOM = number("BOTTOM", IMPORT)
 IMPORT_BUTTON_WIDTH = number("BUTTON_WIDTH", IMPORT)
 IMPORT_BUTTON_HEIGHT = number("BUTTON_HEIGHT", IMPORT)
+# The Shorten preview's own numbers, from UI/Shorten.lua.
+SHORTEN_PANEL_WIDTH = number("WIDTH", SHORTEN)
+SHORTEN_PANEL_HEIGHT = number("HEIGHT", SHORTEN)
+SHORTEN_PANEL_INSET = number("INSET_PADDING", SHORTEN)
+SHORTEN_HINT_TOP = number("HINT_TOP", SHORTEN)
+SHORTEN_HINT_HEIGHT = number("HINT_HEIGHT", SHORTEN)
+SHORTEN_BOX_BOTTOM = number("BOX_BOTTOM", SHORTEN)
+SHORTEN_STATUS_BOTTOM = number("STATUS_BOTTOM", SHORTEN)
+SHORTEN_BOTTOM = number("BOTTOM", SHORTEN)
+SHORTEN_BUTTON_WIDTH = number("BUTTON_WIDTH", SHORTEN)
+SHORTEN_BUTTON_HEIGHT = number("BUTTON_HEIGHT", SHORTEN)
 ROW_ICON_SIZE = 26
 ROW_ICON_INSET = 6
 ROW_TEXT_X = 40
@@ -1483,12 +1495,124 @@ def picker_layout(ui):
     return {"frame": {"x": X, "y": Y, "w": WINDOW_WIDTH, "h": WINDOW_HEIGHT}, "widgets": widgets}
 
 
+# The Shorten preview's sample: five long lines rewritten to fit, with the old line in red and the new one in green.
+SHORTEN_OLD_LINE = "/spell      [harm, nodead]      Arcane Shot"
+SHORTEN_NEW_LINE = "/cast [harm,nodead] Arcane Shot"
+SHORTEN_OLD = "\n".join([SHORTEN_OLD_LINE] * 6)
+SHORTEN_NEW = "\n".join([SHORTEN_NEW_LINE] * 6)
+
+
+def shorten_geometry():
+    x = X + (WINDOW_WIDTH - SHORTEN_PANEL_WIDTH) // 2
+    y = Y + (WINDOW_HEIGHT - SHORTEN_PANEL_HEIGHT) // 2
+    return x, y, SHORTEN_PANEL_WIDTH, SHORTEN_PANEL_HEIGHT
+
+
+def draw_shorten(canvas):
+    """The Shorten preview over the macro window: the changed lines and the counts before and after."""
+    x, y, w, h = shorten_geometry()
+    background(canvas, x, y, w, h)
+    canvas.text(
+        x + 12,
+        y + SHORTEN_HINT_TOP,
+        "This rewrite only removes what the macro does not need.",
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        width=w - 24,
+    )
+    box_x = x + 10
+    box_y = y + SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8
+    box_w = w - 20
+    box_h = h - (SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8) - SHORTEN_BOX_BOTTOM
+    inset(canvas, box_x, box_y, box_w, box_h)
+    diff_y = box_y + SHORTEN_PANEL_INSET + 2
+    for _ in range(6):
+        canvas.text(
+            box_x + SHORTEN_PANEL_INSET + 2,
+            diff_y,
+            f"-{SHORTEN_OLD_LINE}",
+            MONO,
+            (1, 0.25, 0.25),
+            width=box_w - SHORTEN_PANEL_INSET * 2 - 4,
+        )
+        diff_y += 18
+        canvas.text(
+            box_x + SHORTEN_PANEL_INSET + 2,
+            diff_y,
+            f"+{SHORTEN_NEW_LINE}",
+            MONO,
+            (0.2, 1, 0.6),
+            width=box_w - SHORTEN_PANEL_INSET * 2 - 4,
+        )
+        diff_y += 18
+    canvas.text(
+        x + 12,
+        y + h - SHORTEN_STATUS_BOTTOM - 6,
+        f"{len(SHORTEN_OLD)}/255, now {len(SHORTEN_NEW)}/255",
+        FONTS["GameFontHighlightSmall"],
+        (0.2, 1, 0.6),
+    )
+    button(
+        canvas,
+        x + w - 10 - SHORTEN_BUTTON_WIDTH,
+        y + h - SHORTEN_BOTTOM - SHORTEN_BUTTON_HEIGHT,
+        SHORTEN_BUTTON_WIDTH,
+        "Apply",
+        h=SHORTEN_BUTTON_HEIGHT,
+    )
+    button(
+        canvas,
+        x + w - 10 - SHORTEN_BUTTON_WIDTH * 2 - 6,
+        y + h - SHORTEN_BOTTOM - SHORTEN_BUTTON_HEIGHT,
+        SHORTEN_BUTTON_WIDTH,
+        "Cancel",
+        h=SHORTEN_BUTTON_HEIGHT,
+    )
+    wowmock.portrait_frame_art(canvas, x, y, w, h, IDENTITY_ICON, "Shorten macro")
+    return x, y, w, h
+
+
+def shorten_layout():
+    x, y, w, h = shorten_geometry()
+    box_y = y + SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8
+    return {
+        "frame": {"x": x, "y": y, "w": w, "h": h},
+        "widgets": [
+            {
+                "name": "shorten-diff",
+                "role": "text",
+                "x": x + 10,
+                "y": box_y,
+                "w": w - 20,
+                "h": h - (SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8) - SHORTEN_BOX_BOTTOM,
+            },
+            {
+                "name": "shorten-cancel",
+                "role": "button",
+                "x": x + w - 10 - SHORTEN_BUTTON_WIDTH * 2 - 6,
+                "y": y + h - SHORTEN_BOTTOM - SHORTEN_BUTTON_HEIGHT,
+                "w": SHORTEN_BUTTON_WIDTH,
+                "h": SHORTEN_BUTTON_HEIGHT,
+            },
+            {
+                "name": "shorten-apply",
+                "role": "button",
+                "x": x + w - 10 - SHORTEN_BUTTON_WIDTH,
+                "y": y + h - SHORTEN_BOTTOM - SHORTEN_BUTTON_HEIGHT,
+                "w": SHORTEN_BUTTON_WIDTH,
+                "h": SHORTEN_BUTTON_HEIGHT,
+            },
+        ],
+    }
+
+
 def layout(ui):
     return {
         "scenes": [
             window_layout(ui),
             history_layout(),
             import_layout(),
+            shorten_layout(),
             picker_layout(ui),
         ]
     }
@@ -1546,6 +1670,17 @@ def main():
     draw_import(import_canvas)
     wowmock.scene(ui, [(import_canvas, 0, 0)]).save(output / "import.png")
     print(output / "import.png")
+
+    shorten_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data=window_data,
+    )
+    draw_shorten(shorten_canvas)
+    wowmock.scene(ui, [(shorten_canvas, 0, 0)]).save(output / "shorten.png")
+    print(output / "shorten.png")
 
     picker_canvas = window(
         ui,

@@ -177,6 +177,40 @@
     },
     {
       "frame": {
+        "x": 214,
+        "y": 74,
+        "w": 480,
+        "h": 400
+      },
+      "widgets": [
+        {
+          "name": "shorten-diff",
+          "role": "text",
+          "x": 224,
+          "y": 162,
+          "w": 460,
+          "h": 236
+        },
+        {
+          "name": "shorten-cancel",
+          "role": "button",
+          "x": 498,
+          "y": 442,
+          "w": 90,
+          "h": 24
+        },
+        {
+          "name": "shorten-apply",
+          "role": "button",
+          "x": 594,
+          "y": 442,
+          "w": 90,
+          "h": 24
+        }
+      ]
+    },
+    {
+      "frame": {
         "x": 24,
         "y": 24,
         "w": 860,

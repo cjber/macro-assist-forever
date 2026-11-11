@@ -21,6 +21,7 @@
 - **An icon picker in the window.** Click the header icon or Rename and the code gives way to one grid: the macro's Automatic icon and the icons of what it casts first, then your spellbook, then every icon in the game. Search by icon file name or by your own spells and items, or filter by class, spell school or item slot. The name is editable in the header, a pick shows at once, and Save keeps it.
 - **Rename, New, Save, Cancel and Delete.** Delete asks for a second click. New adds a macro and opens the picker with its name ready to type. Drag a row or the header icon to an action bar to place the macro there.
 - **Import a macro by pasting it.** Addons cannot reach the web, so Import takes text from wago.io or another character, checks it with the same parser and diagnostics as the editor, and refuses prose, MySlot exports and anything over 255 characters. A macro that passes opens the name and icon picker.
+- **Shorten a macro that is over 255.** The status line offers Shorten when a lossless rewrite exists, the preview shows only the changed lines, and Apply puts the rewrite in the editor without saving. It trims redundant whitespace, uses the shortest alias of each command from the same data entry, and drops clauses the checker calls unreachable.
 - **History with Restore.** Every save, rename and delete keeps the macro's previous name, icon and text, the newest 20 for each macro. History lists them with their time and what changed, and Restore puts one back. Deleted macros stay in a Deleted section until you restore them.
 - **Safe to open in combat.** Every button that writes to your macros is turned off in combat, Restore included, with a line in the status row saying why. Edits are saved when the window closes out of combat.
 
@@ -43,6 +44,10 @@ The icon picker: the macro's Automatic icon and what it casts, your spellbook, t
 <p align="center"><img src="docs/screenshots/import.png" alt="The Import box with a pasted macro checked and ready to import"></p>
 
 Paste a macro from wago.io or another character, see its checks and character count, then import it into the General or character tab.
+
+<p align="center"><img src="docs/screenshots/shorten.png" alt="The Shorten preview showing the old lines in red and the rewritten lines in green"></p>
+
+An over-limit macro offers a lossless rewrite, shown as a diff before it reaches the editor.
 
 ## Install
 

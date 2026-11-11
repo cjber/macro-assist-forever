@@ -13,6 +13,7 @@ INTENTIONAL_GAPS = {
     frozenset(("history", "import")): 6,
     frozenset(("cancel", "save")): 6,
     frozenset(("import-cancel", "import-button")): 6,
+    frozenset(("shorten-cancel", "shorten-apply")): 6,
 }
 
 
