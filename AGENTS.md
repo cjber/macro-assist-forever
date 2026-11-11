@@ -4,9 +4,9 @@ Macro Assist Forever gives WoW: Forever (`Interface 16001`) a macro window of it
 list of every macro, and an editor with a mono font, line numbers, completions, live condition values and diagnostics
 as you type. Blizzard's macro panel still opens; our window covers it at alpha 0. It never runs macros for the player.
 
-It requires ForeverCore (`## Dependencies: ForeverCore`, `required-dependencies` in `.pkgmeta`), the standalone addon
-every Forever addon needs: the report window, the error journal, the debug log and the family page are core's alone.
-The stores install ForeverCore with it, and no core file is ever vendored here.
+It requires ForeverCore (`## Dependencies: ForeverCore`, and the release `tools/forever-core.txt` pins ships in the
+`.pkgmeta` `externals`), the standalone addon every Forever addon needs: the report window, the error journal, the
+debug log and the family page are core's alone. The one core runtime file carried here is the shared warning below.
 
 ## Commands
 
@@ -37,6 +37,8 @@ cjber/forever-core at the ref in `tools/forever-core.txt` into `forever-core/` a
 separate `core-shared` workflow runs the client load rule, the menu rule and the vendored-tooling drift check.
 `tools/deadcode.py`, `tools/deadcode-allow.txt`, `tools/check_client_load.py`, `tools/check_menu_scroll.py` and
 `.github/workflows/core-shared-drift.yml` are copied from forever-core: change them there, never here.
+`Core/ForeverRequire.lua`, the one out-of-date warning every Forever addon carries, is copied byte for byte from
+forever-core too, and is never edited here.
 `tools/forever_tools/` is the suite's shared Python tooling and `tools/forever_sim/` is the vendored simulator; both
 are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cache/` and is never committed.
 
@@ -51,11 +53,11 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
 - Render every player-facing UI scene and inspect the PNG at full size. Keep the render reproducible and audit its
   layout with `tools/visual_audit.py`.
 - Do not save frames, functions, userdata, or client tables.
-- `Core/Require.lua` runs before any other addon file and stops the addon with one line in `UIErrorsFrame` when
-  ForeverCore is missing or its `API` is below 1. Every file after it opens with `if ns.broken then return end`.
+- `Core/Require.lua` runs after `Core/ForeverRequire.lua` and stops the addon with one line in `UIErrorsFrame` when
+  the loaded ForeverCore lacks the member the addon calls. Every file after it opens with `if ns.broken then return end`.
 - `Core/Core.lua` registers the addon's shared services once at load (`ns.core = ForeverCore.Register(...)`) and
   attaches the saved table at login. Everything shared (report, journal, log, family page) is ForeverCore's, read
-  from the `ForeverCore` global: never copy one of its files here.
+  from the `ForeverCore` global: never copy one of its runtime files here.
 - The specs and the sim load ForeverCore the way the client does: `tests/forever_core.lua` finds the checkout
   (`FOREVER_CORE`, else `../forever-core`) and reads its TOC, so a spec never fakes a shared module.
 - Run `stylua --check .`, `luacheck .`, every `tests/*_spec.lua` under LuaJIT, and `python3 tools/changelog.py --check`
@@ -73,8 +75,9 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
 - Every player-visible phrase lives in `Locales/enUS.lua` and is read through `ns.L`, never as a bare string.
 - Every saved option gets a default in an `ns.DEFAULTS` table in `Core/Core.lua`, copied into `MacroAssistForeverDB`
   on load, so an old save file and a new setting agree.
-- The addon requires ForeverCore and works with nothing else installed. No core file is vendored: a shared file that
-  needs a change is changed in forever-core and reaches players with its release.
+- The addon requires ForeverCore and works with nothing else installed. No core runtime file is vendored: a shared
+  file that needs a change is changed in forever-core and reaches players with its release. `Core/ForeverRequire.lua`
+  is the one shared file carried here, copied byte for byte.
 
 ## Standards
 
