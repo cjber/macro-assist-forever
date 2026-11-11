@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parent.parent
 POLICY = package.Policy(
     addons=("MacroAssistForever", "ForeverCore"),
     specs=tuple(sorted(path.relative_to(ROOT).as_posix() for path in ROOT.glob("tests/*_spec.lua"))),
+    # changelog_spec checks the shipped headline against CHANGELOG.md, which does not ship.
+    support=("tests", "CHANGELOG.md"),
 )
 
 if __name__ == "__main__":
