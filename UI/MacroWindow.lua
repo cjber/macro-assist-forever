@@ -77,6 +77,8 @@ ns.ICON_TEXCOORD = ICON_TEXCOORD
 local MACRO_CONSTS = Constants and Constants.MacroConsts
 local MAX_ACCOUNT = MACRO_CONSTS and MACRO_CONSTS.MAX_ACCOUNT_MACROS or 120
 local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
+-- GetActionInfo reads an action slot, and the client's bars use the first 120 of them.
+local ACTION_SLOTS = 120
 
 ---@class MacroAssistTab : Button
 ---@field Icon Texture
@@ -472,6 +474,7 @@ function Window.Create()
 	Window.picking = false
 	Window.pendingName = nil
 	Window.pendingIcon = nil
+	Window.slots = {}
 
 	frame.explainPanel = BuildExplainPanel(editorSurface)
 	frame.editor = ns.Editor.Create(editorSurface, statusBar)
@@ -580,7 +583,12 @@ function Window:InitializeRow(row, data)
 	row.Icon:SetTexture(data.icon)
 	row.Icon:SetTexCoord(ICON_TEXCOORD[1], ICON_TEXCOORD[2], ICON_TEXCOORD[3], ICON_TEXCOORD[4])
 	row.Name:SetText(data.name or "")
-	row.Summary:SetText(data.summary or "")
+	local summary = data.summary or ""
+	local slots = self.slots and self.slots[data.index]
+	if not slots or #slots == 0 then
+		summary = summary ~= "" and L["%s · Not on a bar"]:format(summary) or L["Not on a bar"]
+	end
+	row.Summary:SetText(summary)
 	row.Summary:SetTextColor(ROW_MUTED[1], ROW_MUTED[2], ROW_MUTED[3])
 	local selected = data.index == self.selected
 	row.Selected:SetShown(selected)
@@ -922,6 +930,60 @@ function Window:SelectMacro(actual)
 	self:RefreshList()
 end
 
+-- Which action slots hold which macro, rebuilt from the client when a bar, binding or macro changes. GetActionInfo
+-- answers "macro", macro index for a macro action, so the index is the same one GetMacroInfo uses (character macros
+-- follow the account macros). A slot with no Blizzard binding is still shown by its number, without a key.
+function Window:RebuildBars()
+	local slots = {}
+	if type(GetActionInfo) ~= "function" then
+		self.slots = slots
+		return
+	end
+	for slot = 1, ACTION_SLOTS do
+		local ok, kind, id = pcall(GetActionInfo, slot)
+		if ok and kind == "macro" and type(id) == "number" then
+			local binding = ns.Bars.Binding(slot)
+			local key
+			if binding and type(GetBindingKey) == "function" then
+				local keyOk, bound = pcall(GetBindingKey, binding)
+				if keyOk and type(bound) == "string" and bound ~= "" then
+					key = bound
+					if type(GetBindingText) == "function" then
+						local textOk, text = pcall(GetBindingText, bound, "KEY_")
+						if textOk and type(text) == "string" and text ~= "" then
+							key = text
+						end
+					end
+				end
+			end
+			local list = slots[id] or {}
+			list[#list + 1] = { slot = slot, key = key }
+			slots[id] = list
+		end
+	end
+	self.slots = slots
+end
+
+-- The header's second line: the tab, then every slot the selected macro sits in and the key that presses it.
+---@param index integer
+---@return string
+function Window:BarText(index)
+	local tab = self.tab == 1 and L["General macro"] or L["Character macro"]
+	local list = self.slots and self.slots[index]
+	if not list or #list == 0 then
+		return L["%s, not on a bar"]:format(tab)
+	end
+	local text = tab
+	for _, entry in ipairs(list) do
+		if entry.key then
+			text = L["%s, slot %d (%s)"]:format(text, entry.slot, entry.key)
+		else
+			text = L["%s, slot %d"]:format(text, entry.slot)
+		end
+	end
+	return text
+end
+
 function Window:UpdateHeader()
 	local frame = self.frame
 	local header = frame.header
@@ -942,7 +1004,7 @@ function Window:UpdateHeader()
 	local shownName = self.pendingName or name or L["No macro selected"]
 	header.icon:SetTexture(icon)
 	header.name:SetText(shownName)
-	header.meta:SetText(self.tab == 1 and L["General macro"] or L["Character macro"])
+	header.meta:SetText(self:BarText(self.selected))
 	if self.picking then
 		header.name:Hide()
 		header.nameEdit:Show()
@@ -1336,7 +1398,10 @@ function Window:OnShow()
 	frame:RegisterEvent("PLAYER_TARGET_CHANGED")
 	frame:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 	frame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+	frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+	frame:RegisterEvent("UPDATE_BINDINGS")
 	ns.Context.Rebuild()
+	self:RebuildBars()
 	self.combat = InCombatLockdown()
 	self.deleteArmed = false
 	self:UpdatePortrait()
@@ -1364,6 +1429,8 @@ function Window:OnHide()
 	frame:UnregisterEvent("PLAYER_TARGET_CHANGED")
 	frame:UnregisterEvent("UPDATE_MOUSEOVER_UNIT")
 	frame:UnregisterEvent("UNIT_PORTRAIT_UPDATE")
+	frame:UnregisterEvent("ACTIONBAR_SLOT_CHANGED")
+	frame:UnregisterEvent("UPDATE_BINDINGS")
 	frame.editor:ClearFocus()
 	frame.editor:HideCompletion()
 	if frame.picker then
@@ -1377,6 +1444,10 @@ end
 function Window:OnEvent(event, ...)
 	local frame = self.frame
 	if event == "UPDATE_MACROS" then
+		self:RebuildBars()
+		self:RefreshList()
+	elseif event == "ACTIONBAR_SLOT_CHANGED" or event == "UPDATE_BINDINGS" then
+		self:RebuildBars()
 		self:RefreshList()
 	elseif event == "UNIT_PORTRAIT_UPDATE" then
 		local unit = ...

@@ -23,6 +23,7 @@ Core\Lexer.lua
 Core\Parser.lua
 Core\Icons.lua
 Core\Length.lua
+Core\Bars.lua
 Core\Now.lua
 Core\Highlight.lua
 Core\Explain.lua

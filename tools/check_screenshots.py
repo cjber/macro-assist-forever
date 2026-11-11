@@ -22,6 +22,7 @@ SCENES = {
             "Core/Highlight.lua",
             "Core/Check.lua",
             "Core/Complete.lua",
+            "Core/Bars.lua",
             "Core/Lexer.lua",
             "Core/Parser.lua",
             "Core/Length.lua",

@@ -201,6 +201,10 @@ MACROS = [
 SELECTED = 0
 CURRENT_LINE = 1
 TAB_SELECTED = 1
+# #57: the selected macro sits on the bottom-right bar, so the header names that slot and its key. Every other list row
+# is on no bar and carries the dim marker.
+BAR_TEXT = "Character macro, slot 61 (Shift-1)"
+ON_BAR = {0}
 
 # The picker scene's sample data. The Arcane macro's saved icon is Automatic, as a #showtooltip macro starts, so the
 # header, the list row and the selected grid cell all show the question mark.
@@ -936,6 +940,9 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
         height = min(ROW_HEIGHT, scroll_y + scroll_h - row_y)
         if height <= 0:
             break
+        summary = data["summary"][index + 1]
+        if index not in ON_BAR:
+            summary = f"{summary} · Not on a bar" if summary else "Not on a bar"
         draw_row(
             canvas,
             scroll_x,
@@ -943,7 +950,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
             scroll_w,
             icon,
             name,
-            data["summary"][index + 1],
+            summary,
             index == SELECTED,
             height,
         )
@@ -980,7 +987,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
     canvas.text(
         header_x + HEADER_ICON_FRAME + 8,
         header_y + 20,
-        "Character macro",
+        BAR_TEXT,
         FONTS["GameFontHighlightSmall"],
         MUTED,
     )

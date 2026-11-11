@@ -15,6 +15,7 @@ read_globals = {
 	"DeleteMacro", "EditMacro",
 	"Enum", "FONT_COLOR_CODE_CLOSE", "GameFontHighlightSmall", "GameTooltip", "GetCursorPosition", "GetFlyoutInfo",
 	"GetFlyoutSlotInfo", "GetInventoryItemLink", "GetInventoryItemTexture", "GREEN_FONT_COLOR_CODE",
+	"GetActionInfo", "GetBindingKey", "GetBindingText",
 	"GetMacroInfo", "GetServerTime",
 	"GetNumMacros", "HideUIPanel", "hooksecurefunc",
 	"IconDataProviderExtraType", "IconDataProviderMixin",

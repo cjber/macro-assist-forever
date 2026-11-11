@@ -152,7 +152,7 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(#rows(window), 2, "the General tab lists only account macros")
 	equal(selectedRow(window).Name:GetText(), "General One", "the first account macro is selected")
 	check(selectedRow(window).SelectedBar:IsShown(), "the selected row has no gold bar")
-	equal(window.header.meta:GetText(), "General macro", "the header names the tab")
+	equal(window.header.meta:GetText(), "General macro, not on a bar", "the header names the tab and the bar")
 	equal(window.count:GetText(), "2/120", "the count sits beside the search box")
 	equal(window.editor.now:GetText():find("Arcane Shot", 1, true) ~= nil, true, "the status says what fires now")
 
@@ -166,7 +166,7 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(#rows(window), 5, "the character tab lists only character macros")
 	equal(selectedRow(window).Name:GetText(), "Arcane", "the first character macro is selected")
 	equal(window.header.name:GetText(), "Arcane", "the header shows the selected name")
-	equal(window.header.meta:GetText(), "Character macro", "the header names the tab")
+	equal(window.header.meta:GetText(), "Character macro, not on a bar", "the header names the tab and the bar")
 	equal(window.count:GetText(), "5/30", "the count follows the character tab")
 	equal(textOf(window), "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot", "the editor holds the body")
 	check(window.explainPanel:IsShown(), "the What it does panel is hidden")
@@ -182,7 +182,11 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 		"the live line names no unit when the matching clause has none"
 	)
 	equal(window.editor.now:GetText():find("Arcane Shot", 1, true) ~= nil, true, "the live line still says what fires")
-	equal(arcane.Summary:GetText(), "Arcane Shot", "the row shows the main action")
+	equal(
+		arcane.Summary:GetText(),
+		"Arcane Shot · Not on a bar",
+		"the row shows the main action and that it is on no bar"
+	)
 	check(window.Tabs[1]:GetLeft() >= window:GetRight() - 2, "the side tabs do not hang off the window's right edge")
 
 	local trap = rowNamed(window, "Trap")
@@ -195,6 +199,84 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 		drag(trap)
 	end)
 	equal(sim.pickedMacro, trap.macroIndex, "dragging a row picks up its macro")
+end)
+
+scenario("the header and rows show action bar slots and their keys", function(sim)
+	world.install(sim)
+	local account = sim.G.Constants.MacroConsts.MAX_ACCOUNT_MACROS
+	local arcane = account + 1
+	local trap = account + 4
+	local action = {
+		[61] = arcane,
+		[62] = arcane,
+		[1] = 1,
+	}
+	sim.G.GetActionInfo = function(slot)
+		local index = action[slot]
+		if index then
+			return "macro", index
+		end
+	end
+	local keys = { MULTIACTIONBAR1BUTTON1 = "SHIFT-1", ACTIONBUTTON1 = "BUTTON4" }
+	sim.G.GetBindingKey = function(binding)
+		return keys[binding]
+	end
+	sim.G.GetBindingText = function(key)
+		if key == "BUTTON4" then
+			return "Button 4"
+		end
+		if key == "SHIFT-1" then
+			return "Shift-1"
+		end
+		return key
+	end
+	sim:login()
+	local window = open(sim)
+	equal(
+		window.header.meta:GetText(),
+		"General macro, slot 1 (Button 4)",
+		"the header names the general macro's slot and key"
+	)
+	check(
+		rowNamed(window, "General One").Summary:GetText():find("Not on a bar", 1, true) == nil,
+		"a macro on a bar is not marked as on none"
+	)
+
+	characterTab(sim, window)
+	equal(
+		window.header.meta:GetText(),
+		"Character macro, slot 61 (Shift-1), slot 62",
+		"the header names every slot and the key that presses it"
+	)
+	check(
+		rowNamed(window, "Trap").Summary:GetText():find("Not on a bar", 1, true) ~= nil,
+		"a macro on no bar is marked in the list"
+	)
+
+	-- The bottom-right bar loses its first button, its second is rebound and a macro moves onto another bar.
+	action[61] = nil
+	keys.MULTIACTIONBAR1BUTTON2 = "CTRL-2"
+	action[37] = trap
+	sim:input(function()
+		sim.events.fire("ACTIONBAR_SLOT_CHANGED", 61)
+	end)
+	equal(
+		window.header.meta:GetText(),
+		"Character macro, slot 62 (CTRL-2)",
+		"an action bar change rebuilds the slots while the window shows"
+	)
+	check(
+		rowNamed(window, "Arcane").Summary:GetText():find("Not on a bar", 1, true) == nil,
+		"the row keeps a macro that is still on a bar unmarked"
+	)
+	check(
+		rowNamed(window, "Trap").Summary:GetText():find("Not on a bar", 1, true) == nil,
+		"the row clears the mark when the macro moves onto a bar"
+	)
+	check(
+		rowNamed(window, "Pet").Summary:GetText():find("Not on a bar", 1, true) ~= nil,
+		"a macro on no bar stays marked"
+	)
 end)
 
 scenario("the search box filters the list by name and summary", function(sim)
@@ -647,7 +729,7 @@ scenario("a deleted macro stays restorable from History", function(sim)
 	equal(select(2, sim.G.GetNumMacros()), before, "Restore did not recreate the deleted macro")
 	check(select(1, sim.G.GetMacroInfo(121 + before - 1)) == "Trap", "Restore created the wrong macro")
 	check(window.Tabs[2].SelectedTexture:IsShown(), "Restore did not switch to the deleted macro's tab")
-	equal(window.header.meta:GetText(), "Character macro", "the header still names the other tab")
+	equal(window.header.meta:GetText(), "Character macro, not on a bar", "the header still names the other tab")
 	equal(selectedRow(window).Name:GetText(), "Trap", "Restore did not select the macro it brought back")
 	sim:click(window.history.CloseButton)
 	sim:advance(0.1)
