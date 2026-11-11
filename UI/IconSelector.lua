@@ -103,6 +103,8 @@ local SLOT_LABELS = {
 ---@field statusKeep FontString
 ---@field selectedIcon any
 ---@field allIcons table[]?
+---@field allRows table<integer, table[]>?
+---@field kindCache table<string, { icons: table[], rows: table<integer, table[]> }>?
 ---@field show string
 ---@field kind table?
 ---@field search string
@@ -204,11 +206,6 @@ function Picker.Create(parent, surface, editor)
 	rule:SetPoint("TOPLEFT", statusFrame, "TOPLEFT", 0, 0)
 	rule:SetPoint("TOPRIGHT", statusFrame, "TOPRIGHT", 0, 0)
 	rule:SetHeight(1)
-	local statusText = statusFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	statusText:SetPoint("LEFT", statusFrame, "LEFT", 10, 0)
-	statusText:SetJustifyH("LEFT")
-	statusText:SetWordWrap(false)
-	frame.statusText = statusText
 	local keep = statusFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	keep:SetPoint("RIGHT", statusFrame, "RIGHT", -10, 0)
 	keep:SetJustifyH("RIGHT")
@@ -216,6 +213,13 @@ function Picker.Create(parent, surface, editor)
 	keep:SetText(L["Click to pick, Save to keep"])
 	keep:SetTextColor(0.55, 0.55, 0.55)
 	frame.statusKeep = keep
+	local statusText = statusFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	statusText:SetPoint("LEFT", statusFrame, "LEFT", 10, 0)
+	-- The right hint stays on its own edge, so the left text ends before it instead of running underneath.
+	statusText:SetPoint("RIGHT", keep, "LEFT", -8, 0)
+	statusText:SetJustifyH("LEFT")
+	statusText:SetWordWrap(false)
+	frame.statusText = statusText
 	frame.statusFrame = statusFrame
 
 	local lastWidth
@@ -382,10 +386,11 @@ end
 
 -- The player's own spells and items, for the "Your spells" search section: the spellbook first, then anything the
 -- macro names that the book does not list (an item, a rank the book hides).
+---@param spellbook table[]?
 ---@return table[]
-function Picker:Known()
+function Picker:Known(spellbook)
 	local out, seen = {}, {}
-	for _, entry in ipairs(self:SpellbookIcons()) do
+	for _, entry in ipairs(spellbook or self:SpellbookIcons()) do
 		AddUnique(out, seen, entry)
 	end
 	for _, entry in ipairs(self.macroIcons or {}) do
@@ -478,9 +483,10 @@ function Picker:UpdateFilterText()
 end
 
 ---@param icons table[]
+---@param kind table?
 ---@return table[]
-function Picker:FilterKind(icons)
-	local kind = self.kind
+function Picker:FilterKind(icons, kind)
+	kind = kind or self.kind
 	if not kind then
 		return icons
 	end
@@ -523,29 +529,77 @@ local function AddIconRows(rows, icons, columns)
 	end
 end
 
+-- The All icons section runs to every client icon, and its rows depend only on the column count and kind filter.
+-- Building it once and reusing the row tables keeps a reopen from walking the whole icon list again.
+---@param columns integer
+---@return table[] rows
+function Picker:AllIconRows(columns)
+	self.allRows = self.allRows or {}
+	local rows = self.allRows[columns]
+	if not rows then
+		rows = {}
+		AddIconRows(rows, self:AllIcons(), columns)
+		self.allRows[columns] = rows
+	end
+	return rows
+end
+
+-- The kind filter's icon list and rows are cached together: filtering every client icon is the other all-icon walk.
+---@param kind table
+---@return { icons: table[], rows: table<integer, table[]> }
+function Picker:KindIcons(kind)
+	self.kindCache = self.kindCache or {}
+	local key = kind.kind .. ":" .. kind.token
+	local cached = self.kindCache[key]
+	if not cached then
+		cached = { icons = self:FilterKind(self:AllIcons(), kind), rows = {} }
+		self.kindCache[key] = cached
+	end
+	return cached
+end
+
+---@param columns integer
+---@param kind table
+---@return table[] rows
+---@return integer count
+function Picker:KindIconRows(columns, kind)
+	local cached = self:KindIcons(kind)
+	local rows = cached.rows[columns]
+	if not rows then
+		rows = {}
+		AddIconRows(rows, cached.icons, columns)
+		cached.rows[columns] = rows
+	end
+	return rows, #cached.icons
+end
+
 -- The row list for the current search and filter: the search's own spells first, then the source's name matches;
--- without a search, the three sections the picker opens with, or just the chosen source.
+-- without a search, the three sections the picker opens with, or just the chosen source. Only the All icons rows
+-- are cached; the macro and spellbook sections stay small and are rebuilt from the current macro.
 ---@return table[]
 function Picker:BuildRows()
 	local rows = {}
-	local spellbook = self:SpellbookIcons()
-	local known = self:Known()
-	local source
-	if self.show == "macro" then
-		source = self.macroIcons or {}
-	elseif self.show == "spellbook" then
-		source = spellbook
-	elseif self.show == "equipped" then
-		source = self:EquippedIcons()
-	else
-		source = self:AllIcons()
-	end
-	source = self:FilterKind(source)
-	self:Remember(known)
-	self:Remember(source)
 	local columns = self.columns or 1
 	local search = self.search
 	if search ~= "" then
+		local spellbook = self:SpellbookIcons()
+		local known = self:Known(spellbook)
+		self:Remember(known)
+		local source
+		if self.show == "macro" then
+			source = self.macroIcons or {}
+		elseif self.show == "spellbook" then
+			source = spellbook
+		elseif self.show == "equipped" then
+			source = self:EquippedIcons()
+		elseif self.kind ~= nil then
+			source = self:KindIcons(self.kind).icons
+		else
+			source = self:AllIcons()
+		end
+		if self.show ~= "all" then
+			source = self:FilterKind(source)
+		end
 		for _, entry in ipairs(source) do
 			self:EntryName(entry)
 		end
@@ -567,6 +621,8 @@ function Picker:BuildRows()
 		return rows
 	end
 	if self.show == "all" and self.kind == nil then
+		local spellbook = self:SpellbookIcons()
+		self:Remember(spellbook)
 		local fromMacro = { { icon = AUTOMATIC_ICON, label = L["Automatic"], auto = true } }
 		for _, entry in ipairs(self.macroIcons or {}) do
 			fromMacro[#fromMacro + 1] = entry
@@ -576,9 +632,29 @@ function Picker:BuildRows()
 		AddHeader(rows, L["Spellbook"], ns.Readable(self.className) or "")
 		AddIconRows(rows, spellbook, columns)
 		AddHeader(rows, L["All icons"], BreakUpLargeNumbers(#self:AllIcons()))
-		AddIconRows(rows, self:FilterKind(self:AllIcons()), columns)
+		for _, row in ipairs(self:AllIconRows(columns)) do
+			rows[#rows + 1] = row
+		end
 		return rows
 	end
+	if self.show == "all" then
+		local iconRows, count = self:KindIconRows(columns, self.kind)
+		AddHeader(rows, self:SourceTitle(), BreakUpLargeNumbers(count))
+		for _, row in ipairs(iconRows) do
+			rows[#rows + 1] = row
+		end
+		return rows
+	end
+	local source
+	if self.show == "macro" then
+		source = self.macroIcons or {}
+	elseif self.show == "spellbook" then
+		source = self:SpellbookIcons()
+	else
+		source = self:EquippedIcons()
+	end
+	source = self:FilterKind(source)
+	self:Remember(source)
 	AddHeader(rows, self:SourceTitle(), BreakUpLargeNumbers(#source))
 	AddIconRows(rows, source, columns)
 	return rows
@@ -689,7 +765,10 @@ function Picker:Open(icon, body, className)
 	self.show = "all"
 	self.kind = nil
 	self.selectedIcon = icon
+	-- Only the player's own spells and this macro's actions are remembered up front; the All icons labels are read
+	-- when a button is shown, hovered or searched, never by walking the whole client list on open.
 	self.labels = {}
+	self:Remember(self:Known())
 	self.searchBox:SetText("")
 	self.columns = nil
 	self:Show()

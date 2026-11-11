@@ -194,6 +194,16 @@ local function SelectTabArt(tab, selected)
 	tab:SetChecked(selected)
 end
 
+-- Delete's tooltip reads the armed state. Arming happens on a click while the pointer already rests on the button, so
+-- UpdateButtons repaints an owned tooltip through here instead of leaving the unarmed text until the pointer returns.
+---@param button Button
+local function ShowDeleteTooltip(button)
+	GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+	local text = Window.deleteArmed and L["Click again to delete"] or L["Deletes this macro"]
+	GameTooltip:SetText(text, 1, 1, 1, 1, true)
+	GameTooltip:Show()
+end
+
 ---@param frame Frame
 ---@return MacroAssistHeader
 local function BuildHeader(frame)
@@ -441,6 +451,14 @@ function Window.Create()
 	delete:SetSize(DELETE_WIDTH, BUTTON_HEIGHT)
 	delete:SetPoint("LEFT", new, "RIGHT", FOOTER_GAP, 0)
 	delete:SetText(L["Delete"])
+	delete:SetScript("OnEnter", function(button)
+		ShowDeleteTooltip(button)
+	end)
+	delete:SetScript("OnLeave", function(button)
+		if GameTooltip:IsOwned(button) then
+			GameTooltip:Hide()
+		end
+	end)
 	local history = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	history:SetSize(HISTORY_WIDTH, BUTTON_HEIGHT)
 	history:SetPoint("LEFT", delete, "RIGHT", FOOTER_GAP, 0)
@@ -1018,6 +1036,8 @@ function Window:OpenPicker(focusName)
 	local className = UnitClass("player")
 	self.frame.picker:Open(self.pendingIcon, self.frame.editor:GetText(), className)
 	self.frame.editorSurface:Hide()
+	-- The picker has its own status strip over the same row; the editor's text and counter would show through it.
+	self.frame.statusBar:Hide()
 	self:UpdateHeader()
 	self:UpdateButtons()
 	if focusName then
@@ -1034,6 +1054,7 @@ function Window:LeavePicker()
 	self.picking = false
 	self.frame.picker:Close()
 	self.frame.editorSurface:Show()
+	self.frame.statusBar:Show()
 	self.frame.editor:Focus()
 	self:UpdateHeader()
 	self:UpdateButtons()
@@ -1098,7 +1119,10 @@ function Window:UpdateButtons()
 	local pending = self:HasPending()
 	local changed = self.dirty or pending
 	self.frame.deleteButton:SetEnabled(hasMacro and not combat)
-	self.frame.deleteButton:SetText(self.deleteArmed and L["Click again to delete"] or L["Delete"])
+	self.frame.deleteButton:SetText(self.deleteArmed and L["Confirm"] or L["Delete"])
+	if GameTooltip:IsOwned(self.frame.deleteButton) then
+		ShowDeleteTooltip(self.frame.deleteButton)
+	end
 	self.frame.historyButton:SetEnabled(true)
 	self.frame.newButton:SetEnabled((self.count or 0) < (self.maximum or 0) and not combat)
 	self.frame.saveButton:SetEnabled(changed and not combat)
@@ -1139,7 +1163,8 @@ function Window:Cancel()
 end
 
 function Window:Delete()
-	if not self.selected or InCombatLockdown() then
+	local index = self.selected
+	if not index or InCombatLockdown() then
 		return
 	end
 	if not self.deleteArmed then
@@ -1150,9 +1175,11 @@ function Window:Delete()
 	if self.picking then
 		self:LeavePicker()
 	end
-	local oldPosition = self.selected - (self.base or 0)
-	self:WriteDelete(self.selected)
-	self.drafts[self.selected] = nil
+	-- DeleteMacro fires UPDATE_MACROS synchronously, and the handler may clear or move self.selected before this
+	-- returns: the index captured above keeps the draft bookkeeping on the deleted macro.
+	local oldPosition = index - (self.base or 0)
+	self:WriteDelete(index)
+	self.drafts[index] = nil
 	self.selected = nil
 	self.dirty = false
 	self.pendingName = nil
@@ -1355,6 +1382,7 @@ function Window:OnHide()
 		self.picking = false
 		frame.picker:Close()
 		frame.editorSurface:Show()
+		frame.statusBar:Show()
 	end
 	frame:UnregisterEvent("UPDATE_MACROS")
 	frame:UnregisterEvent("PLAYER_REGEN_DISABLED")
