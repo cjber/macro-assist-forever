@@ -5,6 +5,12 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-11
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
 ## [0.3.2] - 2026-11-11
 
 - **Tells you which addon to update.** If another Forever addon you have installed is older than this one and stops it starting, the message now names that addon, so you know exactly what to update.
