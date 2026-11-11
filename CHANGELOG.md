@@ -5,6 +5,10 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-11
+
+- **Works again after updating.** Updating to the last version could leave the addon switched off in the game's AddOns list with "ForeverCore: missing", because the update did not bring Forever Core with it. Forever Core now comes inside this addon's download again, from CurseForge, Wago or GitHub alike, so updating is all it takes (cjber/shortest-path-forever#731).
+
 ## [0.3.0] - 2026-11-11
 
 - **The icon picker lives in the macro window.** Clicking the header icon, or Rename, swaps the code surface for one
