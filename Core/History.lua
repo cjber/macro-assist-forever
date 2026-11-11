@@ -230,6 +230,38 @@ local function SplitLines(body)
 	end
 end
 
+---@class MacroAssistDiffLine
+---@field kind "same"|"changed"|"added"|"removed"
+---@field line integer
+---@field old string?
+---@field new string?
+
+-- One row for each line of the older text, then one for each line the newer text adds. The comparison is the same
+-- plain line-by-line one ChangeSummary describes, so a preview and a history row never disagree.
+---@param body string?
+---@param newerBody string?
+---@return MacroAssistDiffLine[]
+function History.LineDiff(body, newerBody)
+	local oldLines = SplitLines(body)
+	local newLines = SplitLines(newerBody)
+	local rows = {}
+	local common = math.min(#oldLines, #newLines)
+	for index = 1, common do
+		if oldLines[index] == newLines[index] then
+			rows[#rows + 1] = { kind = "same", line = index, old = oldLines[index], new = newLines[index] }
+		else
+			rows[#rows + 1] = { kind = "changed", line = index, old = oldLines[index], new = newLines[index] }
+		end
+	end
+	for index = common + 1, #oldLines do
+		rows[#rows + 1] = { kind = "removed", line = index, old = oldLines[index] }
+	end
+	for index = common + 1, #newLines do
+		rows[#rows + 1] = { kind = "added", line = index, new = newLines[index] }
+	end
+	return rows
+end
+
 ---@param body string?
 ---@param newerBody string?
 ---@return string[]

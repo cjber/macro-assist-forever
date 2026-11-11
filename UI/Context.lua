@@ -9,7 +9,7 @@ end
 
 local L = ns.L
 
-local ctx = { spells = {} }
+local ctx = { spells = {}, recipes = {} }
 ns.Context = { ctx = ctx }
 
 -- The parts of a condition descriptor or parser node that the engine call needs. Completion passes a descriptor
@@ -199,8 +199,74 @@ local function Spellbook()
 	return spells
 end
 
+-- The client's name for a spell ID, in the client's language. A spell the client does not know returns nil, which
+-- keeps a recipe with a missing spell out of the list rather than inserting an incomplete macro.
+---@param spellID integer
+---@return string?
+local function SpellName(spellID)
+	if type(C_Spell) == "table" and type(C_Spell.GetSpellInfo) == "function" then
+		local ok, info = pcall(C_Spell.GetSpellInfo, spellID)
+		if ok then
+			local name = type(info) == "table" and info.name or info
+			local readable = ns.Readable(name)
+			if readable then
+				return readable
+			end
+		end
+	end
+	local fallback = rawget(_G, "GetSpellInfo")
+	if type(fallback) == "function" then
+		local ok, name = pcall(fallback, spellID)
+		if ok then
+			return ns.Readable(name)
+		end
+	end
+end
+
+---@return string?
+local function PlayerClass()
+	if type(UnitClass) ~= "function" then
+		return nil
+	end
+	local ok, _, token = pcall(UnitClass, "player")
+	if ok and type(token) == "string" then
+		return token
+	end
+end
+
+-- The recipes this character can use, each already rendered with its spell names. A class recipe is left out until
+-- UnitClass names the player's class, and a recipe whose spell the client does not know is left out entirely. The
+-- resolved names stay beside the body so completion can match the player's own word for the spell.
+---@return table[]
+local function AvailableRecipes()
+	local class = PlayerClass()
+	local list = {}
+	for _, recipe in ipairs(ns.Recipes.List) do
+		if recipe.class == nil or recipe.class == class then
+			local spells = {}
+			local body = ns.Recipes.Render(recipe, function(spellID)
+				local name = SpellName(spellID)
+				if name then
+					spells[#spells + 1] = name
+				end
+				return name
+			end)
+			if body then
+				list[#list + 1] = {
+					words = recipe.words,
+					title = L[recipe.title] or recipe.title,
+					spells = spells,
+					body = body,
+				}
+			end
+		end
+	end
+	return list
+end
+
 function ns.Context.Rebuild()
 	ctx.spells = Spellbook()
+	ctx.recipes = AvailableRecipes()
 end
 
 ns.Context.Rebuild()

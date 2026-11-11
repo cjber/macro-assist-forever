@@ -37,6 +37,7 @@ local BUTTON_HEIGHT = 24
 local BUTTON_WIDTH = 90
 local DELETE_WIDTH = 90
 local HISTORY_WIDTH = 90
+local IMPORT_WIDTH = 90
 local FOOTER_GAP = 6
 local RENAME_WIDTH = 110
 local RENAME_HEIGHT = 22
@@ -77,6 +78,9 @@ ns.ICON_TEXCOORD = ICON_TEXCOORD
 local MACRO_CONSTS = Constants and Constants.MacroConsts
 local MAX_ACCOUNT = MACRO_CONSTS and MACRO_CONSTS.MAX_ACCOUNT_MACROS or 120
 local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
+-- GetActionInfo reads an action slot, and the client's bars use the first 180 of them: MultiBar7 is page 15, whose
+-- last slot is 15 * 12.
+local ACTION_SLOTS = 180
 
 ---@class MacroAssistTab : Button
 ---@field Icon Texture
@@ -150,10 +154,13 @@ local MAX_CHARACTER = MACRO_CONSTS and MACRO_CONSTS.MAX_CHARACTER_MACROS or 30
 ---@field empty FontString
 ---@field deleteButton Button
 ---@field historyButton Button
+---@field importButton Button
 ---@field newButton Button
 ---@field saveButton Button
 ---@field cancelButton Button
 ---@field Tabs MacroAssistTab[]
+---@field importPanel MacroAssistImportPanel
+---@field shortenPanel MacroAssistShortenPanel
 
 ---@class MacroAssistWindow
 ---@field frame MacroAssistFrame
@@ -463,6 +470,10 @@ function Window.Create()
 	history:SetSize(HISTORY_WIDTH, BUTTON_HEIGHT)
 	history:SetPoint("LEFT", delete, "RIGHT", FOOTER_GAP, 0)
 	history:SetText(L["History"])
+	local import = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
+	import:SetSize(IMPORT_WIDTH, BUTTON_HEIGHT)
+	import:SetPoint("LEFT", history, "RIGHT", FOOTER_GAP, 0)
+	import:SetText(L["Import"])
 	local save = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	save:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
 	save:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, 8)
@@ -474,6 +485,7 @@ function Window.Create()
 
 	frame.deleteButton = delete
 	frame.historyButton = history
+	frame.importButton = import
 	frame.newButton = new
 	frame.saveButton = save
 	frame.cancelButton = cancel
@@ -490,10 +502,17 @@ function Window.Create()
 	Window.picking = false
 	Window.pendingName = nil
 	Window.pendingIcon = nil
+	Window.slots = {}
 
 	frame.explainPanel = BuildExplainPanel(editorSurface)
 	frame.editor = ns.Editor.Create(editorSurface, statusBar)
 	frame.history = ns.HistoryPanel.Create(frame)
+	frame.importPanel = ns.ImportPanel.Create(frame, function(body)
+		Window:ImportMacro(body)
+	end)
+	frame.shortenPanel = ns.ShortenPanel.Create(frame, function(text)
+		Window:ApplyShorten(text)
+	end)
 	local lastWidth
 	editorSurface:SetScript("OnSizeChanged", function(_, width)
 		if width > 1 and width ~= lastWidth and frame:IsShown() then
@@ -506,6 +525,9 @@ function Window.Create()
 	end
 	frame.editor.onExplain = function()
 		Window:UpdateExplain()
+	end
+	frame.editor.onShorten = function()
+		Window:OpenShorten()
 	end
 	frame.editor.onEscape = function()
 		Window.ClosePanel()
@@ -539,6 +561,9 @@ function Window.Create()
 	end)
 	history:SetScript("OnClick", function()
 		Window:OpenHistory()
+	end)
+	import:SetScript("OnClick", function()
+		Window:OpenImport()
 	end)
 	new:SetScript("OnClick", function()
 		Window:New()
@@ -598,7 +623,12 @@ function Window:InitializeRow(row, data)
 	row.Icon:SetTexture(data.icon)
 	row.Icon:SetTexCoord(ICON_TEXCOORD[1], ICON_TEXCOORD[2], ICON_TEXCOORD[3], ICON_TEXCOORD[4])
 	row.Name:SetText(data.name or "")
-	row.Summary:SetText(data.summary or "")
+	local summary = data.summary or ""
+	local slots = self.slots and self.slots[data.index]
+	if not slots or #slots == 0 then
+		summary = summary ~= "" and L["%s · Not on a bar"]:format(summary) or L["Not on a bar"]
+	end
+	row.Summary:SetText(summary)
 	row.Summary:SetTextColor(ROW_MUTED[1], ROW_MUTED[2], ROW_MUTED[3])
 	local selected = data.index == self.selected
 	row.Selected:SetShown(selected)
@@ -806,8 +836,9 @@ function Window:LeaveSelected()
 	if self.dirty then
 		if InCombatLockdown() then
 			self.drafts[self.selected] = self.frame.editor:GetText()
-		else
-			self:SaveCurrent()
+		elseif not self:SaveCurrent() then
+			-- The write was refused, so the edit stays a draft instead of disappearing with the selection.
+			self.drafts[self.selected] = self.frame.editor:GetText()
 		end
 	end
 end
@@ -839,6 +870,16 @@ end
 ---@return boolean
 function Window:WriteMacro(index, name, icon, body)
 	if InCombatLockdown() then
+		return false
+	end
+	-- The client stores at most 255 characters and silently cuts a longer body, so a write it would truncate is
+	-- refused here and the editor says why. An edit of the name or icon alone passes no body and is unaffected.
+	if type(body) == "string" and ns.Length(body) > ns.MacroLimit then
+		if self.frame and self.frame.editor then
+			self.frame.editor:Notice(
+				L["Macro is %d characters; the limit is %d. Nothing was saved."]:format(ns.Length(body), ns.MacroLimit)
+			)
+		end
 		return false
 	end
 	local oldName, oldIcon, oldBody = GetMacroInfo(index)
@@ -940,6 +981,88 @@ function Window:SelectMacro(actual)
 	self:RefreshList()
 end
 
+-- The macro index a slot holds. A macro whose text starts with a spell the client knows reports that spell's ID with
+-- subType "spell" (ActionButton.lua:1028-1033 and AssistedCombatManager.lua:203-213 both read it as a spell ID), so the
+-- ID is not the macro. What the client shows on a macro action button is the macro's name (ActionButton.lua:615-616),
+-- and GetMacroIndexByName turns that name back into the index GetMacroInfo uses. Only a macro with no recognised spell
+-- reports its index as the ID, so the ID is used only when the subType does not say it is a spell.
+---@param slot integer
+---@param id any
+---@param subType any
+---@return integer?
+local function MacroIndexFor(slot, id, subType)
+	if type(GetActionText) == "function" and type(GetMacroIndexByName) == "function" then
+		local textOk, text = pcall(GetActionText, slot)
+		if textOk and type(text) == "string" and text ~= "" then
+			local indexOk, index = pcall(GetMacroIndexByName, text)
+			if indexOk and type(index) == "number" and index > 0 then
+				return index
+			end
+		end
+	end
+	if subType ~= "spell" and type(id) == "number" and id > 0 then
+		return id
+	end
+	return nil
+end
+
+-- Which action slots hold which macro, rebuilt from the client when a bar, binding or macro changes. A slot's macro
+-- comes from the name the client shows, never from GetActionInfo's ID when that ID is a spell. A slot with no Blizzard
+-- binding is still shown by its number, without a key.
+function Window:RebuildBars()
+	local slots = {}
+	if type(GetActionInfo) ~= "function" then
+		self.slots = slots
+		return
+	end
+	for slot = 1, ACTION_SLOTS do
+		local ok, kind, id, subType = pcall(GetActionInfo, slot)
+		if ok and kind == "macro" then
+			local index = MacroIndexFor(slot, id, subType)
+			if index then
+				local binding = ns.Bars.Binding(slot)
+				local key
+				if binding and type(GetBindingKey) == "function" then
+					local keyOk, bound = pcall(GetBindingKey, binding)
+					if keyOk and type(bound) == "string" and bound ~= "" then
+						key = bound
+						if type(GetBindingText) == "function" then
+							local textOk, text = pcall(GetBindingText, bound, "KEY_")
+							if textOk and type(text) == "string" and text ~= "" then
+								key = text
+							end
+						end
+					end
+				end
+				local list = slots[index] or {}
+				list[#list + 1] = { slot = slot, key = key }
+				slots[index] = list
+			end
+		end
+	end
+	self.slots = slots
+end
+
+-- The header's second line: the tab, then every slot the selected macro sits in and the key that presses it.
+---@param index integer
+---@return string
+function Window:BarText(index)
+	local tab = self.tab == 1 and L["General macro"] or L["Character macro"]
+	local list = self.slots and self.slots[index]
+	if not list or #list == 0 then
+		return L["%s, not on a bar"]:format(tab)
+	end
+	local text = tab
+	for _, entry in ipairs(list) do
+		if entry.key then
+			text = L["%s, slot %d (%s)"]:format(text, entry.slot, entry.key)
+		else
+			text = L["%s, slot %d"]:format(text, entry.slot)
+		end
+	end
+	return text
+end
+
 function Window:UpdateHeader()
 	local frame = self.frame
 	local header = frame.header
@@ -960,7 +1083,7 @@ function Window:UpdateHeader()
 	local shownName = self.pendingName or name or L["No macro selected"]
 	header.icon:SetTexture(icon)
 	header.name:SetText(shownName)
-	header.meta:SetText(self.tab == 1 and L["General macro"] or L["Character macro"])
+	header.meta:SetText(self:BarText(self.selected))
 	if self.picking then
 		header.name:Hide()
 		header.nameEdit:Show()
@@ -1124,6 +1247,7 @@ function Window:UpdateButtons()
 		ShowDeleteTooltip(self.frame.deleteButton)
 	end
 	self.frame.historyButton:SetEnabled(true)
+	self.frame.importButton:SetEnabled((self.count or 0) < (self.maximum or 0) and not combat)
 	self.frame.newButton:SetEnabled((self.count or 0) < (self.maximum or 0) and not combat)
 	self.frame.saveButton:SetEnabled(changed and not combat)
 	self.frame.cancelButton:SetEnabled(changed)
@@ -1131,6 +1255,9 @@ function Window:UpdateButtons()
 	self.frame.header.rename:SetText(self.picking and L["Back to code"] or L["Rename"])
 	if self.frame.history:IsShown() then
 		self.frame.history:UpdateButtons()
+	end
+	if self.frame.importPanel then
+		ns.ImportPanel.SetCombat(self.frame.importPanel, combat)
 	end
 end
 
@@ -1286,6 +1413,82 @@ function Window.LiveMacroNames(_)
 	return live
 end
 
+-- The Import box only reads and checks pasted text. The macro itself is created through WriteCreate, with the same
+-- snapshot and combat refusal as New, and then the icon picker opens for its name and icon.
+function Window:OpenImport()
+	local frame = self.frame
+	if not frame or not frame.importPanel or InCombatLockdown() then
+		return
+	end
+	if not self:SaveCurrent() then
+		return
+	end
+	if self.picking then
+		self:LeavePicker()
+	end
+	ns.ImportPanel.Open(frame.importPanel)
+end
+
+---@param body string
+function Window:ImportMacro(body)
+	if InCombatLockdown() then
+		return
+	end
+	local classified = ns.Import.Classify(body)
+	if classified.kind ~= "macro" or ns.Length(classified.body) > ns.MacroLimit then
+		return
+	end
+	if not self:SaveCurrent() then
+		return
+	end
+	if self.picking then
+		self:LeavePicker()
+	end
+	local actual = self:WriteCreate(self:FreeName(), 134400, classified.body, self.tab == 2)
+	if not actual then
+		return
+	end
+	self.drafts[actual] = nil
+	self.selected = actual
+	self.dirty = false
+	self.desiredPosition = actual - (self.base or 0)
+	self:LoadSelected()
+	self:RefreshList()
+	self:OpenPicker(true)
+end
+
+-- Shorten is an edit, not a write: the preview shows the diff, Apply changes the editor text and marks it dirty, and
+-- Save still goes through the usual macro write. Nothing here is refused in combat, because Save refuses on its own.
+function Window:OpenShorten()
+	local frame = self.frame
+	if not frame or not frame.shortenPanel then
+		return
+	end
+	if frame.importPanel and frame.importPanel:IsShown() then
+		ns.ImportPanel.Close(frame.importPanel)
+	end
+	if self.picking then
+		self:LeavePicker()
+	end
+	local old = frame.editor:GetText()
+	local result = ns.Shorten(old)
+	if result.text == old then
+		return
+	end
+	ns.ShortenPanel.Open(frame.shortenPanel, old, result.text)
+end
+
+---@param text string
+function Window:ApplyShorten(text)
+	local editor = self.frame and self.frame.editor
+	if not editor then
+		return
+	end
+	editor:SetText(text)
+	editor:Focus()
+	self:OnTextEdited()
+end
+
 function Window:OpenHistory()
 	local frame = self.frame
 	if not frame or not frame.history then
@@ -1363,7 +1566,10 @@ function Window:OnShow()
 	frame:RegisterEvent("PLAYER_TARGET_CHANGED")
 	frame:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 	frame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+	frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+	frame:RegisterEvent("UPDATE_BINDINGS")
 	ns.Context.Rebuild()
+	self:RebuildBars()
 	self.combat = InCombatLockdown()
 	self.deleteArmed = false
 	self:UpdatePortrait()
@@ -1392,6 +1598,8 @@ function Window:OnHide()
 	frame:UnregisterEvent("PLAYER_TARGET_CHANGED")
 	frame:UnregisterEvent("UPDATE_MOUSEOVER_UNIT")
 	frame:UnregisterEvent("UNIT_PORTRAIT_UPDATE")
+	frame:UnregisterEvent("ACTIONBAR_SLOT_CHANGED")
+	frame:UnregisterEvent("UPDATE_BINDINGS")
 	frame.editor:ClearFocus()
 	frame.editor:HideCompletion()
 	if frame.picker then
@@ -1400,11 +1608,21 @@ function Window:OnHide()
 	if frame.history then
 		frame.history:Hide()
 	end
+	if frame.importPanel and frame.importPanel:IsShown() then
+		ns.ImportPanel.Close(frame.importPanel)
+	end
+	if frame.shortenPanel and frame.shortenPanel:IsShown() then
+		ns.ShortenPanel.Close(frame.shortenPanel)
+	end
 end
 
 function Window:OnEvent(event, ...)
 	local frame = self.frame
 	if event == "UPDATE_MACROS" then
+		self:RebuildBars()
+		self:RefreshList()
+	elseif event == "ACTIONBAR_SLOT_CHANGED" or event == "UPDATE_BINDINGS" then
+		self:RebuildBars()
 		self:RefreshList()
 	elseif event == "UNIT_PORTRAIT_UPDATE" then
 		local unit = ...

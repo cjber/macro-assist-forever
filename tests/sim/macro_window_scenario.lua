@@ -140,6 +140,13 @@ local function characterTab(sim, window)
 	return window
 end
 
+local function paste(sim, panel, text)
+	sim:input(function()
+		panel.edit:SetText(text)
+	end)
+	sim:advance(0.05)
+end
+
 local function openNamed(sim)
 	world.install(sim)
 	sim.world.units.target = { name = "Defias Pillager", level = 12, friendly = false }
@@ -152,7 +159,7 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(#rows(window), 2, "the General tab lists only account macros")
 	equal(selectedRow(window).Name:GetText(), "General One", "the first account macro is selected")
 	check(selectedRow(window).SelectedBar:IsShown(), "the selected row has no gold bar")
-	equal(window.header.meta:GetText(), "General macro", "the header names the tab")
+	equal(window.header.meta:GetText(), "General macro, not on a bar", "the header names the tab and the bar")
 	equal(window.count:GetText(), "2/120", "the count sits beside the search box")
 	equal(window.editor.now:GetText():find("Arcane Shot", 1, true) ~= nil, true, "the status says what fires now")
 
@@ -166,7 +173,7 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(#rows(window), 5, "the character tab lists only character macros")
 	equal(selectedRow(window).Name:GetText(), "Arcane", "the first character macro is selected")
 	equal(window.header.name:GetText(), "Arcane", "the header shows the selected name")
-	equal(window.header.meta:GetText(), "Character macro", "the header names the tab")
+	equal(window.header.meta:GetText(), "Character macro, not on a bar", "the header names the tab and the bar")
 	equal(window.count:GetText(), "5/30", "the count follows the character tab")
 	equal(textOf(window), "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot", "the editor holds the body")
 	check(window.explainPanel:IsShown(), "the What it does panel is hidden")
@@ -182,7 +189,11 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 		"the live line names no unit when the matching clause has none"
 	)
 	equal(window.editor.now:GetText():find("Arcane Shot", 1, true) ~= nil, true, "the live line still says what fires")
-	equal(arcane.Summary:GetText(), "Arcane Shot", "the row shows the main action")
+	equal(
+		arcane.Summary:GetText(),
+		"Arcane Shot · Not on a bar",
+		"the row shows the main action and that it is on no bar"
+	)
 	check(window.Tabs[1]:GetLeft() >= window:GetRight() - 2, "the side tabs do not hang off the window's right edge")
 
 	local trap = rowNamed(window, "Trap")
@@ -195,6 +206,78 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 		drag(trap)
 	end)
 	equal(sim.pickedMacro, trap.macroIndex, "dragging a row picks up its macro")
+end)
+
+scenario("the header and rows show action bar slots and their keys", function(sim)
+	world.install(sim)
+	local account = sim.G.Constants.MacroConsts.MAX_ACCOUNT_MACROS
+	local arcane = account + 1
+	local trap = account + 4
+	-- The client reports each macro's first spell as the slot's ID with subType "spell", so the slot's macro comes
+	-- from the name the button shows, not from that ID.
+	sim.actionSlots[61] = arcane
+	sim.actionSlots[62] = arcane
+	sim.actionSlots[1] = 1
+	local keys = { MULTIACTIONBAR1BUTTON1 = "SHIFT-1", ACTIONBUTTON1 = "BUTTON4" }
+	sim.G.GetBindingKey = function(binding)
+		return keys[binding]
+	end
+	sim.G.GetBindingText = function(key)
+		if key == "BUTTON4" then
+			return "Button 4"
+		end
+		if key == "SHIFT-1" then
+			return "Shift-1"
+		end
+		return key
+	end
+	sim:login()
+	local window = open(sim)
+	equal(
+		window.header.meta:GetText(),
+		"General macro, slot 1 (Button 4)",
+		"the header names the general macro's slot and key"
+	)
+	check(
+		rowNamed(window, "General One").Summary:GetText():find("Not on a bar", 1, true) == nil,
+		"a macro on a bar is not marked as on none"
+	)
+
+	characterTab(sim, window)
+	equal(
+		window.header.meta:GetText(),
+		"Character macro, slot 61 (Shift-1), slot 62",
+		"the header names every slot and the key that presses it"
+	)
+	check(
+		rowNamed(window, "Trap").Summary:GetText():find("Not on a bar", 1, true) ~= nil,
+		"a macro on no bar is marked in the list"
+	)
+
+	-- The bottom-left bar loses its first button, its second is rebound and a macro moves onto another bar.
+	sim.actionSlots[61] = nil
+	keys.MULTIACTIONBAR1BUTTON2 = "CTRL-2"
+	sim.actionSlots[37] = trap
+	sim:input(function()
+		sim.events.fire("ACTIONBAR_SLOT_CHANGED", 61)
+	end)
+	equal(
+		window.header.meta:GetText(),
+		"Character macro, slot 62 (CTRL-2)",
+		"an action bar change rebuilds the slots while the window shows"
+	)
+	check(
+		rowNamed(window, "Arcane").Summary:GetText():find("Not on a bar", 1, true) == nil,
+		"the row keeps a macro that is still on a bar unmarked"
+	)
+	check(
+		rowNamed(window, "Trap").Summary:GetText():find("Not on a bar", 1, true) == nil,
+		"the row clears the mark when the macro moves onto a bar"
+	)
+	check(
+		rowNamed(window, "Pet").Summary:GetText():find("Not on a bar", 1, true) ~= nil,
+		"a macro on no bar stays marked"
+	)
 end)
 
 scenario("the search box filters the list by name and summary", function(sim)
@@ -382,6 +465,137 @@ scenario("completion, a problem and its fix", function(sim)
 	setText(sim, window, original, false)
 end)
 
+scenario("plain words offer checked recipes and Tab inserts one", function(sim)
+	world.install(sim)
+	sim.world.player.classFile = "HUNTER"
+	sim.world.player.className = "Hunter"
+	sim:login()
+	local window = open(sim)
+	characterTab(sim, window)
+	local editor = window.editor
+
+	setText(sim, window, "heal pet")
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	check(editor.popup:IsShown(), "plain words did not open the completion list")
+	local recipe
+	for _, item in ipairs(editor.completion.items) do
+		if item.label == "Heal the pet" then
+			recipe = item
+			break
+		end
+	end
+	check(recipe, "the Heal the pet recipe was not offered")
+	equal(recipe.kind, "recipe", "a recipe has its own kind")
+	equal(recipe.detail, "Recipe", "a recipe reads as a recipe")
+	check(recipe.insert:find("Mend Pet", 1, true) ~= nil, "the recipe did not resolve its spell name")
+	check(recipe.insert:find("%s", 1, true) == nil, "the recipe left its spell placeholder")
+
+	local tab = editor.edit:GetScript("OnTabPressed")
+	check(tab(editor.edit), "Tab did not insert the recipe")
+	equal(textOf(window), recipe.insert, "the recipe did not replace the whole line")
+	check(not editor.popup:IsShown(), "the popup stayed open after inserting a recipe")
+
+	-- Another class's recipe is never offered, and a recipe whose spell this client does not know is skipped.
+	setText(sim, window, "polymorph")
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	for _, item in ipairs(editor.completion.items) do
+		check(item.kind ~= "recipe", "a Mage recipe was offered to a Hunter")
+	end
+
+	sim.world.player.classFile = "DEATHKNIGHT"
+	sim.world.player.className = "Death Knight"
+	sim:input(function()
+		sim.events.fire("SPELLS_CHANGED")
+	end)
+	setText(sim, window, "death grip")
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	for _, item in ipairs(editor.completion.items) do
+		check(item.kind ~= "recipe", "a recipe with an unknown spell was still offered")
+	end
+end)
+
+scenario("a macro over the limit offers a shorter rewrite, previews it and applies it", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local line = "/spell    [harm, nodead]   Arcane Shot; [harm] Arcane Shot"
+	local long = table.concat({ line, line, line, line, line }, "\n")
+	local expected = table.concat({
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+		"/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot",
+	}, "\n")
+	check(#long > 255, "the sample macro is not over the limit")
+
+	setText(sim, window, long, true)
+	check(window.editor.shorten:IsShown(), "an over-limit macro does not offer Shorten")
+	check(window.editor.shortenText == expected, "Shorten did not keep the lossless rewrite")
+
+	sim:click(window.editor.shorten)
+	sim:advance(0.1)
+	local panel = window.shortenPanel
+	check(panel:IsShown(), "Shorten did not open the preview")
+	check(panel.diff:GetText():find("-" .. line, 1, true) ~= nil, "the preview does not show the old line")
+	check(
+		panel.diff:GetText():find("+/cast [harm,nodead] Arcane Shot;[harm] Arcane Shot", 1, true) ~= nil,
+		"the preview does not show the new line"
+	)
+	check(panel.status:GetText():find("now 254/255", 1, true) ~= nil, "the preview does not count the new length")
+
+	sim:click(panel.cancelButton)
+	sim:advance(0.1)
+	check(not panel:IsShown(), "Cancel left the preview open")
+	equal(textOf(window), long, "Cancel changed the editor")
+
+	sim:click(window.editor.shorten)
+	sim:advance(0.1)
+	sim:click(panel.applyButton)
+	sim:advance(0.1)
+	check(not panel:IsShown(), "Apply left the preview open")
+	equal(textOf(window), expected, "Apply did not put the rewrite in the editor")
+	check(not window.editor.shorten:IsShown(), "Shorten is still offered after the rewrite")
+	check(window.saveButton:IsEnabled(), "the rewrite did not mark the macro dirty")
+
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(121)), expected, "Save did not keep the shortened macro")
+end)
+
+scenario("a body over the limit is refused and kept as a draft", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local original = "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot"
+	local long = string.rep("/cast Arcane Shot\n", 16)
+	check(#long > 255, "the sample body is not over the limit")
+
+	setText(sim, window, long, true)
+	check(window.saveButton:IsEnabled(), "Save is disabled with an over-limit edit")
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(121)), original, "Save wrote a body over the limit")
+	check(
+		window.editor.problem:GetText():find("Nothing was saved", 1, true) ~= nil,
+		"the refused write is not in the status line"
+	)
+	check(window.saveButton:IsEnabled(), "Save stayed disabled after it refused the write")
+
+	-- Switching tabs saves too, so the same refusal applies and the edit stays a draft on this macro.
+	sim:click(window.Tabs[1])
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(121)), original, "switching tabs wrote a body over the limit")
+	sim:click(window.Tabs[2])
+	sim:advance(0.1)
+	equal(textOf(window), long, "the refused edit did not come back as a draft")
+	check(window.saveButton:IsEnabled(), "the draft is not marked dirty")
+end)
+
 scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)
@@ -444,6 +658,76 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	sim:advance(0.2)
 	check(select(2, sim.G.GetNumMacros()) == before, "the second Delete click did not delete the macro")
 	check(not window.picker:IsShown(), "the picker is open after deleting")
+end)
+
+scenario("Import checks pasted text, creates the macro and opens the picker", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local panel = window.importPanel
+	check(panel, "the window did not build the Import box")
+	check(not panel:IsShown(), "the Import box is shown before it is asked for")
+
+	sim:click(window.importButton)
+	sim:advance(0.1)
+	check(panel:IsShown(), "Import did not open the box")
+	equal(panel.status:GetText(), "Paste a macro to import.", "an empty box says what to do")
+	check(not panel.importButton:IsEnabled(), "Import is enabled with nothing pasted")
+
+	paste(sim, panel, "I like pets and healing")
+	equal(panel.status:GetText(), "Not a macro: no line starts with / or #.", "prose is refused")
+	check(not panel.importButton:IsEnabled(), "Import is enabled for prose")
+
+	paste(sim, panel, "!MySlot:AAAABBBBCCCC")
+	equal(panel.status:GetText(), "This is a MySlot export, not a macro.", "a MySlot export is named")
+	check(not panel.importButton:IsEnabled(), "Import is enabled for a MySlot export")
+
+	paste(sim, panel, string.rep("/cast Arcane Shot\n", 20))
+	check(
+		panel.status:GetText():find("the limit is 255", 1, true) ~= nil,
+		"text over the limit does not show its problem before saving"
+	)
+	check(not panel.importButton:IsEnabled(), "Import is enabled over the limit")
+
+	-- The counter measures the body the macro store will take, so Windows line endings cost nothing: 14 lines are
+	-- 266 bytes on the clipboard but a 252-character macro.
+	paste(sim, panel, string.rep("/cast Arcane Shot\r\n", 14))
+	equal(panel.length:GetText(), "252/255", "the counter measures the normalized body")
+	equal(panel.status:GetText(), "Ready to import.", "a body that fits after normalization is ready")
+	check(panel.importButton:IsEnabled(), "Import is disabled for a body that fits after normalization")
+
+	paste(sim, panel, "/cast Arcane Shot\n/startattack")
+	equal(panel.status:GetText(), "Ready to import.", "a checked macro is ready")
+	check(panel.importButton:IsEnabled(), "Import is disabled for a checked macro")
+	equal(panel.length:GetText(), "30/255", "the box counts the pasted characters")
+
+	local before = select(2, sim.G.GetNumMacros())
+	sim:click(panel.importButton)
+	sim:advance(0.2)
+	check(not panel:IsShown(), "Import left the box open")
+	check(window.picker:IsShown(), "Import did not open the picker for the name and icon")
+	check(select(2, sim.G.GetNumMacros()) == before + 1, "Import did not create a character macro")
+	local actual = 121 + before
+	equal(
+		select(3, sim.G.GetMacroInfo(actual)),
+		"/cast Arcane Shot\n/startattack",
+		"Import did not keep the pasted body"
+	)
+	equal(window.header.nameEdit:GetText(), "New macro", "the picker did not start on a free name")
+
+	window.header.nameEdit:SetText("Imported")
+	sim:click(window.saveButton)
+	sim:advance(0.2)
+	equal(window.header.name:GetText(), "Imported", "the imported macro did not take the chosen name")
+	equal(select(1, sim.G.GetMacroInfo(actual)), "Imported", "the chosen name was not written")
+
+	-- Cancel closes the box without writing anything.
+	sim:click(window.importButton)
+	sim:advance(0.1)
+	paste(sim, panel, "/cast Wing Clip")
+	sim:click(panel.cancelButton)
+	sim:advance(0.1)
+	check(not panel:IsShown(), "Cancel left the Import box open")
+	equal(select(2, sim.G.GetNumMacros()), before + 1, "Cancel imported a macro")
 end)
 
 scenario("the icon picker previews, searches and keeps a pick through Save", function(sim)
@@ -653,7 +937,7 @@ scenario("a deleted macro stays restorable from History", function(sim)
 	equal(select(2, sim.G.GetNumMacros()), before, "Restore did not recreate the deleted macro")
 	check(select(1, sim.G.GetMacroInfo(121 + before - 1)) == "Trap", "Restore created the wrong macro")
 	check(window.Tabs[2].SelectedTexture:IsShown(), "Restore did not switch to the deleted macro's tab")
-	equal(window.header.meta:GetText(), "Character macro", "the header still names the other tab")
+	equal(window.header.meta:GetText(), "Character macro, not on a bar", "the header still names the other tab")
 	equal(selectedRow(window).Name:GetText(), "Trap", "Restore did not select the macro it brought back")
 	sim:click(window.history.CloseButton)
 	sim:advance(0.1)
@@ -737,6 +1021,7 @@ scenario("in combat the window stays open and refuses every write", function(sim
 	sim:advance(0.1)
 	check(not window.saveButton:IsEnabled(), "Save is enabled in combat")
 	check(not window.newButton:IsEnabled(), "New is enabled in combat")
+	check(not window.importButton:IsEnabled(), "Import is enabled in combat")
 	check(not window.deleteButton:IsEnabled(), "Delete is enabled in combat")
 	check(not window.header.rename:IsEnabled(), "Rename is enabled in combat")
 	check(editor.problem:GetText():find("Saving is disabled in combat", 1, true) ~= nil, "the status does not say why")

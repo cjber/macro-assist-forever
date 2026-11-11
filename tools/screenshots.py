@@ -26,6 +26,8 @@ SOURCE = (ROOT / "UI" / "MacroWindow.lua").read_text(encoding="utf-8")
 PICKER = (ROOT / "UI" / "IconSelector.lua").read_text(encoding="utf-8")
 EDITOR = (ROOT / "UI" / "Editor.lua").read_text(encoding="utf-8")
 HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
+IMPORT = (ROOT / "UI" / "Import.lua").read_text(encoding="utf-8")
+SHORTEN = (ROOT / "UI" / "Shorten.lua").read_text(encoding="utf-8")
 XML = (ROOT / "UI" / "MacroWindow.xml").read_text(encoding="utf-8")
 FONT_FILE = ROOT / "media" / "fonts" / "JetBrainsMono-Regular.ttf"
 SQUIGGLE = Image.open(ROOT / "media" / "squiggle.tga").convert("RGBA")
@@ -76,6 +78,7 @@ BUTTON_HEIGHT = number("BUTTON_HEIGHT")
 BUTTON_WIDTH = number("BUTTON_WIDTH")
 DELETE_WIDTH = number("DELETE_WIDTH")
 HISTORY_WIDTH = number("HISTORY_WIDTH")
+IMPORT_WIDTH = number("IMPORT_WIDTH")
 FOOTER_GAP = number("FOOTER_GAP")
 RENAME_WIDTH = number("RENAME_WIDTH")
 RENAME_HEIGHT = number("RENAME_HEIGHT")
@@ -103,6 +106,28 @@ HISTORY_SCROLL_GAP = number("SCROLL_GAP", HISTORY)
 HISTORY_SCROLL_WIDTH = number("SCROLL_WIDTH", HISTORY)
 HISTORY_SCROLL_RIGHT = number("SCROLL_RIGHT_PADDING", HISTORY)
 HISTORY_BOTTOM = number("BOTTOM", HISTORY)
+# The Import box's own numbers, from UI/Import.lua.
+IMPORT_PANEL_WIDTH = number("WIDTH", IMPORT)
+IMPORT_PANEL_HEIGHT = number("HEIGHT", IMPORT)
+IMPORT_PANEL_INSET = number("INSET_PADDING", IMPORT)
+IMPORT_HINT_TOP = number("HINT_TOP", IMPORT)
+IMPORT_HINT_HEIGHT = number("HINT_HEIGHT", IMPORT)
+IMPORT_BOX_BOTTOM = number("BOX_BOTTOM", IMPORT)
+IMPORT_STATUS_BOTTOM = number("STATUS_BOTTOM", IMPORT)
+IMPORT_BOTTOM = number("BOTTOM", IMPORT)
+IMPORT_BUTTON_WIDTH = number("BUTTON_WIDTH", IMPORT)
+IMPORT_BUTTON_HEIGHT = number("BUTTON_HEIGHT", IMPORT)
+# The Shorten preview's own numbers, from UI/Shorten.lua.
+SHORTEN_PANEL_WIDTH = number("WIDTH", SHORTEN)
+SHORTEN_PANEL_HEIGHT = number("HEIGHT", SHORTEN)
+SHORTEN_PANEL_INSET = number("INSET_PADDING", SHORTEN)
+SHORTEN_HINT_TOP = number("HINT_TOP", SHORTEN)
+SHORTEN_HINT_HEIGHT = number("HINT_HEIGHT", SHORTEN)
+SHORTEN_BOX_BOTTOM = number("BOX_BOTTOM", SHORTEN)
+SHORTEN_STATUS_BOTTOM = number("STATUS_BOTTOM", SHORTEN)
+SHORTEN_BOTTOM = number("BOTTOM", SHORTEN)
+SHORTEN_BUTTON_WIDTH = number("BUTTON_WIDTH", SHORTEN)
+SHORTEN_BUTTON_HEIGHT = number("BUTTON_HEIGHT", SHORTEN)
 ROW_ICON_SIZE = 26
 ROW_ICON_INSET = 6
 ROW_TEXT_X = 40
@@ -201,6 +226,10 @@ MACROS = [
 SELECTED = 0
 CURRENT_LINE = 1
 TAB_SELECTED = 1
+# #57: the selected macro sits on the bottom-right bar, so the header names that slot and its key. Every other list row
+# is on no bar and carries the dim marker.
+BAR_TEXT = "Character macro, slot 61 (Shift-1)"
+ON_BAR = {0}
 
 # The picker scene's sample data. The Arcane macro's saved icon is Automatic, as a #showtooltip macro starts, so the
 # header, the list row and the selected grid cell all show the question mark.
@@ -282,6 +311,10 @@ COMPLETION_BODY = "\n".join(
 )
 COMPLETION_LINE = 5
 COMPLETION_CARET = COMPLETION_BODY.rindex("/cast [") + len("/cast [") + 1  # byte offset after `[`
+# The recipe scene: plain words on a line offer the Hunter recipes whose words match, with their spell names resolved.
+RECIPE_BODY = "pet"
+RECIPE_CARET = 4
+RECIPE_SPELL_NAMES = {136: "Mend Pet", 982: "Revive Pet", 1130: "Hunter's Mark", 1499: "Freezing Trap"}
 LIVE = {
     "actionbar": "no",
     "bar": "no",
@@ -345,12 +378,16 @@ def sample():
         for spell in SPELLS
     )
     live = ",\n".join(f"[{lua_string(name)}] = {lua_string(value)}" for name, value in LIVE.items())
+    recipe_spells = ",\n".join(
+        f"[{spell_id}] = {lua_string(name)}" for spell_id, name in sorted(RECIPE_SPELL_NAMES.items())
+    )
     script = f"""
 local ns = {{}}
 for _, file in ipairs({{
     "Locales/enUS.lua",
     "Data/Commands.lua",
     "Data/Conditions.lua",
+    "Data/Recipes.lua",
     "Core/Lexer.lua",
     "Core/Parser.lua",
     "Core/Length.lua",
@@ -408,6 +445,29 @@ for index, item in ipairs(result.items) do
         .. "\\t" .. clean(item.live or ""))
 end
 print("LENGTH\\t" .. ns.Length(completion))
+local recipeSpells = {{
+{recipe_spells}
+}}
+local recipes = {{}}
+for _, recipe in ipairs(ns.Recipes.List) do
+    if not recipe.class or recipe.class == "HUNTER" then
+        local body = ns.Recipes.Render(recipe, function(spellID) return recipeSpells[spellID] end)
+        if body then
+            recipes[#recipes + 1] = {{
+                words = recipe.words,
+                title = ns.L[recipe.title] or recipe.title,
+                body = body,
+            }}
+        end
+    end
+end
+ctx.recipes = recipes
+local recipeResult = ns.Complete({lua_string(RECIPE_BODY)}, {RECIPE_CARET}, ctx)
+print("RECIPE_COMPLETE\\t" .. recipeResult.from .. "\\t" .. recipeResult.to)
+for index, item in ipairs(recipeResult.items) do
+    print("RECIPE_ITEM\\t" .. index .. "\\t" .. item.kind .. "\\t" .. clean(item.label) .. "\\t"
+        .. clean(item.detail) .. "\\t" .. clean(item.insert))
+end
 """
     result = subprocess.run(["luajit", "-e", script], cwd=ROOT, capture_output=True, text=True, check=True)
     data = {
@@ -420,6 +480,7 @@ print("LENGTH\\t" .. ns.Length(completion))
         "items": [],
         "complete": None,
         "length": 0,
+        "recipe": {"from": 1, "to": 0, "items": []},
     }
     for line in result.stdout.splitlines():
         parts = line.split("\t")
@@ -456,6 +517,18 @@ print("LENGTH\\t" .. ns.Length(completion))
             )
         elif parts[0] == "LENGTH":
             data["length"] = int(parts[1])
+        elif parts[0] == "RECIPE_COMPLETE":
+            data["recipe"]["from"] = int(parts[1])
+            data["recipe"]["to"] = int(parts[2])
+        elif parts[0] == "RECIPE_ITEM":
+            data["recipe"]["items"].append(
+                {
+                    "kind": parts[2],
+                    "label": parts[3],
+                    "detail": parts[4],
+                    "insert": parts[5] if len(parts) > 5 else "",
+                }
+            )
     return data
 
 
@@ -689,7 +762,13 @@ def draw_completion(canvas, completion, caret_column, text_x, text_y, text_w):
         selected = completion[3] + index + 1 == completion[4]
         if selected:
             canvas.fill(row_x, row_y, row_width, POPUP_ROW_HEIGHT, (1, 0.82, 0.2, 0.14))
-        canvas.text(x + POPUP_LABEL_X, row_y, item["label"], MONO, box_height=POPUP_ROW_HEIGHT)
+        canvas.text(
+            x + POPUP_LABEL_X,
+            row_y,
+            fit(canvas, item["label"], MONO, POPUP_LABEL_WIDTH),
+            MONO,
+            box_height=POPUP_ROW_HEIGHT,
+        )
         live = item.get("live", "")
         detail = item["detail"]
         if live:
@@ -937,6 +1016,9 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
         height = min(ROW_HEIGHT, scroll_y + scroll_h - row_y)
         if height <= 0:
             break
+        summary = data["summary"][index + 1]
+        if index not in ON_BAR:
+            summary = f"{summary} · Not on a bar" if summary else "Not on a bar"
         draw_row(
             canvas,
             scroll_x,
@@ -944,7 +1026,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
             scroll_w,
             icon,
             name,
-            data["summary"][index + 1],
+            summary,
             index == SELECTED,
             height,
         )
@@ -981,7 +1063,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
     canvas.text(
         header_x + HEADER_ICON_FRAME + 8,
         header_y + 20,
-        "Character macro",
+        BAR_TEXT,
         FONTS["GameFontHighlightSmall"],
         MUTED,
     )
@@ -1020,6 +1102,14 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
         button_y,
         HISTORY_WIDTH,
         "History",
+        h=BUTTON_HEIGHT,
+    )
+    button(
+        canvas,
+        X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + FOOTER_GAP * 3,
+        button_y,
+        IMPORT_WIDTH,
+        "Import",
         h=BUTTON_HEIGHT,
     )
     button(canvas, X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH, button_y, BUTTON_WIDTH, "Save", h=BUTTON_HEIGHT)
@@ -1112,6 +1202,14 @@ def window_layout(ui):
             "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + FOOTER_GAP * 2,
             "y": button_y,
             "w": HISTORY_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "import",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + FOOTER_GAP * 3,
+            "y": button_y,
+            "w": IMPORT_WIDTH,
             "h": BUTTON_HEIGHT,
         },
         {
@@ -1252,6 +1350,114 @@ def history_layout():
     }
 
 
+# The Import box's sample text: a short macro already pasted and checked, so the scene shows the ready line and count.
+IMPORT_BODY = "/cast [@mouseover,harm,nodead][] Arcane Shot\n/startattack"
+
+
+def import_geometry():
+    x = X + (WINDOW_WIDTH - IMPORT_PANEL_WIDTH) // 2
+    y = Y + (WINDOW_HEIGHT - IMPORT_PANEL_HEIGHT) // 2
+    return x, y, IMPORT_PANEL_WIDTH, IMPORT_PANEL_HEIGHT
+
+
+def draw_import(canvas):
+    """The Import box over the macro window: a pasted, checked macro with the panel's Import and Cancel buttons."""
+    x, y, w, h = import_geometry()
+    background(canvas, x, y, w, h)
+    canvas.text(
+        x + 12,
+        y + IMPORT_HINT_TOP,
+        "Paste a macro from wago.io or another character.",
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        width=w - 24,
+    )
+    box_x = x + 10
+    box_y = y + IMPORT_HINT_TOP + IMPORT_HINT_HEIGHT + 8
+    box_w = w - 20
+    box_h = h - (IMPORT_HINT_TOP + IMPORT_HINT_HEIGHT + 8) - IMPORT_BOX_BOTTOM
+    inset(canvas, box_x, box_y, box_w, box_h)
+    line_y = box_y + IMPORT_PANEL_INSET + 4
+    for line in IMPORT_BODY.split("\n"):
+        canvas.text(
+            box_x + IMPORT_PANEL_INSET + 2,
+            line_y,
+            line,
+            FONTS["GameFontHighlight"],
+            WHITE,
+            width=box_w - IMPORT_PANEL_INSET * 2 - 4,
+        )
+        line_y += 18
+    canvas.text(
+        x + 12,
+        y + h - IMPORT_STATUS_BOTTOM - 6,
+        "Ready to import.",
+        FONTS["GameFontHighlightSmall"],
+        (0.2, 1, 0.6),
+    )
+    canvas.text(
+        x + w - 70,
+        y + h - IMPORT_STATUS_BOTTOM - 6,
+        f"{len(IMPORT_BODY)}/255",
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        width=58,
+        justify="RIGHT",
+    )
+    button(
+        canvas,
+        x + w - 10 - IMPORT_BUTTON_WIDTH,
+        y + h - IMPORT_BOTTOM - IMPORT_BUTTON_HEIGHT,
+        IMPORT_BUTTON_WIDTH,
+        "Import",
+        h=IMPORT_BUTTON_HEIGHT,
+    )
+    button(
+        canvas,
+        x + w - 10 - IMPORT_BUTTON_WIDTH * 2 - 6,
+        y + h - IMPORT_BOTTOM - IMPORT_BUTTON_HEIGHT,
+        IMPORT_BUTTON_WIDTH,
+        "Cancel",
+        h=IMPORT_BUTTON_HEIGHT,
+    )
+    wowmock.portrait_frame_art(canvas, x, y, w, h, IDENTITY_ICON, "Import macro")
+    return x, y, w, h
+
+
+def import_layout():
+    x, y, w, h = import_geometry()
+    box_y = y + IMPORT_HINT_TOP + IMPORT_HINT_HEIGHT + 8
+    return {
+        "frame": {"x": x, "y": y, "w": w, "h": h},
+        "widgets": [
+            {
+                "name": "import-input",
+                "role": "input",
+                "x": x + 10,
+                "y": box_y,
+                "w": w - 20,
+                "h": h - (IMPORT_HINT_TOP + IMPORT_HINT_HEIGHT + 8) - IMPORT_BOX_BOTTOM,
+            },
+            {
+                "name": "import-cancel",
+                "role": "button",
+                "x": x + w - 10 - IMPORT_BUTTON_WIDTH * 2 - 6,
+                "y": y + h - IMPORT_BOTTOM - IMPORT_BUTTON_HEIGHT,
+                "w": IMPORT_BUTTON_WIDTH,
+                "h": IMPORT_BUTTON_HEIGHT,
+            },
+            {
+                "name": "import-button",
+                "role": "button",
+                "x": x + w - 10 - IMPORT_BUTTON_WIDTH,
+                "y": y + h - IMPORT_BOTTOM - IMPORT_BUTTON_HEIGHT,
+                "w": IMPORT_BUTTON_WIDTH,
+                "h": IMPORT_BUTTON_HEIGHT,
+            },
+        ],
+    }
+
+
 def picker_layout(ui):
     editor_x, editor_y, editor_w, editor_h = editor_geometry()
     status_x, status_y, status_w, status_h = status_geometry()
@@ -1304,6 +1510,14 @@ def picker_layout(ui):
             "h": BUTTON_HEIGHT,
         },
         {
+            "name": "import",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + FOOTER_GAP * 3,
+            "y": button_y,
+            "w": IMPORT_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
             "name": "cancel",
             "role": "button",
             "x": X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH * 2 - FOOTER_GAP,
@@ -1332,11 +1546,124 @@ def picker_layout(ui):
     return {"frame": {"x": X, "y": Y, "w": WINDOW_WIDTH, "h": WINDOW_HEIGHT}, "widgets": widgets}
 
 
+# The Shorten preview's sample: five long lines rewritten to fit, with the old line in red and the new one in green.
+SHORTEN_OLD_LINE = "/spell      [harm, nodead]      Arcane Shot"
+SHORTEN_NEW_LINE = "/cast [harm,nodead] Arcane Shot"
+SHORTEN_OLD = "\n".join([SHORTEN_OLD_LINE] * 6)
+SHORTEN_NEW = "\n".join([SHORTEN_NEW_LINE] * 6)
+
+
+def shorten_geometry():
+    x = X + (WINDOW_WIDTH - SHORTEN_PANEL_WIDTH) // 2
+    y = Y + (WINDOW_HEIGHT - SHORTEN_PANEL_HEIGHT) // 2
+    return x, y, SHORTEN_PANEL_WIDTH, SHORTEN_PANEL_HEIGHT
+
+
+def draw_shorten(canvas):
+    """The Shorten preview over the macro window: the changed lines and the counts before and after."""
+    x, y, w, h = shorten_geometry()
+    background(canvas, x, y, w, h)
+    canvas.text(
+        x + 12,
+        y + SHORTEN_HINT_TOP,
+        "This rewrite only removes what the macro does not need.",
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        width=w - 24,
+    )
+    box_x = x + 10
+    box_y = y + SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8
+    box_w = w - 20
+    box_h = h - (SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8) - SHORTEN_BOX_BOTTOM
+    inset(canvas, box_x, box_y, box_w, box_h)
+    diff_y = box_y + SHORTEN_PANEL_INSET + 2
+    for _ in range(6):
+        canvas.text(
+            box_x + SHORTEN_PANEL_INSET + 2,
+            diff_y,
+            f"-{SHORTEN_OLD_LINE}",
+            MONO,
+            (1, 0.25, 0.25),
+            width=box_w - SHORTEN_PANEL_INSET * 2 - 4,
+        )
+        diff_y += 18
+        canvas.text(
+            box_x + SHORTEN_PANEL_INSET + 2,
+            diff_y,
+            f"+{SHORTEN_NEW_LINE}",
+            MONO,
+            (0.2, 1, 0.6),
+            width=box_w - SHORTEN_PANEL_INSET * 2 - 4,
+        )
+        diff_y += 18
+    canvas.text(
+        x + 12,
+        y + h - SHORTEN_STATUS_BOTTOM - 6,
+        f"{len(SHORTEN_OLD)}/255, now {len(SHORTEN_NEW)}/255",
+        FONTS["GameFontHighlightSmall"],
+        (0.2, 1, 0.6),
+    )
+    button(
+        canvas,
+        x + w - 10 - SHORTEN_BUTTON_WIDTH,
+        y + h - SHORTEN_BOTTOM - SHORTEN_BUTTON_HEIGHT,
+        SHORTEN_BUTTON_WIDTH,
+        "Apply",
+        h=SHORTEN_BUTTON_HEIGHT,
+    )
+    button(
+        canvas,
+        x + w - 10 - SHORTEN_BUTTON_WIDTH * 2 - 6,
+        y + h - SHORTEN_BOTTOM - SHORTEN_BUTTON_HEIGHT,
+        SHORTEN_BUTTON_WIDTH,
+        "Cancel",
+        h=SHORTEN_BUTTON_HEIGHT,
+    )
+    wowmock.portrait_frame_art(canvas, x, y, w, h, IDENTITY_ICON, "Shorten macro")
+    return x, y, w, h
+
+
+def shorten_layout():
+    x, y, w, h = shorten_geometry()
+    box_y = y + SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8
+    return {
+        "frame": {"x": x, "y": y, "w": w, "h": h},
+        "widgets": [
+            {
+                "name": "shorten-diff",
+                "role": "text",
+                "x": x + 10,
+                "y": box_y,
+                "w": w - 20,
+                "h": h - (SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8) - SHORTEN_BOX_BOTTOM,
+            },
+            {
+                "name": "shorten-cancel",
+                "role": "button",
+                "x": x + w - 10 - SHORTEN_BUTTON_WIDTH * 2 - 6,
+                "y": y + h - SHORTEN_BOTTOM - SHORTEN_BUTTON_HEIGHT,
+                "w": SHORTEN_BUTTON_WIDTH,
+                "h": SHORTEN_BUTTON_HEIGHT,
+            },
+            {
+                "name": "shorten-apply",
+                "role": "button",
+                "x": x + w - 10 - SHORTEN_BUTTON_WIDTH,
+                "y": y + h - SHORTEN_BOTTOM - SHORTEN_BUTTON_HEIGHT,
+                "w": SHORTEN_BUTTON_WIDTH,
+                "h": SHORTEN_BUTTON_HEIGHT,
+            },
+        ],
+    }
+
+
 def layout(ui):
     return {
         "scenes": [
             window_layout(ui),
             history_layout(),
+            import_layout(),
+            shorten_layout(),
             picker_layout(ui),
         ]
     }
@@ -1384,6 +1711,28 @@ def main():
     wowmock.scene(ui, [(history_canvas, 0, 0)]).save(output / "history.png")
     print(output / "history.png")
 
+    import_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data=window_data,
+    )
+    draw_import(import_canvas)
+    wowmock.scene(ui, [(import_canvas, 0, 0)]).save(output / "import.png")
+    print(output / "import.png")
+
+    shorten_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data=window_data,
+    )
+    draw_shorten(shorten_canvas)
+    wowmock.scene(ui, [(shorten_canvas, 0, 0)]).save(output / "shorten.png")
+    print(output / "shorten.png")
+
     picker_canvas = window(
         ui,
         body=MACROS[SELECTED][2],
@@ -1413,6 +1762,25 @@ def main():
     )
     wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "completion.png")
     print(output / "completion.png")
+
+    recipe_data = {
+        "lines": {1: "pet"},
+        "summary": data["summary"],
+        "explain": [],
+        "diagnostics": [],
+        "length": len(RECIPE_BODY),
+    }
+    recipe_completion = (RECIPE_BODY.split("\n"), 0, data["recipe"]["items"][:POPUP_ROWS], 0, 0)
+    canvas = window(
+        ui,
+        body=RECIPE_BODY,
+        current_line=0,
+        caret_column=len(RECIPE_BODY),
+        data=recipe_data,
+        completion=recipe_completion,
+    )
+    wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "recipes.png")
+    print(output / "recipes.png")
     (output / "layout.json").write_text(json.dumps(layout(ui), indent=2) + "\n", encoding="utf-8")
 
 

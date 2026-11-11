@@ -355,7 +355,9 @@ local function Check(text, ctx)
 				end
 			end
 		end
-		if line.kind == "command" then
+		-- Only a secure command reads its clauses as macro syntax. On a chat, script or plain command line a `;` is
+		-- the player's own text, so nothing there is unreachable and nothing may be dropped.
+		if line.kind == "command" and entry and entry.kind == "secure" then
 			CheckClauses(line, diagnostics)
 		end
 	end

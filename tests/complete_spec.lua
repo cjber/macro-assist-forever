@@ -85,6 +85,48 @@ for index, item in ipairs(result.items) do
 	equal(again.items[index].insert, item.insert, "completion order is deterministic")
 end
 
+-- Plain words on a line offer checked recipes, and Tab replaces the whole line with the recipe's body. A recipe is
+-- found by its intent words, its localized title and the resolved name of each spell it casts.
+local recipeCtx = {
+	spells = ctx.spells,
+	evaluate = ctx.evaluate,
+	recipes = {
+		{
+			words = { "pet", "send pet" },
+			title = "Send the pet",
+			spells = {},
+			body = "#showtooltip\n/petattack [@mouseover,harm,nodead][]",
+		},
+		{
+			words = { "heal", "heal mouseover" },
+			title = "Heal your mouseover",
+			spells = { "Flash Heal" },
+			body = "/cast [@mouseover,help,nodead][] Flash Heal",
+		},
+	},
+}
+result = ns.Complete("pet", 4, recipeCtx)
+equal(result.from, 1, "a recipe replaces the whole line from its start")
+equal(result.to, 3, "a recipe replaces the whole line to its end")
+equal(#result.items, 1, "one recipe matches pet")
+equal(result.items[1].kind, "recipe", "the recipe kind")
+equal(result.items[1].label, "Send the pet", "the recipe title is the label")
+equal(result.items[1].insert, "#showtooltip\n/petattack [@mouseover,harm,nodead][]", "the recipe body is the insert")
+equal(result.items[1].detail, "Recipe", "the recipe reads as a recipe")
+result = ns.Complete("heal mo", 8, recipeCtx)
+equal(result.items[1].label, "Heal your mouseover", "a longer phrase narrows the recipe")
+result = ns.Complete("flash heal", 11, recipeCtx)
+equal(result.items[1] and result.items[1].label, "Heal your mouseover", "a resolved spell name offers the recipe")
+result = ns.Complete("heal your", 10, recipeCtx)
+equal(result.items[1] and result.items[1].label, "Heal your mouseover", "the localized title offers the recipe")
+result = ns.Complete("pe", 3, recipeCtx)
+equal(result.from, 1, "a partial word still replaces the line from its start")
+equal(result.to, 2, "a partial word replaces to the line's end")
+result = ns.Complete("", 1, recipeCtx)
+equal(#result.items, 0, "an empty line offers no recipes")
+result = ns.Complete("/cast Flash", 12, recipeCtx)
+equal(result.items[1].kind, "spell", "a command line still offers spells, not recipes")
+
 -- A directive after #.
 result = ns.Complete("#sh", 4, ctx)
 equal(result.from, 1, "the directive range starts at #")

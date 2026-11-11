@@ -240,6 +240,74 @@ function M.install(sim)
 			}
 		end
 	end
+
+	-- The action bar as the client answers it. A slot holding a macro reports "macro" and, when the macro's first
+	-- spell is one the client knows, that spell's ID with subType "spell"; otherwise it reports the macro index
+	-- (Blizzard_ActionBar's ActionButton.lua:1028-1033 and AssistedCombatManager.lua:203-213 read the ID as a spell).
+	-- The name on the button, which is what GetActionText gives, is how an addon finds the macro again.
+	sim.actionSlots = {}
+	local function macroInfoAt(index)
+		if type(index) ~= "number" then
+			return nil
+		end
+		local isCharacter = index > maxAccount
+		return list(isCharacter)[index - base(isCharacter)]
+	end
+	local function firstSpellID(body)
+		for line in tostring(body):gmatch("[^\n]+") do
+			local args = line:match("^%s*/[Cc][Aa][Ss][Tt]%s+(.*)$")
+			if args then
+				while args:sub(1, 1) == "[" do
+					local close = args:find("]", 1, true)
+					if not close then
+						break
+					end
+					args = args:sub(close + 1):gsub("^%s+", "")
+				end
+				args = args:gsub("^!", "")
+				local name = args:match("^([^,;]+)")
+				if name then
+					name = name:gsub("%s+$", "")
+					local spell = spellByName[name:lower()]
+					if spell then
+						return spell.id
+					end
+				end
+			end
+		end
+	end
+	G.GetActionInfo = function(slot)
+		local index = sim.actionSlots[slot]
+		local info = macroInfoAt(index)
+		if not info then
+			return nil
+		end
+		local spellID = firstSpellID(info.body)
+		if spellID then
+			return "macro", spellID, "spell"
+		end
+		return "macro", index
+	end
+	G.GetActionText = function(slot)
+		local info = macroInfoAt(sim.actionSlots[slot])
+		return info and info.name or nil
+	end
+	G.GetMacroIndexByName = function(name)
+		if type(name) ~= "string" then
+			return 0
+		end
+		for index, info in ipairs(account) do
+			if info.name == name then
+				return index
+			end
+		end
+		for index, info in ipairs(character) do
+			if info.name == name then
+				return maxAccount + index
+			end
+		end
+		return 0
+	end
 	-- Blizzard's Mainline icon provider also walks talent groups, which the simulator does not boot.
 	G.GetNumSpecGroups = function()
 		return 0
