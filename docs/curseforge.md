@@ -64,12 +64,12 @@ For help, ideas and each day's release notes, join [cjber's Workshop on Discord]
 
 <!-- forever-family:end -->
 
-Source code and issues: [github.com/cjber/macro-assist-forever](https://github.com/cjber/macro-assist-forever). Licence: GPL-3.0-or-later.
-
 <!-- forever-credits:start -->
 
 Thanks to everyone who reports a bug or asks for a feature.
 
 <!-- forever-credits:end -->
+
+Source code and issues: [github.com/cjber/macro-assist-forever](https://github.com/cjber/macro-assist-forever). Licence: GPL-3.0-or-later.
 
 Built with AI assistance.
