@@ -139,6 +139,8 @@ jobs:
           persist-credentials: false
       # A release publishes its changelog entry, so every tagged version needs one.
       - run: python3 tools/changelog.py --check
+      # Data/Credits.lua and the README and store thanks blocks are generated from THIRD_PARTY.md (WFA-31).
+      - run: python3 tools/forever_tools/credits.py --check
 
   workflows:
     runs-on: ubuntu-24.04

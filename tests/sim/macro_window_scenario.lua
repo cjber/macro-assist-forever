@@ -645,9 +645,15 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	check(window.header.name:GetText() == "Renamed", "Rename did not rename the macro")
 	check(select(1, sim.G.GetMacroInfo(121 + before)) == "Renamed", "the rename was not written")
 
+	sim:hover(window.deleteButton)
+	check(sim.G.GameTooltip:IsOwned(window.deleteButton), "hovering Delete does not own the tooltip")
 	sim:click(window.deleteButton)
 	sim:advance(0.05)
-	check(window.deleteButton:GetText() == "Click again to delete", "the first Delete click did not ask for a second")
+	check(window.deleteButton:GetText() == "Confirm", "the first Delete click did not ask for a second")
+	check(
+		sim.G.GameTooltip:GetLeftLine(1):GetText() == "Click again to delete",
+		"the owned Delete tooltip still says the macro goes on the first click"
+	)
 	sim:click(window.deleteButton)
 	sim:advance(0.2)
 	check(select(2, sim.G.GetNumMacros()) == before, "the second Delete click did not delete the macro")

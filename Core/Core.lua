@@ -37,6 +37,12 @@ ns.core = ForeverCore.Register(addonName, {
 	end,
 })
 
+-- Hands the generated player credits to the shared Thanks page (WFA-31). An older core has no Credits module, and the
+-- addon loads as before.
+if type(ForeverCore.Credits) == "table" then
+	ns.core.SafeCall("credits", ForeverCore.Credits.Register, "Macro Assist Forever", ns.Credits)
+end
+
 local addon = CreateFrame("Frame")
 addon:RegisterEvent("ADDON_LOADED")
 

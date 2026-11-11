@@ -58,7 +58,7 @@ An over-limit macro offers a lossless rewrite, shown as a diff before it reaches
 
 Put the `MacroAssistForever` folder in `World of Warcraft/_forever_/Interface/AddOns`, or install it from CurseForge. Then type `/reload`.
 
-Macro Assist Forever needs [Forever Core](https://www.curseforge.com/wow/addons/forevercore), which CurseForge and Wago install with it. Nothing else is needed.
+Nothing else needs installing.
 
 ## Usage
 
@@ -68,7 +68,7 @@ Click a macro to edit it, or type in the search box to narrow the list by name o
 
 ## Works alongside
 
-Macro Assist Forever covers Blizzard's macro panel but leaves the panel, its keybind and the macro store in place. It does not run macros for you; its only dependency is Forever Core, which supplies the shared report window and error log.
+Macro Assist Forever covers Blizzard's macro panel but leaves the panel, its keybind and the macro store in place. It does not run macros for you.
 
 ## Development
 
@@ -76,7 +76,13 @@ Run `stylua --check .`, `luacheck .`, and every `tests/*_spec.lua` under LuaJIT.
 
 ## Credits
 
-Thanks to the JetBrains Mono project for the bundled mono font, used under the SIL Open Font License, and to warcraft.wiki.gg for the macro conditional reference. [Forever Core](https://github.com/cjber/forever-core) supplies the shared report window and error log. [THIRD_PARTY.md](THIRD_PARTY.md) lists every input and its licence.
+Thanks to the JetBrains Mono project for the bundled mono font, used under the SIL Open Font License, and to warcraft.wiki.gg for the macro conditional reference. [THIRD_PARTY.md](THIRD_PARTY.md) lists every input and its licence.
+
+<!-- forever-credits:start -->
+
+Thanks to everyone who reports a bug or asks for a feature.
+
+<!-- forever-credits:end -->
 
 ## Licence
 
@@ -99,7 +105,7 @@ Each one works on its own, and they work together when you install more than one
 | [Commissions Forever](https://www.curseforge.com/wow/addons/commissions-forever) | Lists your commission turn-ins, the materials in your bags and the next NPC to visit. | [Issues](https://github.com/cjber/commissions-forever/issues) |
 | [Macro Assist Forever](https://www.curseforge.com/wow/addons/macro-assist-forever) | Adds a macro window with every macro in one list, a mono editor with live checks, and history. | [Issues](https://github.com/cjber/macro-assist-forever/issues) |
 
-Bug reports, feature requests and pull requests are welcome on each addon's GitHub. Everyone whose report or idea ships is thanked by name in the addon's credits and changelog.
+Bug reports, feature requests and pull requests are welcome on each addon's GitHub. Everyone whose report or idea ships is thanked by name on the Thanks page in game, in the store page and in the changelog, unless they ask not to be.
 
 For help, ideas and each day's release notes, join [cjber's Workshop on Discord](https://discord.gg/FpHugGxRJY).
 

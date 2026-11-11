@@ -957,23 +957,24 @@ def draw_picker(canvas, icon=PICKER_ICON):
     canvas.fill(status_x, status_y, status_w, 1, RULE)
     font = FONTS["GameFontHighlightSmall"]
     automatic = "Automatic"
-    canvas.text(status_x + 10, status_y, automatic, font, GREEN, box_height=STATUS_HEIGHT)
-    cursor = status_x + 10 + canvas.text_width(automatic, font) + 4
+    detail = "shows the icon of the spell #showtooltip picks: Arcane Shot"
+    hint = "Click to pick, Save to keep"
+    hint_w = canvas.text_width(hint, font)
+    # The left text is anchored to end before the right hint and truncates there, as the FontString does.
+    available = status_w - 10 - 8 - hint_w - 10
+    left = fit(canvas, automatic + " " + detail, font, available)
+    if len(left) <= len(automatic):
+        canvas.text(status_x + 10, status_y, left, font, GREEN, box_height=STATUS_HEIGHT)
+    else:
+        canvas.text(status_x + 10, status_y, automatic, font, GREEN, box_height=STATUS_HEIGHT)
+        cursor = status_x + 10 + canvas.text_width(automatic, font)
+        canvas.text(cursor, status_y, left[len(automatic) :], font, box_height=STATUS_HEIGHT)
     canvas.text(
-        cursor,
+        status_x + status_w - 10 - hint_w,
         status_y,
-        "shows the icon of the spell #showtooltip picks: Arcane Shot",
-        font,
-        box_height=STATUS_HEIGHT,
-    )
-    canvas.text(
-        status_x,
-        status_y,
-        "Click to pick, Save to keep",
+        hint,
         font,
         MUTED,
-        justify="RIGHT",
-        width=status_w - 10,
         box_height=STATUS_HEIGHT,
     )
 

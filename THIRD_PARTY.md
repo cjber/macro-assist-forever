@@ -14,8 +14,12 @@
 | `docs/github-sponsors-button.png` | The GitHub Sponsors button in the store description; drawn in forever-core to match the Ko-fi button, with the heart from GitHub's [Octicons](https://github.com/primer/octicons) and the Adwaita Sans font. No pin. | Octicons: MIT; Adwaita Sans: SIL OFL 1.1 | No |
 | `docs/discord-button.png` | The Discord button on the store page; drawn in forever-core with Discord's logo from [Simple Icons](https://simpleicons.org) and the Adwaita Sans font | Simple Icons: CC0; Adwaita Sans: SIL OFL 1.1; the logo is Discord's, used to link to a Discord server | No |
 
-## Ideas and contributors
+## Players
 
-The font is JetBrains Mono, made by JetBrains and used here under the SIL Open Font License. The condition names and
-forms follow warcraft.wiki.gg's macro conditional reference. The wavy underline is the addon's own art, drawn by the
-script above. Everything else that ships is this addon's code, or art and data that belong to Blizzard's game.
+| Who | What | Notes |
+|---|---|---|
+
+## Inspired by
+
+| Who | What | Notes |
+|---|---|---|
