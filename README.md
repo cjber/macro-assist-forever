@@ -58,8 +58,6 @@ An over-limit macro offers a lossless rewrite, shown as a diff before it reaches
 
 Put the `MacroAssistForever` folder in `World of Warcraft/_forever_/Interface/AddOns`, or install it from CurseForge. Then type `/reload`.
 
-Nothing else needs installing.
-
 ## Usage
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. The General tab holds account macros and the character tab holds this character's macros.
