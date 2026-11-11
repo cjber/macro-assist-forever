@@ -5,6 +5,7 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **The players who helped are on the Thanks page.** Settings, Forever addons, Thanks lists everyone whose report or idea shipped in Macro Assist Forever, ranked by how much they gave. (#98)
 ## [0.3.3] - 2026-11-11
 
 <!-- forever-core-sync -->
