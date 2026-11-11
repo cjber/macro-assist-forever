@@ -213,17 +213,11 @@ scenario("the header and rows show action bar slots and their keys", function(si
 	local account = sim.G.Constants.MacroConsts.MAX_ACCOUNT_MACROS
 	local arcane = account + 1
 	local trap = account + 4
-	local action = {
-		[61] = arcane,
-		[62] = arcane,
-		[1] = 1,
-	}
-	sim.G.GetActionInfo = function(slot)
-		local index = action[slot]
-		if index then
-			return "macro", index
-		end
-	end
+	-- The client reports each macro's first spell as the slot's ID with subType "spell", so the slot's macro comes
+	-- from the name the button shows, not from that ID.
+	sim.actionSlots[61] = arcane
+	sim.actionSlots[62] = arcane
+	sim.actionSlots[1] = 1
 	local keys = { MULTIACTIONBAR1BUTTON1 = "SHIFT-1", ACTIONBUTTON1 = "BUTTON4" }
 	sim.G.GetBindingKey = function(binding)
 		return keys[binding]
@@ -260,10 +254,10 @@ scenario("the header and rows show action bar slots and their keys", function(si
 		"a macro on no bar is marked in the list"
 	)
 
-	-- The bottom-right bar loses its first button, its second is rebound and a macro moves onto another bar.
-	action[61] = nil
+	-- The bottom-left bar loses its first button, its second is rebound and a macro moves onto another bar.
+	sim.actionSlots[61] = nil
 	keys.MULTIACTIONBAR1BUTTON2 = "CTRL-2"
-	action[37] = trap
+	sim.actionSlots[37] = trap
 	sim:input(function()
 		sim.events.fire("ACTIONBAR_SLOT_CHANGED", 61)
 	end)

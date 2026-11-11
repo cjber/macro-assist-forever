@@ -952,9 +952,34 @@ function Window:SelectMacro(actual)
 	self:RefreshList()
 end
 
--- Which action slots hold which macro, rebuilt from the client when a bar, binding or macro changes. GetActionInfo
--- answers "macro", macro index for a macro action, so the index is the same one GetMacroInfo uses (character macros
--- follow the account macros). A slot with no Blizzard binding is still shown by its number, without a key.
+-- The macro index a slot holds. A macro whose text starts with a spell the client knows reports that spell's ID with
+-- subType "spell" (ActionButton.lua:1028-1033 and AssistedCombatManager.lua:203-213 both read it as a spell ID), so the
+-- ID is not the macro. What the client shows on a macro action button is the macro's name (ActionButton.lua:615-616),
+-- and GetMacroIndexByName turns that name back into the index GetMacroInfo uses. Only a macro with no recognised spell
+-- reports its index as the ID, so the ID is used only when the subType does not say it is a spell.
+---@param slot integer
+---@param id any
+---@param subType any
+---@return integer?
+local function MacroIndexFor(slot, id, subType)
+	if type(GetActionText) == "function" and type(GetMacroIndexByName) == "function" then
+		local textOk, text = pcall(GetActionText, slot)
+		if textOk and type(text) == "string" and text ~= "" then
+			local indexOk, index = pcall(GetMacroIndexByName, text)
+			if indexOk and type(index) == "number" and index > 0 then
+				return index
+			end
+		end
+	end
+	if subType ~= "spell" and type(id) == "number" and id > 0 then
+		return id
+	end
+	return nil
+end
+
+-- Which action slots hold which macro, rebuilt from the client when a bar, binding or macro changes. A slot's macro
+-- comes from the name the client shows, never from GetActionInfo's ID when that ID is a spell. A slot with no Blizzard
+-- binding is still shown by its number, without a key.
 function Window:RebuildBars()
 	local slots = {}
 	if type(GetActionInfo) ~= "function" then
@@ -962,25 +987,28 @@ function Window:RebuildBars()
 		return
 	end
 	for slot = 1, ACTION_SLOTS do
-		local ok, kind, id = pcall(GetActionInfo, slot)
-		if ok and kind == "macro" and type(id) == "number" then
-			local binding = ns.Bars.Binding(slot)
-			local key
-			if binding and type(GetBindingKey) == "function" then
-				local keyOk, bound = pcall(GetBindingKey, binding)
-				if keyOk and type(bound) == "string" and bound ~= "" then
-					key = bound
-					if type(GetBindingText) == "function" then
-						local textOk, text = pcall(GetBindingText, bound, "KEY_")
-						if textOk and type(text) == "string" and text ~= "" then
-							key = text
+		local ok, kind, id, subType = pcall(GetActionInfo, slot)
+		if ok and kind == "macro" then
+			local index = MacroIndexFor(slot, id, subType)
+			if index then
+				local binding = ns.Bars.Binding(slot)
+				local key
+				if binding and type(GetBindingKey) == "function" then
+					local keyOk, bound = pcall(GetBindingKey, binding)
+					if keyOk and type(bound) == "string" and bound ~= "" then
+						key = bound
+						if type(GetBindingText) == "function" then
+							local textOk, text = pcall(GetBindingText, bound, "KEY_")
+							if textOk and type(text) == "string" and text ~= "" then
+								key = text
+							end
 						end
 					end
 				end
+				local list = slots[index] or {}
+				list[#list + 1] = { slot = slot, key = key }
+				slots[index] = list
 			end
-			local list = slots[id] or {}
-			list[#list + 1] = { slot = slot, key = key }
-			slots[id] = list
 		end
 	end
 	self.slots = slots
