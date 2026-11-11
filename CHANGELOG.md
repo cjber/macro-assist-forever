@@ -5,6 +5,10 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-11
+
+- **Forever Core now installs alongside it.** Forever Core is on CurseForge, so the CurseForge app installs and updates it with this addon instead of the addon carrying its own copy. On Wago, install Forever Core from its own page.
+
 ## [0.2.2] - 2026-11-10
 
 ### Fixed
