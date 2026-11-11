@@ -682,6 +682,13 @@ scenario("Import checks pasted text, creates the macro and opens the picker", fu
 	)
 	check(not panel.importButton:IsEnabled(), "Import is enabled over the limit")
 
+	-- The counter measures the body the macro store will take, so Windows line endings cost nothing: 14 lines are
+	-- 266 bytes on the clipboard but a 252-character macro.
+	paste(sim, panel, string.rep("/cast Arcane Shot\r\n", 14))
+	equal(panel.length:GetText(), "252/255", "the counter measures the normalized body")
+	equal(panel.status:GetText(), "Ready to import.", "a body that fits after normalization is ready")
+	check(panel.importButton:IsEnabled(), "Import is disabled for a body that fits after normalization")
+
 	paste(sim, panel, "/cast Arcane Shot\n/startattack")
 	equal(panel.status:GetText(), "Ready to import.", "a checked macro is ready")
 	check(panel.importButton:IsEnabled(), "Import is disabled for a checked macro")

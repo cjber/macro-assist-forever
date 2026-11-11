@@ -141,10 +141,13 @@ function Panel.Create(parent, onImport)
 end
 
 -- What the box says about the text in it: nothing pasted, prose, a MySlot export, or a macro with its first problem.
+-- The counter and the checks measure the normalized body, the text the macro store takes, so Windows line endings do
+-- not count as characters the saved macro will not have.
 function Panel.Refresh(frame)
 	local text = frame.edit:GetText() or ""
 	local classified = ns.Import.Classify(text)
-	local length = ns.Length(text)
+	local body = classified.body
+	local length = ns.Length(body)
 	frame.length:SetText(L["%d/%d"]:format(length, ns.MacroLimit))
 	frame.length:SetTextColor(
 		length > ns.MacroLimit and RED[1] or MUTED[1],
@@ -168,7 +171,7 @@ function Panel.Refresh(frame)
 		frame.status:SetText(L["Macro is %d characters; the limit is %d."]:format(length, ns.MacroLimit))
 		frame.status:SetTextColor(RED[1], RED[2], RED[3])
 	else
-		local diagnostics = ns.Check(text, ns.Context.ctx)
+		local diagnostics = ns.Check(body, ns.Context.ctx)
 		if #diagnostics == 0 then
 			frame.status:SetText(L["Ready to import."])
 			frame.status:SetTextColor(GREEN[1], GREEN[2], GREEN[3])
