@@ -18,6 +18,7 @@ Locales\enUS.lua
 Core\Require.lua
 Data\Commands.lua
 Data\Conditions.lua
+Data\Recipes.lua
 Data\IconNames.lua
 Core\Lexer.lua
 Core\Parser.lua

@@ -85,6 +85,41 @@ for index, item in ipairs(result.items) do
 	equal(again.items[index].insert, item.insert, "completion order is deterministic")
 end
 
+-- Plain words on a line offer checked recipes, and Tab replaces the whole line with the recipe's body.
+local recipeCtx = {
+	spells = ctx.spells,
+	evaluate = ctx.evaluate,
+	recipes = {
+		{
+			words = { "pet", "send pet" },
+			title = "Send the pet",
+			body = "#showtooltip\n/petattack [@mouseover,harm,nodead][]",
+		},
+		{
+			words = { "heal", "heal mouseover" },
+			title = "Heal your mouseover",
+			body = "/cast [@mouseover,help,nodead][] Flash Heal",
+		},
+	},
+}
+result = ns.Complete("pet", 4, recipeCtx)
+equal(result.from, 1, "a recipe replaces the whole line from its start")
+equal(result.to, 3, "a recipe replaces the whole line to its end")
+equal(#result.items, 1, "one recipe matches pet")
+equal(result.items[1].kind, "recipe", "the recipe kind")
+equal(result.items[1].label, "Send the pet", "the recipe title is the label")
+equal(result.items[1].insert, "#showtooltip\n/petattack [@mouseover,harm,nodead][]", "the recipe body is the insert")
+equal(result.items[1].detail, "Recipe", "the recipe reads as a recipe")
+result = ns.Complete("heal mo", 8, recipeCtx)
+equal(result.items[1].label, "Heal your mouseover", "a longer phrase narrows the recipe")
+result = ns.Complete("pe", 3, recipeCtx)
+equal(result.from, 1, "a partial word still replaces the line from its start")
+equal(result.to, 2, "a partial word replaces to the line's end")
+result = ns.Complete("", 1, recipeCtx)
+equal(#result.items, 0, "an empty line offers no recipes")
+result = ns.Complete("/cast Flash", 12, recipeCtx)
+equal(result.items[1].kind, "spell", "a command line still offers spells, not recipes")
+
 -- A directive after #.
 result = ns.Complete("#sh", 4, ctx)
 equal(result.from, 1, "the directive range starts at #")

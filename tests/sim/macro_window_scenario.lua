@@ -471,6 +471,61 @@ scenario("completion, a problem and its fix", function(sim)
 	setText(sim, window, original, false)
 end)
 
+scenario("plain words offer checked recipes and Tab inserts one", function(sim)
+	world.install(sim)
+	sim.world.player.classFile = "HUNTER"
+	sim.world.player.className = "Hunter"
+	sim:login()
+	local window = open(sim)
+	characterTab(sim, window)
+	local editor = window.editor
+
+	setText(sim, window, "heal pet")
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	check(editor.popup:IsShown(), "plain words did not open the completion list")
+	local recipe
+	for _, item in ipairs(editor.completion.items) do
+		if item.label == "Heal the pet" then
+			recipe = item
+			break
+		end
+	end
+	check(recipe, "the Heal the pet recipe was not offered")
+	equal(recipe.kind, "recipe", "a recipe has its own kind")
+	equal(recipe.detail, "Recipe", "a recipe reads as a recipe")
+	check(recipe.insert:find("Mend Pet", 1, true) ~= nil, "the recipe did not resolve its spell name")
+	check(recipe.insert:find("%s", 1, true) == nil, "the recipe left its spell placeholder")
+
+	local tab = editor.edit:GetScript("OnTabPressed")
+	check(tab(editor.edit), "Tab did not insert the recipe")
+	equal(textOf(window), recipe.insert, "the recipe did not replace the whole line")
+	check(not editor.popup:IsShown(), "the popup stayed open after inserting a recipe")
+
+	-- Another class's recipe is never offered, and a recipe whose spell this client does not know is skipped.
+	setText(sim, window, "polymorph")
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	for _, item in ipairs(editor.completion.items) do
+		check(item.kind ~= "recipe", "a Mage recipe was offered to a Hunter")
+	end
+
+	sim.world.player.classFile = "DEATHKNIGHT"
+	sim.world.player.className = "Death Knight"
+	sim:input(function()
+		sim.events.fire("SPELLS_CHANGED")
+	end)
+	setText(sim, window, "death grip")
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	for _, item in ipairs(editor.completion.items) do
+		check(item.kind ~= "recipe", "a recipe with an unknown spell was still offered")
+	end
+end)
+
 scenario("a macro over the limit offers a shorter rewrite, previews it and applies it", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)

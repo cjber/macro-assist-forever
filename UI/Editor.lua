@@ -34,8 +34,8 @@ local POPUP_INSET_TOP = 4
 local POPUP_INSET_RIGHT = 4
 local POPUP_INSET_BOTTOM = 4
 local POPUP_LABEL_X = 10
-local POPUP_LABEL_WIDTH = 108
-local POPUP_HELP_X = 130
+local POPUP_LABEL_WIDTH = 180
+local POPUP_HELP_X = 194
 local POPUP_TAG_WIDTH = 34
 local POPUP_TAG_RIGHT = 10
 
@@ -114,6 +114,7 @@ end
 ---@field meterFill Texture
 ---@field popup MacroAssistCompletionPopup
 ---@field popupMeasure FontString
+---@field labelMeasure FontString
 ---@field lineFonts FontString[]
 ---@field numberFonts FontString[]
 ---@field squiggles MacroAssistSquiggle[]
@@ -672,6 +673,8 @@ function Editor.Create(parent, statusParent)
 	end
 	self.popupMeasure = self.popup:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	self.popupMeasure:SetAlpha(0)
+	self.labelMeasure = self.popup:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
+	self.labelMeasure:SetAlpha(0)
 
 	self.edit:SetScript("OnTextChanged", function(_, userInput)
 		self.click = nil
@@ -1366,7 +1369,7 @@ function Editor:RenderCompletion()
 		if item then
 			row:SetID(index)
 			row:Show()
-			row.label:SetText(item.label)
+			row.label:SetText(TrimToWidth(item.label, self.labelMeasure, POPUP_LABEL_WIDTH))
 			local detail = item.detail or ""
 			local live = item.live
 			if live and live ~= "" then

@@ -311,6 +311,10 @@ COMPLETION_BODY = "\n".join(
 )
 COMPLETION_LINE = 5
 COMPLETION_CARET = COMPLETION_BODY.rindex("/cast [") + len("/cast [") + 1  # byte offset after `[`
+# The recipe scene: plain words on a line offer the Hunter recipes whose words match, with their spell names resolved.
+RECIPE_BODY = "pet"
+RECIPE_CARET = 4
+RECIPE_SPELL_NAMES = {136: "Mend Pet", 982: "Revive Pet", 1130: "Hunter's Mark", 1499: "Freezing Trap"}
 LIVE = {
     "actionbar": "no",
     "bar": "no",
@@ -374,12 +378,16 @@ def sample():
         for spell in SPELLS
     )
     live = ",\n".join(f"[{lua_string(name)}] = {lua_string(value)}" for name, value in LIVE.items())
+    recipe_spells = ",\n".join(
+        f"[{spell_id}] = {lua_string(name)}" for spell_id, name in sorted(RECIPE_SPELL_NAMES.items())
+    )
     script = f"""
 local ns = {{}}
 for _, file in ipairs({{
     "Locales/enUS.lua",
     "Data/Commands.lua",
     "Data/Conditions.lua",
+    "Data/Recipes.lua",
     "Core/Lexer.lua",
     "Core/Parser.lua",
     "Core/Length.lua",
@@ -437,6 +445,29 @@ for index, item in ipairs(result.items) do
         .. "\\t" .. clean(item.live or ""))
 end
 print("LENGTH\\t" .. ns.Length(completion))
+local recipeSpells = {{
+{recipe_spells}
+}}
+local recipes = {{}}
+for _, recipe in ipairs(ns.Recipes.List) do
+    if not recipe.class or recipe.class == "HUNTER" then
+        local body = ns.Recipes.Render(recipe, function(spellID) return recipeSpells[spellID] end)
+        if body then
+            recipes[#recipes + 1] = {{
+                words = recipe.words,
+                title = ns.L[recipe.title] or recipe.title,
+                body = body,
+            }}
+        end
+    end
+end
+ctx.recipes = recipes
+local recipeResult = ns.Complete({lua_string(RECIPE_BODY)}, {RECIPE_CARET}, ctx)
+print("RECIPE_COMPLETE\\t" .. recipeResult.from .. "\\t" .. recipeResult.to)
+for index, item in ipairs(recipeResult.items) do
+    print("RECIPE_ITEM\\t" .. index .. "\\t" .. item.kind .. "\\t" .. clean(item.label) .. "\\t"
+        .. clean(item.detail) .. "\\t" .. clean(item.insert))
+end
 """
     result = subprocess.run(["luajit", "-e", script], cwd=ROOT, capture_output=True, text=True, check=True)
     data = {
@@ -449,6 +480,7 @@ print("LENGTH\\t" .. ns.Length(completion))
         "items": [],
         "complete": None,
         "length": 0,
+        "recipe": {"from": 1, "to": 0, "items": []},
     }
     for line in result.stdout.splitlines():
         parts = line.split("\t")
@@ -485,6 +517,18 @@ print("LENGTH\\t" .. ns.Length(completion))
             )
         elif parts[0] == "LENGTH":
             data["length"] = int(parts[1])
+        elif parts[0] == "RECIPE_COMPLETE":
+            data["recipe"]["from"] = int(parts[1])
+            data["recipe"]["to"] = int(parts[2])
+        elif parts[0] == "RECIPE_ITEM":
+            data["recipe"]["items"].append(
+                {
+                    "kind": parts[2],
+                    "label": parts[3],
+                    "detail": parts[4],
+                    "insert": parts[5] if len(parts) > 5 else "",
+                }
+            )
     return data
 
 
@@ -718,7 +762,13 @@ def draw_completion(canvas, completion, caret_column, text_x, text_y, text_w):
         selected = completion[3] + index + 1 == completion[4]
         if selected:
             canvas.fill(row_x, row_y, row_width, POPUP_ROW_HEIGHT, (1, 0.82, 0.2, 0.14))
-        canvas.text(x + POPUP_LABEL_X, row_y, item["label"], MONO, box_height=POPUP_ROW_HEIGHT)
+        canvas.text(
+            x + POPUP_LABEL_X,
+            row_y,
+            fit(canvas, item["label"], MONO, POPUP_LABEL_WIDTH),
+            MONO,
+            box_height=POPUP_ROW_HEIGHT,
+        )
         live = item.get("live", "")
         detail = item["detail"]
         if live:
@@ -1711,6 +1761,25 @@ def main():
     )
     wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "completion.png")
     print(output / "completion.png")
+
+    recipe_data = {
+        "lines": {1: "pet"},
+        "summary": data["summary"],
+        "explain": [],
+        "diagnostics": [],
+        "length": len(RECIPE_BODY),
+    }
+    recipe_completion = (RECIPE_BODY.split("\n"), 0, data["recipe"]["items"][:POPUP_ROWS], 0, 0)
+    canvas = window(
+        ui,
+        body=RECIPE_BODY,
+        current_line=0,
+        caret_column=len(RECIPE_BODY),
+        data=recipe_data,
+        completion=recipe_completion,
+    )
+    wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "recipes.png")
+    print(output / "recipes.png")
     (output / "layout.json").write_text(json.dumps(layout(ui), indent=2) + "\n", encoding="utf-8")
 
 

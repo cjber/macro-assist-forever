@@ -15,6 +15,7 @@
 - **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
 - **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing it can explain.
 - **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through the suggestions, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
+- **Recipes in plain words.** On a line of plain words such as `pet` or `heal mouseover`, the completion list offers checked recipes for your class, with their spell names resolved in your client's language. Tab replaces the line with the whole macro. A recipe whose spell this client does not know is left out.
 - **Live conditions and spells.** Condition values come from the game right now, and the spellbook supplies your spell names and the ranks you know.
 - **Problems with a fix.** A wavy underline marks text the game cannot run. Hover it for the explanation, then press Tab or click it to apply the suggested fix.
 - **A status bar that says what fires now.** It shows the first problem in full with Tab to fix, the action the first matching line would take with your current target, and the character count out of 255 with a meter.
@@ -32,6 +33,10 @@ The searchable macro list on the left, with the selected macro open in the edito
 <p align="center"><img src="docs/screenshots/completion.png" alt="Conditions offered with live values beside a problem in the macro"></p>
 
 Conditions are offered with their live value, and a wavy underline marks a problem on the line above.
+
+<p align="center"><img src="docs/screenshots/recipes.png" alt="Plain words offering checked recipes for the player's class"></p>
+
+Typing plain words on a line offers checked recipes, with each spell name resolved in the client's language.
 
 <p align="center"><img src="docs/screenshots/history.png" alt="The History window listing saved versions and a deleted macro"></p>
 
@@ -59,7 +64,7 @@ Macro Assist Forever needs [Forever Core](https://www.curseforge.com/wow/addons/
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. The General tab holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it, or type in the search box to narrow the list by name or summary. New creates a macro and opens the icon picker with its name ready to type. Import takes a macro pasted from the web or another character, checks it, and opens the same picker for its name and icon. Rename, or a click on the header icon, opens the picker for the selected macro; Back to code returns to the editor. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing the window also saves your text when you are out of combat.
+Click a macro to edit it, or type in the search box to narrow the list by name or summary. New creates a macro and opens the icon picker with its name ready to type. Import takes a macro pasted from the web or another character, checks it, and opens the same picker for its name and icon. Typing plain words on a line, such as `pet` or `heal mouseover`, offers checked recipes that Tab turns into a whole macro. Rename, or a click on the header icon, opens the picker for the selected macro; Back to code returns to the editor. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing the window also saves your text when you are out of combat.
 
 ## Works alongside
 

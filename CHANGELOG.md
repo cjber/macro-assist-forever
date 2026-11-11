@@ -15,6 +15,10 @@ All notable changes to Macro Assist Forever are documented here. The format is b
   shows only the changed lines, with the old line in red and the new one in green, and Apply puts the rewrite in the
   editor without saving. It trims whitespace the macro does not need, uses each command's shortest alias, collapses an
   empty trailing clause and drops the clauses the checker calls unreachable.
+- **Recipes found by typing plain words.** A line such as `pet` or `heal mouseover` offers checked recipes for your
+  class in the completion list, with every spell name resolved in your client's language. Tab replaces the line with
+  the whole macro. Each recipe is checked when it ships for a clean parse and a body within the 255-character limit,
+  and a recipe whose spell this client does not know is left out.
 
 ## [0.3.1] - 2026-11-11
 

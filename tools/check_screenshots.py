@@ -32,12 +32,21 @@ SCENES = {
             "Core/Length.lua",
             "Data/Commands.lua",
             "Data/Conditions.lua",
+            "Data/Recipes.lua",
             "Locales/enUS.lua",
             "media/fonts/JetBrainsMono-Regular.ttf",
             "media/squiggle.tga",
         ],
     )
-    for name in ("window.png", "completion.png", "history.png", "import.png", "shorten.png", "picker.png")
+    for name in (
+        "window.png",
+        "completion.png",
+        "recipes.png",
+        "history.png",
+        "import.png",
+        "shorten.png",
+        "picker.png",
+    )
 }
 
 if __name__ == "__main__":
