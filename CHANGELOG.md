@@ -5,6 +5,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-11
+
 - **Deleting the last macro no longer errors.** The window keeps the deleted macro's index while the client refreshes
   the list, so the delete clears its draft and leaves the tab empty.
 - **Delete's armed label fits its button.** The label reads Confirm, the tooltip says a second click deletes, and the
