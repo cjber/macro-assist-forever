@@ -535,10 +535,49 @@ function Window.Create()
 	local title = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	title:SetPoint("TOPLEFT", 14, -12)
 	title:SetText(L["Copy from another character"])
-	local sourceButtons = {}
 	local selectedSource
 	local replaceArmed = false
 	local replace
+	local sourceScroll = CreateFrame("Frame", nil, characterPanel, "WowScrollBoxList")
+	sourceScroll:SetPoint("TOPLEFT", 14, -66)
+	sourceScroll:SetPoint("BOTTOMRIGHT", -36, 48)
+	local sourceBar = CreateFrame("EventFrame", nil, characterPanel, "MinimalScrollBar")
+	sourceBar:SetPoint("TOPLEFT", sourceScroll, "TOPRIGHT", 6, 0)
+	sourceBar:SetPoint("BOTTOMLEFT", sourceScroll, "BOTTOMRIGHT", 6, 0)
+	local sourceView = CreateScrollBoxListLinearView()
+	sourceView:SetElementExtent(30)
+	local sourceProvider = CreateDataProvider()
+	local function SelectSource(source)
+		selectedSource = source
+		replaceArmed = false
+		replace:SetText(L["Replace"])
+		local clickedCurrent = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		local target = Window.tab == 2 and "character" or "general"
+		local destination = MacroAssistForeverDB.characters[clickedCurrent][target]
+		local plan = ns.CharacterMacros.PlanMacro(source, destination, true)
+		local lines = { L["Choose Keep both or Replace."] }
+		for _, conflict in ipairs(plan.conflicts) do
+			local oldBody
+			for _, existing in ipairs(destination) do
+				if existing.name == conflict.name then
+					oldBody = existing.body
+					break
+				end
+			end
+			lines[#lines + 1] = conflict.name .. ":\n- " .. (oldBody or "") .. "\n+ " .. (conflict.body or "")
+		end
+		characterPanel.status:SetText(table.concat(lines, "\n\n"))
+	end
+	sourceView:SetElementInitializer("SharedButtonSmallTemplate", function(button, source)
+		button:SetSize(390, 26)
+		button:SetText(
+			source.record.name .. " - " .. source.record.realm .. " · " .. source.scope .. " · " .. source.macro.name
+		)
+		button:SetScript("OnClick", function()
+			SelectSource(source)
+		end)
+	end)
+	ScrollUtil.InitScrollBoxListWithScrollBar(sourceScroll, sourceBar, sourceView)
 	local close = CreateFrame("Button", nil, characterPanel, "UIPanelCloseButton")
 	close:SetPoint("TOPRIGHT", -2, -2)
 	close:SetScript("OnClick", function()
@@ -556,42 +595,12 @@ function Window.Create()
 		selectedSource = nil
 		replaceArmed = false
 		replace:SetText(L["Replace"])
-		for _, button in ipairs(sourceButtons) do
-			button:Hide()
-		end
 		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
-		for index, source in ipairs(ns.CharacterMacros.Macros(MacroAssistForeverDB, current)) do
-			local button = sourceButtons[index]
-				or CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
-			button:SetSize(390, 26)
-			button:SetPoint("TOPLEFT", 14, -70 - (index - 1) * 30)
-			button:SetText(
-				source.record.name .. " - " .. source.record.realm .. " · " .. source.scope .. " · " .. source.macro.name
-			)
-			button:SetScript("OnClick", function()
-				selectedSource = source
-				replaceArmed = false
-				replace:SetText(L["Replace"])
-				local clickedCurrent = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
-				local target = Window.tab == 2 and "character" or "general"
-				local destination = MacroAssistForeverDB.characters[clickedCurrent][target]
-				local plan = ns.CharacterMacros.PlanMacro(source, destination, true)
-				local lines = { L["Choose Keep both or Replace."] }
-				for _, conflict in ipairs(plan.conflicts) do
-					local oldBody
-					for _, existing in ipairs(destination) do
-						if existing.name == conflict.name then
-							oldBody = existing.body
-							break
-						end
-					end
-					lines[#lines + 1] = conflict.name .. ":\n- " .. (oldBody or "") .. "\n+ " .. (conflict.body or "")
-				end
-				status:SetText(table.concat(lines, "\n\n"))
-			end)
-			button:Show()
-			sourceButtons[index] = button
+		sourceProvider:Flush()
+		for _, source in ipairs(ns.CharacterMacros.Macros(MacroAssistForeverDB, current)) do
+			sourceProvider:Insert(source)
 		end
+		sourceScroll:SetDataProvider(sourceProvider, ScrollBoxConstants.RetainScrollPosition)
 	end
 	local function copySelected(keepBoth, replaceConflicts)
 		if not selectedSource or InCombatLockdown() then
