@@ -5,6 +5,7 @@ ns.L = {
 	["Macro Assist Forever report"] = true,
 	["Characters"] = true,
 	["Copy from another character"] = true,
+	["No other character macros available"] = true,
 	["Choose Keep both or Replace."] = true,
 	["Keep both"] = true,
 	["Replace"] = true,

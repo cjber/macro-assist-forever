@@ -208,6 +208,22 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(sim.pickedMacro, trap.macroIndex, "dragging a row picks up its macro")
 end)
 
+scenario("Characters without other snapshots explains the empty list", function(sim)
+	world.install(sim)
+	sim:login()
+	local window = open(sim)
+	sim:click(window.charactersButton)
+	local panel = window.charactersPanel
+	check(panel:IsShown(), "Characters did not open")
+	equal(panel.status:GetText(), "No other character macros available", "the empty list explains its state")
+	for _, child in ipairs({ panel:GetChildren() }) do
+		if child.GetText and (child:GetText() == "Keep both" or child:GetText() == "Replace") then
+			check(not child:IsEnabled(), "copy actions must be disabled without a selected source")
+		end
+	end
+	sim:expectNoErrors(ADDON)
+end)
+
 scenario("Characters opens through the real footer control", function(sim)
 	world.install(sim)
 	sim:login()
