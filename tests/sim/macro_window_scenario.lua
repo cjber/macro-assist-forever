@@ -997,6 +997,57 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	check(not window.picker:IsShown(), "the picker is open after deleting")
 end)
 
+scenario("renaming across another macro keeps Save on the renamed macro", function(sim)
+	world.install(sim)
+	sim:login()
+	sim:input(function()
+		sim.G.CreateMacro("Zulu", 134400, "/cast Zulu", true)
+		sim.events.fire("UPDATE_MACROS")
+	end)
+	local window = open(sim)
+	characterTab(sim, window)
+	sim:click(rowNamed(window, "Zulu"))
+	sim:advance(0.05)
+
+	-- Zulu sorts last; Aaa sorts first, so the client moves the macro and returns the new index.
+	sim:click(window.header.rename)
+	sim:advance(0.1)
+	window.header.nameEdit:SetText("Aaa")
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(window.header.name:GetText(), "Aaa", "the header left the renamed macro")
+	equal(textOf(window), "/cast Zulu", "the editor left the renamed macro")
+
+	setText(sim, window, "/cast Aaa Two", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(
+		select(3, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Aaa"))),
+		"/cast Aaa Two",
+		"Save did not write the renamed macro"
+	)
+	equal(
+		select(3, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Trap"))),
+		"/cast Freezing Trap",
+		"Save overwrote the macro that moved into the old index"
+	)
+	equal(window.header.name:GetText(), "Aaa", "the header moved again after the second Save")
+
+	-- An edit the client does not answer with a live index is a refused write, never a success on the old index.
+	sim.G.EditMacro = function()
+		return nil
+	end
+	setText(sim, window, "/cast Refused", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(window.header.name:GetText(), "Aaa", "a refused edit moved the selection")
+	equal(
+		select(3, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Aaa"))),
+		"/cast Aaa Two",
+		"a refused edit changed the macro"
+	)
+end)
+
 scenario("Import checks pasted text, creates the macro and opens the picker", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)
@@ -1055,7 +1106,11 @@ scenario("Import checks pasted text, creates the macro and opens the picker", fu
 	sim:click(window.saveButton)
 	sim:advance(0.2)
 	equal(window.header.name:GetText(), "Imported", "the imported macro did not take the chosen name")
-	equal(select(1, sim.G.GetMacroInfo(actual)), "Imported", "the chosen name was not written")
+	equal(
+		select(1, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Imported"))),
+		"Imported",
+		"the chosen name was not written"
+	)
 
 	-- Cancel closes the box without writing anything.
 	sim:click(window.importButton)

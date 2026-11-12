@@ -1202,6 +1202,7 @@ end
 ---@param icon any
 ---@param body string?
 ---@return boolean
+---@return integer? actualIndex
 function Window:WriteMacro(index, name, icon, body)
 	if InCombatLockdown() then
 		return false
@@ -1225,11 +1226,17 @@ function Window:WriteMacro(index, name, icon, body)
 			tab = self:TabForIndex(index),
 		}, self:Now())
 	end
-	EditMacro(index, name, icon, body)
+	-- The client keeps macros in name order, so EditMacro returns the macro's new index after a rename. The caller
+	-- gets both the write result and the live index, because keeping the old one leaves Save pointing at whichever
+	-- macro moved into it. A result with no live index is a refused write, not a success on the old index.
+	local actual = EditMacro(index, name, icon, body)
+	if type(actual) ~= "number" or actual <= 0 then
+		return false
+	end
 	if name and oldName and name ~= oldName then
 		ns.History.Rename(MacroAssistForeverDB, oldName, name)
 	end
-	return true
+	return true, actual
 end
 
 -- A new macro's starting state is snapshotted before the create; a create the client refuses leaves no record.
@@ -1291,8 +1298,15 @@ function Window:SaveCurrent()
 		name = self:PendingName() or name
 		icon = self.pendingIcon
 	end
-	if not self:WriteMacro(self.selected, name, icon, self.dirty and self.frame.editor:GetText() or body) then
+	local ok, actual = self:WriteMacro(self.selected, name, icon, self.dirty and self.frame.editor:GetText() or body)
+	if not ok then
 		return false
+	end
+	if actual and actual ~= self.selected then
+		-- A rename across another macro's name moved the selected macro. Follow the live index so this editor and
+		-- the next Save stay on the macro the player renamed, not on its old neighbour.
+		self.drafts[self.selected] = nil
+		self.selected = actual
 	end
 	self.drafts[self.selected] = nil
 	self.dirty = false

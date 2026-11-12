@@ -10,6 +10,14 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 - **Copy a macro from another character.** Characters lists the other characters' General and character macros and
   shows the lines that differ from the macro already using that name in a scrolling diff. Keep both saves it under a
   free name, Replace asks for a second click, and both are off in combat.
+- **Renaming a macro keeps the editor on it.** Further edits and Save continue to change the renamed macro, leaving
+  neighbouring macros untouched.
+
+## [0.4.3] - 2026-11-12
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
 
 ## [0.4.2] - 2026-11-12
 

@@ -82,12 +82,17 @@ function M.install(sim)
 		table.insert(target, position, { name = name, icon = icon, body = body or "" })
 		return base(isCharacter) + position
 	end
+	-- EditMacro returns "the new index of the macro ... unless the macro name is changed, as they are sorted
+	-- alphabetically". Model that move so a rename across a neighbour's name cannot hide a stale selection.
 	G.EditMacro = function(index, name, icon, body)
 		local isCharacter = index > maxAccount
-		local info = list(isCharacter)[index - base(isCharacter)]
+		local target = list(isCharacter)
+		local position = index - base(isCharacter)
+		local info = target[position]
 		if not info then
 			return nil
 		end
+		local oldName = info.name
 		if name then
 			info.name = name
 		end
@@ -96,6 +101,18 @@ function M.install(sim)
 		end
 		if body then
 			info.body = body
+		end
+		if name and name ~= oldName then
+			table.remove(target, position)
+			local moved = #target + 1
+			for other, entry in ipairs(target) do
+				if (entry.name or ""):lower() > name:lower() then
+					moved = other
+					break
+				end
+			end
+			table.insert(target, moved, info)
+			return base(isCharacter) + moved
 		end
 		return index
 	end
