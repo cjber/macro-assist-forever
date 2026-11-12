@@ -1,0 +1,28 @@
+{
+  "input_digest": "2f1408df79061cb7fa1090380cce24f30e4ff3173d6e289353393ceeeafb1c65",
+  "runtime_sha256": "2f1408df79061cb7fa1090380cce24f30e4ff3173d6e289353393ceeeafb1c65",
+  "candidate": "d0967a1729ac1c68f5f9675b5a71deffabe71130a0db175785190f4530db361e",
+  "client_build": "1.60.1.70888 (Interface 16001)",
+  "source_commit": "0d3638cdef46e698a1a18677230918615b7917d4",
+  "flows": [
+    {
+      "name": "Empty character-copy popup and reopen",
+      "steps": [
+        "Reload candidate with /rl, open /macroassist",
+        "Open Characters and inspect opaque background, empty guidance and disabled copy controls",
+        "Close the popup, verify main window remains, then reopen and inspect again without editing macros"
+      ],
+      "result": "pass"
+    }
+  ],
+  "images": [
+    {
+      "url": "https://gist.githubusercontent.com/cjber/b72318bca8da82e0affb2f8a0558d944/raw/e5ad1b710a762c30100d6932585e417ff308707e/macro133-0d3638c-in-game.png",
+      "sha256": "1a4d0c416844e7b7df2631c1e839170681e3eeb20a6568c35aea204899a0a7fe"
+    },
+    {
+      "url": "https://gist.githubusercontent.com/cjber/b72318bca8da82e0affb2f8a0558d944/raw/e5ad1b710a762c30100d6932585e417ff308707e/macro133-0d3638c-reopened.png",
+      "sha256": "e28e363571106531d086b9c73fe07397b789ca1613bf58378e207f472bc53000"
+    }
+  ]
+}
