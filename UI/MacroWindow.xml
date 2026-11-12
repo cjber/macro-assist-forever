@@ -89,6 +89,21 @@
 		</Layers>
 	</Button>
 
+	<!-- One changed line in the Characters copy panel's diff. The scroll box sets the row's height from the wrapped
+	     FontString, and the panel gives it the bundled mono font so columns line up with the macro editor. -->
+	<Frame name="MacroAssistDiffRowTemplate" virtual="true">
+		<Layers>
+			<Layer level="ARTWORK">
+				<FontString parentKey="Text" inherits="GameFontHighlightSmall" justifyH="LEFT" wordwrap="true">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="2" y="-1"/>
+						<Anchor point="TOPRIGHT" x="-2" y="-1"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+	</Frame>
+
 	<!-- One icon in the picker: a 36-unit picture inside a 40-unit hit rect, the header's gold WhiteIconFrame when the
 	     icon is selected, and ButtonHilight-Square on hover. The picker builds these into each grid row. -->
 	<Button name="MacroAssistIconTemplate" virtual="true">

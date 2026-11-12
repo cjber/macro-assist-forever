@@ -5,6 +5,12 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+<!-- discord-image: docs/screenshots/characters.png -->
+
+- **Copy a macro from another character.** Characters lists the other characters' General and character macros and
+  shows the lines that differ from the macro already using that name in a scrolling diff. Keep both saves it under a
+  free name, Replace asks for a second click, and both are off in combat.
+
 ## [0.4.2] - 2026-11-12
 
 <!-- forever-core-sync -->

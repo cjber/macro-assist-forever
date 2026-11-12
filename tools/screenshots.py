@@ -1350,6 +1350,67 @@ def history_layout():
     }
 
 
+def draw_characters(canvas):
+    """Characters copy panel: the opaque native ButtonFrame, the source list, and the scrolling diff inset."""
+    x, y, w, h = X + 70, Y + 70, 440, 360
+    background(canvas, x, y, w, h)
+    canvas.text(
+        x + 14,
+        y + 62,
+        "Choose Keep both or Replace.",
+        FONTS["GameFontHighlightSmall"],
+        WHITE,
+        width=412,
+    )
+    labels = ("Other - Forever · general · Heal", "Other - Forever · character · Heal")
+    for row, label in enumerate(labels):
+        button(canvas, x + 14, y + 100 + row * 30, 390, label, h=26)
+    wowmock.minimal_scrollbar(canvas, x + 410, y + 100, 54, visible=0.35)
+    inset(canvas, x + 10, y + 170, 420, 142)
+    diff = (
+        ("Heal", MONO, (1, 0.82, 0.2)),
+        ("- /cast Heal", MONO, (1, 0.25, 0.25)),
+        ("+ /cast Flash Heal", MONO, (0.2, 1, 0.6)),
+    )
+    for row, (text, font, colour) in enumerate(diff):
+        canvas.text(x + 16, y + 174 + row * 19, text, font, colour, width=386)
+    wowmock.minimal_scrollbar(canvas, x + 408, y + 173, 136, visible=0.35)
+    button(canvas, x + 14, y + h - 40, 180, "Keep both", h=26)
+    button(canvas, x + 246, y + h - 40, 180, "Replace", h=26)
+    # ButtonFrameTemplate's own top levels, drawn over the contents as the client does: portrait, metal NineSlice,
+    # title and close button. No hand-drawn panel edge or literal close glyph.
+    wowmock.portrait_frame_art(canvas, x, y, w, h, IDENTITY_ICON, "Copy from another character")
+    return x, y, w, h
+
+
+def characters_layout():
+    x, y, w, h = X + 70, Y + 70, 440, 360
+    return {
+        "frame": {"x": x, "y": y, "w": w, "h": h},
+        "widgets": [
+            {
+                "name": "characters-status",
+                "role": "label",
+                "x": x + 14,
+                "y": y + 62,
+                "w": 412,
+                "h": 28,
+            },
+            {"name": "characters-sources", "role": "list", "x": x + 14, "y": y + 100, "w": 390, "h": 60},
+            {
+                "name": "characters-diff",
+                "role": "list",
+                "x": x + 10,
+                "y": y + 170,
+                "w": 420,
+                "h": 142,
+            },
+            {"name": "characters-keep", "role": "button", "x": x + 14, "y": y + h - 40, "w": 180, "h": 26},
+            {"name": "characters-replace", "role": "button", "x": x + 246, "y": y + h - 40, "w": 180, "h": 26},
+        ],
+    }
+
+
 # The Import box's sample text: a short macro already pasted and checked, so the scene shows the ready line and count.
 IMPORT_BODY = "/cast [@mouseover,harm,nodead][] Arcane Shot\n/startattack"
 
@@ -1665,6 +1726,7 @@ def layout(ui):
             import_layout(),
             shorten_layout(),
             picker_layout(ui),
+            characters_layout(),
         ]
     }
 
@@ -1710,6 +1772,17 @@ def main():
     draw_history(history_canvas)
     wowmock.scene(ui, [(history_canvas, 0, 0)]).save(output / "history.png")
     print(output / "history.png")
+
+    characters_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data=window_data,
+    )
+    draw_characters(characters_canvas)
+    wowmock.scene(ui, [(characters_canvas, 0, 0)]).save(output / "characters.png")
+    print(output / "characters.png")
 
     import_canvas = window(
         ui,

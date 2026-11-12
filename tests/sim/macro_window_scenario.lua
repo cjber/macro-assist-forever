@@ -147,6 +147,34 @@ local function paste(sim, panel, text)
 	sim:advance(0.05)
 end
 
+local function actionButton(panel, label)
+	for _, child in ipairs({ panel:GetChildren() }) do
+		if child.GetText and child:GetText() == label then
+			return child
+		end
+	end
+end
+
+local function copySourceRows(panel)
+	local out = {}
+	panel.sourceScroll:ForEachFrame(function(row)
+		if row:IsShown() then
+			out[#out + 1] = row
+		end
+	end)
+	return out
+end
+
+local function diffText(panel)
+	local out = {}
+	panel.diffScroll:ForEachFrame(function(row)
+		if row:IsShown() and row.Text then
+			out[#out + 1] = row.Text:GetText()
+		end
+	end)
+	return out
+end
+
 local function openNamed(sim)
 	world.install(sim)
 	sim.world.units.target = { name = "Defias Pillager", level = 12, friendly = false }
@@ -208,11 +236,317 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(sim.pickedMacro, trap.macroIndex, "dragging a row picks up its macro")
 end)
 
+scenario("Characters without other snapshots explains the empty list", function(sim)
+	world.install(sim)
+	sim:login()
+	local window = open(sim)
+	sim:click(window.charactersButton)
+	local panel = window.charactersPanel
+	check(panel:IsShown(), "Characters did not open")
+	equal(panel.status:GetText(), "No other character macros available", "the empty list explains its state")
+	for _, child in ipairs({ panel:GetChildren() }) do
+		if child.GetText and (child:GetText() == "Keep both" or child:GetText() == "Replace") then
+			check(not child:IsEnabled(), "copy actions must be disabled without a selected source")
+		end
+	end
+	sim:expectNoErrors(ADDON)
+end)
+
+scenario("Characters opens through the real footer control", function(sim)
+	world.install(sim)
+	sim:login()
+	local window = open(sim)
+	sim.G.MacroAssistForeverDB.characters["Other-Forever"] = {
+		name = "Other",
+		realm = "Forever",
+		general = { { name = "General One", body = "/cast Other" } },
+		character = { { name = "Character One", body = "/cast Character" } },
+	}
+	sim:click(window.charactersButton)
+	sim:advance(0.1)
+	check(window.charactersPanel:IsShown(), "Characters footer control did not open its panel")
+	check(window.charactersPanel:GetWidth() == 440, "Characters panel lost its bounded width")
+	check(window.refreshCharacterSources ~= nil, "Characters panel has no source refresh")
+	check(
+		window.charactersPanel.sourceScroll:GetDataProvider():GetSize() == 2,
+		"Characters did not list each source scope"
+	)
+	local sourceRows = copySourceRows(window.charactersPanel)
+	check(#sourceRows == 2, "Characters did not create source controls")
+	sim:click(sourceRows[1])
+	sim:advance(0.05)
+	local texts = diffText(window.charactersPanel)
+	equal(texts[1], "General One", "source selection did not name the conflicting macro")
+	equal(texts[2], "- /cast Arcane Shot", "the conflict diff does not show the existing body")
+	equal(texts[3], "+ /cast Other", "the conflict diff does not show the incoming body")
+	local replaceButton
+	for _, child in ipairs({ window.charactersPanel:GetChildren() }) do
+		if child.GetText and child:GetText() == "Replace" then
+			replaceButton = child
+		end
+	end
+	check(replaceButton, "Replace control is missing")
+	sim:click(replaceButton)
+	equal(replaceButton:GetText(), "Confirm", "Replace did not arm confirmation")
+	local _, _, beforeBody = sim.G.GetMacroInfo(1)
+	sim:click(replaceButton)
+	local _, _, afterBody = sim.G.GetMacroInfo(1)
+	check(beforeBody ~= afterBody and afterBody == "/cast Other", "confirmed Replace did not update the target scope")
+	equal(textOf(window), "/cast Other", "Replace left the old body in the editor")
+	setText(sim, window, "/cast Other Two", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(1)), "/cast Other Two", "Save wrote the old editor text over the replacement")
+end)
+
+scenario("a copied macro becomes the selection, so Save cannot land on its neighbour", function(sim)
+	world.install(sim)
+	sim:login()
+	local window = open(sim)
+	sim:click(rowNamed(window, "General Two"))
+	sim:advance(0.05)
+	sim.G.MacroAssistForeverDB.characters["Other-Forever"] = {
+		name = "Other",
+		realm = "Forever",
+		general = { { name = "Aaa", body = "/say Aaa" } },
+		character = {},
+	}
+	sim:click(window.charactersButton)
+	sim:advance(0.05)
+	local sources = copySourceRows(window.charactersPanel)
+	equal(#sources, 1, "the copy panel did not list the other character's macro")
+	sim:click(sources[1])
+	sim:advance(0.05)
+	local keep = actionButton(window.charactersPanel, "Keep both")
+	check(keep and keep:IsEnabled(), "Keep both is not available for the chosen source")
+	sim:click(keep)
+	sim:advance(0.1)
+	check(not window.charactersPanel:IsShown(), "the copy panel stayed open after copying")
+	equal(select(1, sim.G.GetNumMacros()), 3, "the copy did not create a General macro")
+	equal(window.header.name:GetText(), "Aaa", "the header does not show the copied macro")
+	equal(textOf(window), "/say Aaa", "the editor does not hold the copied body")
+
+	-- Save after the create must write the copied macro, not the macro that moved into the old index.
+	setText(sim, window, "/say changed", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(select(3, sim.G.GetMacroInfo(1)), "/say changed", "Save did not write the copied macro")
+	equal(select(3, sim.G.GetMacroInfo(2)), "/cast Arcane Shot", "Save overwrote the macro that moved into index 2")
+	equal(select(3, sim.G.GetMacroInfo(3)), "/cast Mend Pet", "Save overwrote the other General macro")
+end)
+
+scenario("a confirmed Replace cannot carry over to another tab", function(sim)
+	world.install(sim)
+	sim:login()
+	sim:input(function()
+		sim.G.CreateMacro("Heal", 134400, "/cast Heal", false)
+		sim.G.CreateMacro("Heal", 134400, "/cast Character Old", true)
+		sim.events.fire("UPDATE_MACROS")
+	end)
+	sim.G.MacroAssistForeverDB.characters["Other-Forever"] = {
+		name = "Other",
+		realm = "Forever",
+		general = { { name = "Heal", body = "/cast General Incoming" } },
+		character = { { name = "Heal", body = "/cast Character Incoming" } },
+	}
+	local window = open(sim)
+	sim:click(rowNamed(window, "Heal"))
+	sim:advance(0.05)
+	sim:click(window.charactersButton)
+	sim:advance(0.05)
+	local panel = window.charactersPanel
+	local sources = copySourceRows(panel)
+	equal(#sources, 2, "the copy panel did not keep both scopes of the source")
+	sim:click(sources[1])
+	sim:advance(0.05)
+	local replace = actionButton(panel, "Replace")
+	sim:click(replace)
+	equal(replace:GetText(), "Confirm", "Replace did not arm")
+	characterTab(sim, window)
+	sim:advance(0.05)
+	check(not panel:IsShown(), "the copy panel survived a tab switch")
+	-- The old armed button must not be able to write the other tab's macro it never showed.
+	if replace and replace:GetText() == "Confirm" then
+		sim:click(replace)
+		sim:advance(0.1)
+	end
+	local maxAccount = sim.G.Constants.MacroConsts.MAX_ACCOUNT_MACROS
+	equal(select(3, sim.G.GetMacroInfo(3)), "/cast Heal", "the armed Replace overwrote the General macro")
+	equal(
+		select(3, sim.G.GetMacroInfo(maxAccount + 3)),
+		"/cast Character Old",
+		"the armed Replace overwrote the Character tab's macro"
+	)
+end)
+
+scenario("the copy diff is scrollable and shows every incoming line", function(sim)
+	world.install(sim)
+	sim:login()
+	sim:input(function()
+		sim.G.CreateMacro("Heal", 134400, "/cast Heal\n/stopcasting", false)
+		sim.events.fire("UPDATE_MACROS")
+	end)
+	local long = string.rep("x", 255)
+	sim.G.MacroAssistForeverDB.characters["Other-Forever"] = {
+		name = "Other",
+		realm = "Forever",
+		general = {
+			{ name = "Heal", body = "/cast Flash Heal\n/stopcasting" },
+			{ name = "Long", body = long },
+		},
+		character = {},
+	}
+	local window = open(sim)
+	sim:click(rowNamed(window, "Heal"))
+	sim:advance(0.05)
+	sim:click(window.charactersButton)
+	sim:advance(0.05)
+	local panel = window.charactersPanel
+	check(panel.diffScroll, "the copy panel has no scrollable diff")
+	equal(panel:GetHeight(), 360, "the copy panel lost its bounded height")
+	local sources = copySourceRows(panel)
+	sim:click(sources[1])
+	sim:advance(0.1)
+	equal(panel.status:GetText(), "Choose Keep both or Replace.", "selecting a source does not explain the choice")
+	local texts = diffText(panel)
+	check(#texts == 3, "the diff did not show the name, the old line and the incoming line")
+	equal(texts[1], "Heal", "the diff lost the macro name")
+	equal(texts[2], "- /cast Heal", "the diff lost the old line")
+	equal(texts[3], "+ /cast Flash Heal", "the diff never shows the incoming line")
+
+	sim:click(sources[2])
+	sim:advance(0.1)
+	texts = diffText(panel)
+	check(texts[#texts] == "+ " .. long, "a 255-character incoming line is not shown in full")
+end)
+
+scenario("copy controls wait for a source, stop in combat, and reset when reopened", function(sim)
+	world.install(sim)
+	sim:login()
+	sim.G.MacroAssistForeverDB.characters["Other-Forever"] = {
+		name = "Other",
+		realm = "Forever",
+		general = { { name = "Other One", body = "/say one" } },
+		character = {},
+	}
+	local window = open(sim)
+	sim:click(window.charactersButton)
+	sim:advance(0.05)
+	local panel = window.charactersPanel
+	local keep = actionButton(panel, "Keep both")
+	local replace = actionButton(panel, "Replace")
+	equal(panel.status:GetText(), "Choose a macro to copy.", "the open panel does not ask for a macro")
+	check(not keep:IsEnabled() and not replace:IsEnabled(), "copy actions are enabled without a selected source")
+	sim:click(copySourceRows(panel)[1])
+	sim:advance(0.05)
+	check(keep:IsEnabled() and replace:IsEnabled(), "copy actions stay disabled after choosing a source")
+	sim:enterCombat()
+	sim:advance(0.1)
+	check(not keep:IsEnabled() and not replace:IsEnabled(), "copy actions are enabled in combat")
+	sim:leaveCombat()
+	sim:advance(0.1)
+	check(keep:IsEnabled() and replace:IsEnabled(), "copy actions did not come back after combat")
+
+	-- Closing the window hides the child panel with it; reopening starts from no selection, not the old status.
+	sim:click(window.CloseButton)
+	sim:advance(0.2)
+	check(not panel:IsShown(), "the copy panel stayed shown with the window closed")
+	local reopened = open(sim)
+	check(not reopened.charactersPanel:IsShown(), "reopening brought the copy panel back")
+	sim:click(reopened.charactersButton)
+	sim:advance(0.05)
+	equal(reopened.charactersPanel.status:GetText(), "Choose a macro to copy.", "the panel kept an old status")
+	check(not actionButton(reopened.charactersPanel, "Keep both"):IsEnabled(), "the reopened panel kept its selection")
+end)
+
+scenario("a full tab refuses the copy and the reason does not linger", function(sim)
+	world.install(sim)
+	sim:login()
+	local maximum = sim.G.Constants.MacroConsts.MAX_CHARACTER_MACROS
+	sim:input(function()
+		local count = select(2, sim.G.GetNumMacros())
+		while count < maximum do
+			count = count + 1
+			sim.G.CreateMacro("Fill " .. count, 134400, "/say fill", true)
+		end
+		sim.events.fire("UPDATE_MACROS")
+	end)
+	sim.G.MacroAssistForeverDB.characters["Other-Forever"] = {
+		name = "Other",
+		realm = "Forever",
+		general = {},
+		character = { { name = "Extra", body = "/say extra" } },
+	}
+	local window = open(sim)
+	characterTab(sim, window)
+	sim:click(window.charactersButton)
+	sim:advance(0.05)
+	local panel = window.charactersPanel
+	sim:click(copySourceRows(panel)[1])
+	sim:advance(0.05)
+	local keep = actionButton(panel, "Keep both")
+	sim:click(keep)
+	sim:advance(0.1)
+	equal(panel.status:GetText(), "Macro limit reached", "a full tab does not say why the copy was refused")
+	check(panel:IsShown(), "a refused copy closed the panel")
+	equal(select(2, sim.G.GetNumMacros()), maximum, "a refused copy changed the macro count")
+
+	-- A client that reports a full list as 0 rather than nil must not be read as a successful create.
+	sim.G.CreateMacro = function()
+		return 0
+	end
+	sim:click(keep)
+	sim:advance(0.1)
+	check(panel:IsShown(), "a 0 returned by CreateMacro was treated as success")
+	equal(panel.status:GetText(), "Macro limit reached", "a 0 create did not say the tab is full")
+
+	sim:click(panel.CloseButton)
+	sim:advance(0.05)
+	sim:click(window.charactersButton)
+	sim:advance(0.05)
+	equal(panel.status:GetText(), "Choose a macro to copy.", "the old copy error stayed on the reopened panel")
+end)
+
+scenario("a Replace the client would cut leaves the macro and the panel as they were", function(sim)
+	world.install(sim)
+	sim:login()
+	sim:input(function()
+		sim.G.CreateMacro("Long", 134400, "/say old", false)
+		sim.events.fire("UPDATE_MACROS")
+	end)
+	local incoming = string.rep("x", 256)
+	sim.G.MacroAssistForeverDB.characters["Other-Forever"] = {
+		name = "Other",
+		realm = "Forever",
+		general = { { name = "Long", body = incoming } },
+		character = {},
+	}
+	local window = open(sim)
+	sim:click(rowNamed(window, "Long"))
+	sim:advance(0.05)
+	sim:click(window.charactersButton)
+	sim:advance(0.05)
+	local panel = window.charactersPanel
+	sim:click(copySourceRows(panel)[1])
+	sim:advance(0.05)
+	local replace = actionButton(panel, "Replace")
+	sim:click(replace)
+	sim:click(replace)
+	sim:advance(0.1)
+	check(panel:IsShown(), "a refused Replace closed the panel")
+	equal(panel.status:GetText(), "The macro was not replaced.", "a refused Replace does not say so")
+	equal(
+		select(3, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Long"))),
+		"/say old",
+		"a refused Replace changed the macro"
+	)
+end)
+
 scenario("the header and rows show action bar slots and their keys", function(sim)
 	world.install(sim)
 	local account = sim.G.Constants.MacroConsts.MAX_ACCOUNT_MACROS
 	local arcane = account + 1
-	local trap = account + 4
+	local trap = account + 5
 	-- The client reports each macro's first spell as the slot's ID with subType "spell", so the slot's macro comes
 	-- from the name the button shows, not from that ID.
 	sim.actionSlots[61] = arcane
@@ -630,7 +964,7 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	sim:advance(0.2)
 	check(select(2, sim.G.GetNumMacros()) == before + 1, "New did not create a character macro")
 	check(window.header.name:GetText() == "Fresh", "New did not select the created macro")
-	check(select(1, sim.G.GetMacroInfo(121 + before)) == "Fresh", "New did not name the macro")
+	check(select(1, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Fresh"))) == "Fresh", "New did not name the macro")
 
 	sim:click(window.header.rename)
 	sim:advance(0.2)
@@ -643,7 +977,10 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	sim:click(window.saveButton)
 	sim:advance(0.2)
 	check(window.header.name:GetText() == "Renamed", "Rename did not rename the macro")
-	check(select(1, sim.G.GetMacroInfo(121 + before)) == "Renamed", "the rename was not written")
+	check(
+		select(1, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Renamed"))) == "Renamed",
+		"the rename was not written"
+	)
 
 	sim:hover(window.deleteButton)
 	check(sim.G.GameTooltip:IsOwned(window.deleteButton), "hovering Delete does not own the tooltip")
@@ -706,7 +1043,7 @@ scenario("Import checks pasted text, creates the macro and opens the picker", fu
 	check(not panel:IsShown(), "Import left the box open")
 	check(window.picker:IsShown(), "Import did not open the picker for the name and icon")
 	check(select(2, sim.G.GetNumMacros()) == before + 1, "Import did not create a character macro")
-	local actual = 121 + before
+	local actual = sim.G.GetMacroIndexByName("New macro")
 	equal(
 		select(3, sim.G.GetMacroInfo(actual)),
 		"/cast Arcane Shot\n/startattack",
@@ -935,7 +1272,7 @@ scenario("a deleted macro stays restorable from History", function(sim)
 	sim:click(window.history.restoreButton)
 	sim:advance(0.1)
 	equal(select(2, sim.G.GetNumMacros()), before, "Restore did not recreate the deleted macro")
-	check(select(1, sim.G.GetMacroInfo(121 + before - 1)) == "Trap", "Restore created the wrong macro")
+	check(select(1, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Trap"))) == "Trap", "Restore created the wrong macro")
 	check(window.Tabs[2].SelectedTexture:IsShown(), "Restore did not switch to the deleted macro's tab")
 	equal(window.header.meta:GetText(), "Character macro, not on a bar", "the header still names the other tab")
 	equal(selectedRow(window).Name:GetText(), "Trap", "Restore did not select the macro it brought back")

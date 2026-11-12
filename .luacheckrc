@@ -22,7 +22,7 @@ read_globals = {
 	"INVSLOT_FIRST_EQUIPPED", "INVSLOT_LAST_EQUIPPED", "MacroFrame",
 	"NUM_BAG_SLOTS", "NORMAL_FONT_COLOR", "BreakUpLargeNumbers",
 	"PickupMacro", "ScrollBoxConstants", "ScrollUtil", "SecureCmdOptionParse", "SetPortraitTexture", "UnitClass",
-	"UnitName",
+	"UnitName", "UnitFullName", "GetRealmName",
 	-- The slash command, the addon compartment and the gamepad input style.
 	"C_InputInterfaceStyle", "ShowMacroFrame",
 	"SLASH_MACROASSISTFOREVER1", "SLASH_MACROASSISTFOREVER2",
