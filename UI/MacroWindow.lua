@@ -610,7 +610,10 @@ function Window.Create()
 					suffix = suffix + 1
 				end
 			end
-			Window:WriteCreate(copiedName, macro.icon, macro.body, target == "character")
+			if not Window:WriteCreate(copiedName, macro.icon, macro.body, target == "character") then
+				status:SetText(L["Macro limit reached"])
+				return
+			end
 		end
 		if replaceConflicts then
 			for _, macro in ipairs(plan.conflicts) do
