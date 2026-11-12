@@ -227,6 +227,32 @@ scenario("Characters opens through the real footer control", function(sim)
 		window.charactersPanel.sourceScroll:GetDataProvider():GetSize() == 2,
 		"Characters did not list each source scope"
 	)
+	local sourceRows = {}
+	window.charactersPanel.sourceScroll:ForEachFrame(function(row)
+		if row:IsShown() then
+			sourceRows[#sourceRows + 1] = row
+		end
+	end)
+	check(#sourceRows == 2, "Characters did not create source controls")
+	sim:click(sourceRows[1])
+	sim:advance(0.05)
+	check(
+		window.charactersPanel.status:GetText():find("General One", 1, true) ~= nil,
+		"source selection did not show its conflict"
+	)
+	local replaceButton
+	for _, child in ipairs({ window.charactersPanel:GetChildren() }) do
+		if child.GetText and child:GetText() == "Replace" then
+			replaceButton = child
+		end
+	end
+	check(replaceButton, "Replace control is missing")
+	sim:click(replaceButton)
+	equal(replaceButton:GetText(), "Confirm", "Replace did not arm confirmation")
+	local _, _, beforeBody = sim.G.GetMacroInfo(1)
+	sim:click(replaceButton)
+	local _, _, afterBody = sim.G.GetMacroInfo(1)
+	check(beforeBody ~= afterBody and afterBody == "/cast Other", "confirmed Replace did not update the target scope")
 end)
 
 scenario("the header and rows show action bar slots and their keys", function(sim)
