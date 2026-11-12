@@ -185,6 +185,7 @@ ns.L = {
 	["Cancel"] = true,
 	["Save"] = true,
 	["Click again to delete"] = true,
+	["Click again to replace"] = true,
 	["No macro selected"] = true,
 	["Back to code"] = true,
 	["New macro"] = true,

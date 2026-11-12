@@ -547,6 +547,7 @@ function Window.Create()
 	characterPanel.status = status
 	local sourceButtons = {}
 	local selectedSource
+	local replaceArmed = false
 	local function refreshSources()
 		for _, button in ipairs(sourceButtons) do
 			button:Hide()
@@ -581,7 +582,8 @@ function Window.Create()
 			sourceButtons[index] = button
 		end
 	end
-	local function copySelected(keepBoth, replace)
+	local replace
+	local function copySelected(keepBoth, replaceConflicts)
 		if not selectedSource or InCombatLockdown() then
 			return
 		end
@@ -600,7 +602,7 @@ function Window.Create()
 			end
 			Window:WriteCreate(copiedName, macro.icon, macro.body, target == "character")
 		end
-		if replace then
+		if replaceConflicts then
 			for _, macro in ipairs(plan.conflicts) do
 				local index = Window.FindMacro(Window, macro.name)
 				if index then
@@ -609,6 +611,8 @@ function Window.Create()
 			end
 		end
 		characterPanel:Hide()
+		replaceArmed = false
+		replace:SetText(L["Replace"])
 		Window:RefreshList()
 	end
 	local keep = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
@@ -618,11 +622,17 @@ function Window.Create()
 	keep:SetScript("OnClick", function()
 		copySelected(true, false)
 	end)
-	local replace = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
+	replace = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
 	replace:SetSize(180, 26)
 	replace:SetPoint("BOTTOMRIGHT", -14, 14)
 	replace:SetText(L["Replace"])
 	replace:SetScript("OnClick", function()
+		if not replaceArmed then
+			replaceArmed = true
+			replace:SetText(L["Confirm"])
+			status:SetText(L["Click again to replace"])
+			return
+		end
 		copySelected(false, true)
 	end)
 	characterPanel:Hide()
