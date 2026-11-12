@@ -571,6 +571,7 @@ function Window.Create()
 		end)
 	end)
 	ScrollUtil.InitScrollBoxListWithScrollBar(sourceScroll, sourceBar, sourceView)
+	characterPanel.sourceScroll = sourceScroll
 	local close = CreateFrame("Button", nil, characterPanel, "UIPanelCloseButton")
 	close:SetPoint("TOPRIGHT", -2, -2)
 	close:SetScript("OnClick", function()

@@ -208,6 +208,27 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(sim.pickedMacro, trap.macroIndex, "dragging a row picks up its macro")
 end)
 
+scenario("Characters opens through the real footer control", function(sim)
+	world.install(sim)
+	sim:login()
+	local window = open(sim)
+	sim.G.MacroAssistForeverDB.characters["Other-Forever"] = {
+		name = "Other",
+		realm = "Forever",
+		general = { { name = "General One", body = "/cast Other" } },
+		character = { { name = "Character One", body = "/cast Character" } },
+	}
+	sim:click(window.charactersButton)
+	sim:advance(0.1)
+	check(window.charactersPanel:IsShown(), "Characters footer control did not open its panel")
+	check(window.charactersPanel:GetWidth() == 440, "Characters panel lost its bounded width")
+	check(window.refreshCharacterSources ~= nil, "Characters panel has no source refresh")
+	check(
+		window.charactersPanel.sourceScroll:GetDataProvider():GetSize() == 2,
+		"Characters did not list each source scope"
+	)
+end)
+
 scenario("the header and rows show action bar slots and their keys", function(sim)
 	world.install(sim)
 	local account = sim.G.Constants.MacroConsts.MAX_ACCOUNT_MACROS
