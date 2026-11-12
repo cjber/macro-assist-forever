@@ -16,5 +16,6 @@ C_InputInterfaceStyle = nil
 ---@field liveValues boolean
 ---@field diagnostics boolean
 ---@field history table<string, MacroAssistHistoryRecord>
+---@field characters? table<string, table>
 ---@type MacroAssistSaved
 MacroAssistForeverDB = nil

@@ -143,6 +143,9 @@ local ACTION_SLOTS = 180
 ---@field searchBox MacroAssistSearchBox
 ---@field count FontString
 ---@field listInset Frame
+---@field charactersButton Button
+---@field charactersPanel Frame
+---@field refreshCharacterSources fun()
 ---@field editorSurface Frame
 ---@field statusBar Frame
 ---@field explainPanel MacroAssistExplainPanel
@@ -550,7 +553,8 @@ function Window.Create()
 		end
 		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 		for index, record in ipairs(ns.CharacterMacros.Sources(MacroAssistForeverDB, current)) do
-			local button = sourceButtons[index] or CreateFrame("Button", nil, characterPanel, "UIPanelButtonTemplate")
+			local button = sourceButtons[index]
+				or CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
 			button:SetSize(390, 26)
 			button:SetPoint("TOPLEFT", 14, -70 - (index - 1) * 30)
 			button:SetText(record.name .. " - " .. record.realm)
@@ -607,14 +611,14 @@ function Window.Create()
 		characterPanel:Hide()
 		Window:RefreshList()
 	end
-	local keep = CreateFrame("Button", nil, characterPanel, "UIPanelButtonTemplate")
+	local keep = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
 	keep:SetSize(180, 26)
 	keep:SetPoint("BOTTOMLEFT", 14, 14)
 	keep:SetText(L["Keep both"])
 	keep:SetScript("OnClick", function()
 		copySelected(true, false)
 	end)
-	local replace = CreateFrame("Button", nil, characterPanel, "UIPanelButtonTemplate")
+	local replace = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
 	replace:SetSize(180, 26)
 	replace:SetPoint("BOTTOMRIGHT", -14, 14)
 	replace:SetText(L["Replace"])
