@@ -1558,6 +1558,8 @@ end
 
 function Window:OnShow()
 	local frame = self.frame
+	MacroAssistForeverDB = MacroAssistForeverDB or {}
+	ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 	frame:RegisterEvent("UPDATE_MACROS")
 	frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 	frame:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1619,6 +1621,8 @@ end
 function Window:OnEvent(event, ...)
 	local frame = self.frame
 	if event == "UPDATE_MACROS" then
+		MacroAssistForeverDB = MacroAssistForeverDB or {}
+		ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 		self:RebuildBars()
 		self:RefreshList()
 	elseif event == "ACTIONBAR_SLOT_CHANGED" or event == "UPDATE_BINDINGS" then

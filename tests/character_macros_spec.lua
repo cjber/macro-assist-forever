@@ -2,7 +2,13 @@ local ns = {}
 assert(loadfile("Core/CharacterMacros.lua"))("MacroAssistForever", ns)
 local C = ns.CharacterMacros
 local db = {}
-C.Capture(db, "Barry", "Azeroth", { { name = "Heal", body = "/cast Heal" } }, { { name = "Trap", body = "/cast Trap" } })
+C.Capture(
+	db,
+	"Barry",
+	"Azeroth",
+	{ { name = "Heal", body = "/cast Heal" } },
+	{ { name = "Trap", body = "/cast Trap" } }
+)
 C.Capture(
 	db,
 	"Cillian",

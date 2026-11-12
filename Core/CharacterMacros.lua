@@ -1,3 +1,4 @@
+-- luacheck: globals UnitFullName GetRealmName
 local _, ns = ...
 
 local Characters = {}
@@ -17,6 +18,23 @@ function Characters.Capture(db, name, realm, general, character)
 		general = general or {},
 		character = character or {},
 	}
+end
+
+function Characters.CaptureCurrent(db)
+	local name, realm = UnitFullName("player")
+	name = name or UnitName("player") or "Unknown"
+	realm = realm or (GetRealmName and GetRealmName()) or "Unknown"
+	local account, count = GetNumMacros()
+	local general, character = {}, {}
+	for index = 1, (account or 0) + (count or 0) do
+		local macroName, icon, body = GetMacroInfo(index)
+		if macroName then
+			local target = index <= (account or 0) and general or character
+			target[#target + 1] = { name = macroName, icon = icon, body = body or "" }
+		end
+	end
+	Characters.Capture(db, name, realm, general, character)
+	return key(name, realm)
 end
 
 function Characters.Sources(db, current)
