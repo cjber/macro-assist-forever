@@ -1350,6 +1350,29 @@ def history_layout():
     }
 
 
+def draw_characters(canvas):
+    """Characters copy panel with separate source scopes and bounded conflict detail."""
+    x, y, w, h = X + 70, Y + 70, 440, 300
+    inset(canvas, x, y, w, h)
+    canvas.text(x + 14, y + 12, "Copy from another character", FONTS["GameFontNormal"], WHITE)
+    canvas.text(x + 14, y + 42, "General One:\n- /cast Heal\n+ /cast Other", FONTS["GameFontHighlightSmall"], MUTED, width=400)
+    for row, label in enumerate(("Other - Forever · general · General One", "Other - Forever · character · Character One")):
+        button(canvas, x + 14, y + 70 + row * 30, 390, label, h=26)
+    wowmock.minimal_scrollbar(canvas, x + 410, y + 70, 180, visible=0.35)
+    button(canvas, x + 14, y + h - 40, 180, "Keep both", h=26)
+    button(canvas, x + 216, y + h - 40, 180, "Replace", h=26)
+    return x, y, w, h
+
+
+def characters_layout():
+    x, y, w, h = X + 70, Y + 70, 440, 300
+    return {"frame": {"x": x, "y": y, "w": w, "h": h}, "widgets": [
+        {"name": "characters-sources", "role": "list", "x": x + 14, "y": y + 70, "w": 390, "h": 180},
+        {"name": "characters-keep", "role": "button", "x": x + 14, "y": y + h - 40, "w": 180, "h": 26},
+        {"name": "characters-replace", "role": "button", "x": x + 216, "y": y + h - 40, "w": 180, "h": 26},
+    ]}
+
+
 # The Import box's sample text: a short macro already pasted and checked, so the scene shows the ready line and count.
 IMPORT_BODY = "/cast [@mouseover,harm,nodead][] Arcane Shot\n/startattack"
 
@@ -1665,6 +1688,7 @@ def layout(ui):
             import_layout(),
             shorten_layout(),
             picker_layout(ui),
+            characters_layout(),
         ]
     }
 
@@ -1710,6 +1734,17 @@ def main():
     draw_history(history_canvas)
     wowmock.scene(ui, [(history_canvas, 0, 0)]).save(output / "history.png")
     print(output / "history.png")
+
+    characters_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data=window_data,
+    )
+    draw_characters(characters_canvas)
+    wowmock.scene(ui, [(characters_canvas, 0, 0)]).save(output / "characters.png")
+    print(output / "characters.png")
 
     import_canvas = window(
         ui,

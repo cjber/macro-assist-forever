@@ -315,6 +315,40 @@
           "h": 112.0
         }
       ]
+    },
+    {
+      "frame": {
+        "x": 94,
+        "y": 94,
+        "w": 440,
+        "h": 300
+      },
+      "widgets": [
+        {
+          "name": "characters-sources",
+          "role": "list",
+          "x": 108,
+          "y": 164,
+          "w": 390,
+          "h": 180
+        },
+        {
+          "name": "characters-keep",
+          "role": "button",
+          "x": 108,
+          "y": 354,
+          "w": 180,
+          "h": 26
+        },
+        {
+          "name": "characters-replace",
+          "role": "button",
+          "x": 310,
+          "y": 354,
+          "w": 180,
+          "h": 26
+        }
+      ]
     }
   ]
 }
