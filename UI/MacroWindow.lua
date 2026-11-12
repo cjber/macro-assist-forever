@@ -536,7 +536,7 @@ function Window.Create()
 	title:Hide()
 	local selectedSource
 	local replaceArmed = false
-	local sourceScroll = CreateFrame("Frame", nil, characterPanel, "WowScrollBoxList")
+	local sourceScroll = CreateFrame("Frame", nil, characterPanel, "WowScrollBoxList") --[[@as ScrollBoxListMixin]]
 	sourceScroll:SetPoint("TOPLEFT", 14, -122)
 	sourceScroll:SetPoint("BOTTOMRIGHT", -36, 48)
 	local sourceBar = CreateFrame("EventFrame", nil, characterPanel, "MinimalScrollBar")
@@ -544,7 +544,7 @@ function Window.Create()
 	sourceBar:SetPoint("BOTTOMLEFT", sourceScroll, "BOTTOMRIGHT", 6, 0)
 	local sourceView = CreateScrollBoxListLinearView()
 	sourceView:SetElementExtent(30)
-	local sourceProvider = CreateDataProvider()
+	local sourceProvider = CreateDataProvider() --[[@as DataProviderMixin]]
 	local keep, replace
 	local currentCharacter = frame.currentCharacter
 	local function SelectSource(source)
@@ -605,9 +605,9 @@ function Window.Create()
 		replaceArmed = false
 		replace:SetText(L["Replace"])
 		local current = currentCharacter or ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
-		(sourceProvider --[[@as DataProviderMixin]]):Flush()
+		sourceProvider:Flush()
 		for _, source in ipairs(ns.CharacterMacros.Macros(MacroAssistForeverDB, current)) do
-			(sourceProvider --[[@as DataProviderMixin]]):Insert(source)
+			sourceProvider:Insert(source)
 		end
 		local hasSources = sourceProvider:GetSize() > 0
 		if not hasSources then
@@ -619,7 +619,7 @@ function Window.Create()
 		if replace and replace.SetEnabled then
 			replace:SetEnabled(hasSources)
 		end
-		(sourceScroll --[[@as ScrollBoxListMixin]]):SetDataProvider(
+		sourceScroll:SetDataProvider(
 			sourceProvider --[[@as DataProviderMixin]],
 			ScrollBoxConstants.RetainScrollPosition
 		)
