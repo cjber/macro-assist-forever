@@ -58,6 +58,33 @@ function Characters.Sources(db, current)
 	return result
 end
 
+function Characters.Macros(db, current)
+	local result = {}
+	for _, record in ipairs(Characters.Sources(db, current)) do
+		for _, scope in ipairs({ "general", "character" }) do
+			for _, macro in ipairs(record[scope] or {}) do
+				result[#result + 1] = { record = record, scope = scope, macro = macro }
+			end
+		end
+	end
+	return result
+end
+
+function Characters.PlanMacro(source, destination, keepBoth)
+	local existing = {}
+	for _, macro in ipairs(destination or {}) do
+		existing[macro.name] = true
+	end
+	local plan = { create = {}, conflicts = {} }
+	if existing[source.macro.name] then
+		plan.conflicts[1] = source.macro
+	end
+	if keepBoth or not existing[source.macro.name] then
+		plan.create[1] = source.macro
+	end
+	return plan
+end
+
 function Characters.PlanCopy(source, destination, toCharacter, keepBoth)
 	local macros = toCharacter and source.character or source.general
 	local plan = { create = {}, conflicts = {} }

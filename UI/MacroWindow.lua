@@ -535,36 +535,47 @@ function Window.Create()
 	local title = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	title:SetPoint("TOPLEFT", 14, -12)
 	title:SetText(L["Copy from another character"])
+	local sourceButtons = {}
+	local selectedSource
+	local replaceArmed = false
+	local replace
 	local close = CreateFrame("Button", nil, characterPanel, "UIPanelCloseButton")
 	close:SetPoint("TOPRIGHT", -2, -2)
 	close:SetScript("OnClick", function()
 		characterPanel:Hide()
+		selectedSource = nil
+		replaceArmed = false
+		replace:SetText(L["Replace"])
 	end)
 	local status = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	status:SetPoint("TOPLEFT", 14, -42)
 	status:SetWidth(400)
 	status:SetJustifyH("LEFT")
 	characterPanel.status = status
-	local sourceButtons = {}
-	local selectedSource
-	local replaceArmed = false
 	local function refreshSources()
+		selectedSource = nil
+		replaceArmed = false
+		replace:SetText(L["Replace"])
 		for _, button in ipairs(sourceButtons) do
 			button:Hide()
 		end
 		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
-		for index, record in ipairs(ns.CharacterMacros.Sources(MacroAssistForeverDB, current)) do
+		for index, source in ipairs(ns.CharacterMacros.Macros(MacroAssistForeverDB, current)) do
 			local button = sourceButtons[index]
 				or CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
 			button:SetSize(390, 26)
 			button:SetPoint("TOPLEFT", 14, -70 - (index - 1) * 30)
-			button:SetText(record.name .. " - " .. record.realm)
+			button:SetText(
+				source.record.name .. " - " .. source.record.realm .. " · " .. source.scope .. " · " .. source.macro.name
+			)
 			button:SetScript("OnClick", function()
-				selectedSource = record
+				selectedSource = source
+				replaceArmed = false
+				replace:SetText(L["Replace"])
 				local clickedCurrent = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 				local target = Window.tab == 2 and "character" or "general"
 				local destination = MacroAssistForeverDB.characters[clickedCurrent][target]
-				local plan = ns.CharacterMacros.PlanCopy(record, destination, target == "character", true)
+				local plan = ns.CharacterMacros.PlanMacro(source, destination, true)
 				local lines = { L["Choose Keep both or Replace."] }
 				for _, conflict in ipairs(plan.conflicts) do
 					local oldBody
@@ -582,7 +593,6 @@ function Window.Create()
 			sourceButtons[index] = button
 		end
 	end
-	local replace
 	local function copySelected(keepBoth, replaceConflicts)
 		if not selectedSource or InCombatLockdown() then
 			return
@@ -590,7 +600,7 @@ function Window.Create()
 		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 		local target = Window.tab == 2 and "character" or "general"
 		local destination = MacroAssistForeverDB.characters[current][target]
-		local plan = ns.CharacterMacros.PlanCopy(selectedSource, destination, target == "character", keepBoth)
+		local plan = ns.CharacterMacros.PlanMacro(selectedSource, destination, keepBoth)
 		for _, macro in ipairs(plan.create) do
 			local copiedName = macro.name
 			if keepBoth and plan.conflicts then

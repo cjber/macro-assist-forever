@@ -9,7 +9,13 @@ C.Capture(
 	{ { name = "Heal", body = "/cast Heal" } },
 	{ { name = "Trap", body = "/cast Trap" } }
 )
-C.Capture(db, "Cillian", "Azeroth", { { name = "Heal", body = "/cast Flash Heal" } }, {})
+C.Capture(
+	db,
+	"Cillian",
+	"Azeroth",
+	{ { name = "Heal", body = "/cast Flash Heal" } },
+	{ { name = "Trap", body = "/cast Trap" } }
+)
 local sources = C.Sources(db, C.Key("Barry", "Azeroth"))
 assert(#sources == 1 and sources[1].name == "Cillian", "the current character is not excluded")
 local plan = C.PlanCopy(sources[1], db.characters[C.Key("Barry", "Azeroth")].general, false, true)
@@ -37,4 +43,11 @@ local current = C.CaptureCurrent(db)
 assert(#db.characters[current].general == 1, "capture keeps account macros")
 assert(#db.characters[current].character == 1, "capture reads the separate character slot range")
 assert(db.characters[current].character[1].body == "/say Character", "capture preserves character macro bodies")
+local entries = C.Macros(db, current)
+assert(
+	#entries == 2 and entries[1].scope == "general" and entries[2].scope == "character",
+	"source macros do not retain their scope"
+)
+local one = C.PlanMacro(entries[2], db.characters[current].general, true)
+assert(#one.create == 1 and one.create[1].body == "/cast Trap", "a character macro cannot be copied to General")
 print("character_macros_spec: passed")
