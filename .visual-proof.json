@@ -1,0 +1,29 @@
+{
+  "input_digest": "9d402d035c341686d443b8036d9ab91eb58a3d667f5a258200fd123ae1adb0cf",
+  "runtime_sha256": "9d402d035c341686d443b8036d9ab91eb58a3d667f5a258200fd123ae1adb0cf",
+  "candidate": "b8f74087c465dcbce14b10dbedf3ad6638696ff374c816733a96f47dd0c27259",
+  "tested_artifact": "release-package",
+  "client_build": "1.60.1.70888 (Interface 16001)",
+  "flows": [
+    {
+      "name": "Macro Assist's window opens on ForeverCore 1.8.1",
+      "steps": [
+        "Install the packaged candidate with its bundled ForeverCore v1.8.1 and /reload",
+        "Print the loaded versions: ForeverCore v1.8.1 and MacroAssistForever v0.4.2-3-g3238644, both loaded, ProfessionTabs.minor 2",
+        "Type /macroassist",
+        "Confirm the Macros window opens with its list, editor and status line"
+      ],
+      "result": "pass"
+    }
+  ],
+  "images": [
+    {
+      "url": "https://gist.githubusercontent.com/cjber/328823e9708f8e8ea7847dc01bd53905/raw/55de9fd8b9c4d5fdf425aa1a72db5386128d3749/sync181-versions.png",
+      "sha256": "68bb8f958f2dab34bbf7a541f311f8141db7ebeaca4a51e39fbe9bf4c725e7c6"
+    },
+    {
+      "url": "https://gist.githubusercontent.com/cjber/328823e9708f8e8ea7847dc01bd53905/raw/55de9fd8b9c4d5fdf425aa1a72db5386128d3749/sync181-macroassist-b8f7408.png",
+      "sha256": "98a40d72c5697ff0d351143e6c634ef02eb4393a1966dd73d9af636631721716"
+    }
+  ]
+}
