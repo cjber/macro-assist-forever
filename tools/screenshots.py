@@ -1355,10 +1355,11 @@ def draw_characters(canvas):
     x, y, w, h = X + 70, Y + 70, 440, 300
     inset(canvas, x, y, w, h)
     canvas.text(x + 14, y + 12, "Copy from another character", FONTS["GameFontNormal"], WHITE)
-    canvas.text(x + 14, y + 42, "General One:\n- /cast Heal\n+ /cast Other", FONTS["GameFontHighlightSmall"], MUTED, width=400)
+    canvas.text(x + 14, y + 42, "General One: - /cast Heal / + /cast Other", FONTS["GameFontHighlightSmall"], MUTED, width=400)
     for row, label in enumerate(("Other - Forever · general · General One", "Other - Forever · character · Character One")):
-        button(canvas, x + 14, y + 70 + row * 30, 390, label, h=26)
-    wowmock.minimal_scrollbar(canvas, x + 410, y + 70, 180, visible=0.35)
+        button(canvas, x + 14, y + 126 + row * 30, 390, label, h=26)
+    wowmock.minimal_scrollbar(canvas, x + 410, y + 126, 124, visible=0.35)
+    canvas.text(x + w - 24, y + 10, "×", FONTS["GameFontNormal"], WHITE)
     button(canvas, x + 14, y + h - 40, 180, "Keep both", h=26)
     button(canvas, x + 216, y + h - 40, 180, "Replace", h=26)
     return x, y, w, h
@@ -1367,7 +1368,7 @@ def draw_characters(canvas):
 def characters_layout():
     x, y, w, h = X + 70, Y + 70, 440, 300
     return {"frame": {"x": x, "y": y, "w": w, "h": h}, "widgets": [
-        {"name": "characters-sources", "role": "list", "x": x + 14, "y": y + 70, "w": 390, "h": 180},
+        {"name": "characters-sources", "role": "list", "x": x + 14, "y": y + 126, "w": 390, "h": 124},
         {"name": "characters-keep", "role": "button", "x": x + 14, "y": y + h - 40, "w": 180, "h": 26},
         {"name": "characters-replace", "role": "button", "x": x + 216, "y": y + h - 40, "w": 180, "h": 26},
     ]}
