@@ -16,7 +16,7 @@
 - **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
 - **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing it can explain.
 - **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through the suggestions, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
-- **Recipes in plain words.** On a line of plain words such as `pet` or `heal mouseover`, the completion list offers checked recipes for your class, with their spell names resolved in your client's language. Tab replaces the line with the whole macro. A recipe whose spell this client does not know is left out.
+- **Recipes for your class, checked against your spellbook.** Typing `pet` or `heal mouseover` offers checked recipes in the completion list, with spell names in your client's language, and Tab inserts the whole macro. Recipes opens the same catalogue in a popup with the general and class macros beside a full preview; an unlearned spell greys its recipe with the client's level, and Import creates it through the checked path.
 - **Live conditions and spells.** Condition values come from the game right now, and the spellbook supplies your spell names and the ranks you know.
 - **Problems with a fix.** A wavy underline marks text the game cannot run. Hover it for the explanation, then press Tab or click it to apply the suggested fix.
 - **A status bar that says what fires now.** It shows the first problem in full with Tab to fix, the action the first matching line would take with your current target, and the character count out of 255 with a meter.
@@ -38,6 +38,10 @@ Conditions are offered with their live value, and a wavy underline marks a probl
 <p align="center"><img src="docs/screenshots/recipes.png" alt="Plain words offering checked recipes for the player's class"></p>
 
 Typing plain words on a line offers checked recipes, with each spell name resolved in the client's language.
+
+<p align="center"><img src="docs/screenshots/recipes-popup.png" alt="The Recipes window listing class recipes beside a full macro preview"></p>
+
+Recipes lists the general and class macros beside the whole macro; an unlearned spell is greyed with the client's level.
 
 <p align="center"><img src="docs/screenshots/history.png" alt="The History window listing saved versions and a deleted macro"></p>
 
@@ -63,7 +67,7 @@ Put the `MacroAssistForever` folder in `World of Warcraft/_forever_/Interface/Ad
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. The General tab holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it, or type in the search box to narrow the list by name or summary. New creates a macro and opens the icon picker with its name ready to type. Import takes a macro pasted from the web or another character, checks it, and opens the same picker for its name and icon. Typing plain words on a line, such as `pet` or `heal mouseover`, offers checked recipes that Tab turns into a whole macro. Rename, or a click on the header icon, opens the picker for the selected macro; Back to code returns to the editor. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing the window also saves your text when you are out of combat.
+Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Import checks pasted text and opens the same picker. Recipes browses the general and class macros, and Import creates the one selected. Plain words such as `pet` or `heal mouseover` offer checked recipes in the completion list, which Tab turns into a whole macro. Rename opens the picker; Back to code returns to the editor. Cancel restores the saved text, Save writes immediately, and History restores an earlier version. Closing the window also saves your text out of combat.
 
 ## Works alongside
 

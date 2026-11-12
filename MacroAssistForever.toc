@@ -42,6 +42,7 @@ UI\Editor.lua
 UI\IconSelector.lua
 UI\History.lua
 UI\Import.lua
+UI\Recipes.lua
 UI\Shorten.lua
 UI\MacroWindow.xml
 UI\MacroWindow.lua

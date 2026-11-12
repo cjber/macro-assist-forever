@@ -38,6 +38,7 @@ local BUTTON_WIDTH = 90
 local DELETE_WIDTH = 90
 local HISTORY_WIDTH = 90
 local IMPORT_WIDTH = 90
+local RECIPES_WIDTH = 90
 local FOOTER_GAP = 6
 local RENAME_WIDTH = 110
 local RENAME_HEIGHT = 22
@@ -45,7 +46,7 @@ local SEARCH_LEFT = 60
 local SEARCH_TOP = -32
 local SEARCH_WIDTH = 146
 local SEARCH_HEIGHT = 20
-local COUNT_WIDTH = 40
+local COUNT_WIDTH = 46
 local EXPLAIN_INSET = 3
 local EXPLAIN_BOTTOM = 4
 local EXPLAIN_TITLE_TOP = 8
@@ -155,11 +156,13 @@ local ACTION_SLOTS = 180
 ---@field deleteButton Button
 ---@field historyButton Button
 ---@field importButton Button
+---@field recipesButton Button
 ---@field newButton Button
 ---@field saveButton Button
 ---@field cancelButton Button
 ---@field Tabs MacroAssistTab[]
 ---@field importPanel MacroAssistImportPanel
+---@field recipesPanel MacroAssistRecipesPanel
 ---@field shortenPanel MacroAssistShortenPanel
 
 ---@class MacroAssistWindow
@@ -474,6 +477,10 @@ function Window.Create()
 	import:SetSize(IMPORT_WIDTH, BUTTON_HEIGHT)
 	import:SetPoint("LEFT", history, "RIGHT", FOOTER_GAP, 0)
 	import:SetText(L["Import"])
+	local recipes = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
+	recipes:SetSize(RECIPES_WIDTH, BUTTON_HEIGHT)
+	recipes:SetPoint("LEFT", import, "RIGHT", FOOTER_GAP, 0)
+	recipes:SetText(L["Recipes"])
 	local save = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	save:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
 	save:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, 8)
@@ -486,6 +493,7 @@ function Window.Create()
 	frame.deleteButton = delete
 	frame.historyButton = history
 	frame.importButton = import
+	frame.recipesButton = recipes
 	frame.newButton = new
 	frame.saveButton = save
 	frame.cancelButton = cancel
@@ -508,6 +516,9 @@ function Window.Create()
 	frame.editor = ns.Editor.Create(editorSurface, statusBar)
 	frame.history = ns.HistoryPanel.Create(frame)
 	frame.importPanel = ns.ImportPanel.Create(frame, function(body)
+		Window:ImportMacro(body)
+	end)
+	frame.recipesPanel = ns.RecipesPanel.Create(frame, function(body)
 		Window:ImportMacro(body)
 	end)
 	frame.shortenPanel = ns.ShortenPanel.Create(frame, function(text)
@@ -564,6 +575,9 @@ function Window.Create()
 	end)
 	import:SetScript("OnClick", function()
 		Window:OpenImport()
+	end)
+	recipes:SetScript("OnClick", function()
+		Window:OpenRecipes()
 	end)
 	new:SetScript("OnClick", function()
 		Window:New()
@@ -1149,6 +1163,7 @@ function Window:OpenPicker(focusName)
 	if not name then
 		return
 	end
+	self:CloseRecipes()
 	if self.pendingName == nil then
 		self.pendingName = name
 	end
@@ -1259,6 +1274,10 @@ function Window:UpdateButtons()
 	if self.frame.importPanel then
 		ns.ImportPanel.SetCombat(self.frame.importPanel, combat)
 	end
+	local full = self.count ~= nil and self.maximum ~= nil and self.count >= self.maximum
+	if self.frame.recipesPanel then
+		ns.RecipesPanel.SetState(self.frame.recipesPanel, combat, full)
+	end
 end
 
 function Window:OnTextEdited()
@@ -1357,6 +1376,7 @@ function Window:New()
 	if self.picking then
 		self:LeavePicker()
 	end
+	self:CloseRecipes()
 	local base = self.base or 0
 	local actual = self:WriteCreate(self:FreeName(), 134400, "", self.tab == 2)
 	if not actual then
@@ -1413,6 +1433,36 @@ function Window.LiveMacroNames(_)
 	return live
 end
 
+-- Recipes is a browse view: it reads the spellbook and never writes. Opening it closes the other popups so two
+-- centered frames never sit on top of each other; Import still goes through Window:ImportMacro.
+function Window:CloseRecipes()
+	local frame = self.frame
+	if frame and frame.recipesPanel and frame.recipesPanel:IsShown() then
+		ns.RecipesPanel.Close(frame.recipesPanel)
+	end
+end
+
+function Window:OpenRecipes()
+	local frame = self.frame
+	if not frame or not frame.recipesPanel then
+		return
+	end
+	if self.picking then
+		self:LeavePicker()
+	end
+	if frame.importPanel and frame.importPanel:IsShown() then
+		ns.ImportPanel.Close(frame.importPanel)
+	end
+	if frame.shortenPanel and frame.shortenPanel:IsShown() then
+		ns.ShortenPanel.Close(frame.shortenPanel)
+	end
+	if frame.history and frame.history:IsShown() then
+		frame.history:Hide()
+	end
+	local full = self.count ~= nil and self.maximum ~= nil and self.count >= self.maximum
+	ns.RecipesPanel.Open(frame.recipesPanel, self.combat == true, full)
+end
+
 -- The Import box only reads and checks pasted text. The macro itself is created through WriteCreate, with the same
 -- snapshot and combat refusal as New, and then the icon picker opens for its name and icon.
 function Window:OpenImport()
@@ -1426,6 +1476,7 @@ function Window:OpenImport()
 	if self.picking then
 		self:LeavePicker()
 	end
+	self:CloseRecipes()
 	ns.ImportPanel.Open(frame.importPanel)
 end
 
@@ -1467,6 +1518,7 @@ function Window:OpenShorten()
 	if frame.importPanel and frame.importPanel:IsShown() then
 		ns.ImportPanel.Close(frame.importPanel)
 	end
+	self:CloseRecipes()
 	if self.picking then
 		self:LeavePicker()
 	end
@@ -1494,6 +1546,7 @@ function Window:OpenHistory()
 	if not frame or not frame.history then
 		return
 	end
+	self:CloseRecipes()
 	if not frame.history:IsShown() then
 		self.historySelected = nil
 	end
@@ -1611,6 +1664,9 @@ function Window:OnHide()
 	if frame.importPanel and frame.importPanel:IsShown() then
 		ns.ImportPanel.Close(frame.importPanel)
 	end
+	if frame.recipesPanel and frame.recipesPanel:IsShown() then
+		ns.RecipesPanel.Close(frame.recipesPanel)
+	end
 	if frame.shortenPanel and frame.shortenPanel:IsShown() then
 		ns.ShortenPanel.Close(frame.shortenPanel)
 	end
@@ -1638,6 +1694,9 @@ function Window:OnEvent(event, ...)
 		frame.editor:RefreshAll()
 		if frame.picker and frame.picker:IsShown() then
 			frame.picker:Refresh()
+		end
+		if frame.recipesPanel and frame.recipesPanel:IsShown() then
+			ns.RecipesPanel.Refresh(frame.recipesPanel)
 		end
 		if frame.editor.popup:IsShown() then
 			frame.editor:RefreshCompletions()

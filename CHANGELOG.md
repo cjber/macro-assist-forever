@@ -5,6 +5,11 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **Recipes for your class, checked against your spellbook.** Recipes in the macro window opens a native popup with
+  the general recipes and your class's, each with its whole macro beside the list. A recipe with a spell you have not
+  learned is greyed, with the level the client reports, and Import creates it through the same checked path as an
+  imported macro.
+
 ## [0.4.3] - 2026-11-12
 
 <!-- forever-core-sync -->

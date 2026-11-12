@@ -27,6 +27,7 @@ PICKER = (ROOT / "UI" / "IconSelector.lua").read_text(encoding="utf-8")
 EDITOR = (ROOT / "UI" / "Editor.lua").read_text(encoding="utf-8")
 HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
 IMPORT = (ROOT / "UI" / "Import.lua").read_text(encoding="utf-8")
+RECIPES = (ROOT / "UI" / "Recipes.lua").read_text(encoding="utf-8")
 SHORTEN = (ROOT / "UI" / "Shorten.lua").read_text(encoding="utf-8")
 XML = (ROOT / "UI" / "MacroWindow.xml").read_text(encoding="utf-8")
 FONT_FILE = ROOT / "media" / "fonts" / "JetBrainsMono-Regular.ttf"
@@ -79,6 +80,7 @@ BUTTON_WIDTH = number("BUTTON_WIDTH")
 DELETE_WIDTH = number("DELETE_WIDTH")
 HISTORY_WIDTH = number("HISTORY_WIDTH")
 IMPORT_WIDTH = number("IMPORT_WIDTH")
+RECIPES_WIDTH = number("RECIPES_WIDTH")
 FOOTER_GAP = number("FOOTER_GAP")
 RENAME_WIDTH = number("RENAME_WIDTH")
 RENAME_HEIGHT = number("RENAME_HEIGHT")
@@ -117,6 +119,28 @@ IMPORT_STATUS_BOTTOM = number("STATUS_BOTTOM", IMPORT)
 IMPORT_BOTTOM = number("BOTTOM", IMPORT)
 IMPORT_BUTTON_WIDTH = number("BUTTON_WIDTH", IMPORT)
 IMPORT_BUTTON_HEIGHT = number("BUTTON_HEIGHT", IMPORT)
+# The Recipes popup's own numbers, from UI/Recipes.lua.
+RECIPES_PANEL_WIDTH = number("WIDTH", RECIPES)
+RECIPES_PANEL_HEIGHT = number("HEIGHT", RECIPES)
+RECIPES_HEADING_LEFT = number("HEADING_LEFT", RECIPES)
+RECIPES_HINT_TOP = number("HINT_TOP", RECIPES)
+RECIPES_HINT_HEIGHT = number("HINT_HEIGHT", RECIPES)
+RECIPES_CONTENT_TOP = RECIPES_HINT_TOP + RECIPES_HINT_HEIGHT + 8
+RECIPES_BODY_INSET = number("BODY_INSET", RECIPES)
+RECIPES_PREVIEW_PADDING = number("PREVIEW_PADDING", RECIPES)
+RECIPES_LIST_WIDTH = number("LIST_WIDTH", RECIPES)
+RECIPES_GAP = number("GAP", RECIPES)
+RECIPES_INSET = number("INSET_PADDING", RECIPES)
+RECIPES_SCROLL_GAP = number("SCROLL_GAP", RECIPES)
+RECIPES_SCROLL_WIDTH = number("SCROLL_WIDTH", RECIPES)
+RECIPES_SCROLL_RIGHT = number("SCROLL_RIGHT_PADDING", RECIPES)
+RECIPES_ROW_HEIGHT = number("ROW_HEIGHT", RECIPES)
+RECIPES_BUTTON_WIDTH = number("BUTTON_WIDTH", RECIPES)
+RECIPES_BUTTON_HEIGHT = number("BUTTON_HEIGHT", RECIPES)
+RECIPES_BOTTOM = number("BOTTOM", RECIPES)
+RECIPES_BOX_BOTTOM = number("BOX_BOTTOM", RECIPES)
+# The preview's hanging indent, the string of spaces UI/Recipes.lua puts before a wrapped row.
+RECIPES_HANGING_INDENT = re.search(r'local HANGING_INDENT = "([^"]*)"', RECIPES)[1]
 # The Shorten preview's own numbers, from UI/Shorten.lua.
 SHORTEN_PANEL_WIDTH = number("WIDTH", SHORTEN)
 SHORTEN_PANEL_HEIGHT = number("HEIGHT", SHORTEN)
@@ -193,6 +217,65 @@ def fit(canvas, text, font, width):
     while text and canvas.text_width(text + "...", font) > width:
         text = text[:-1]
     return text.rstrip() + "..."
+
+
+def wrap_lines(canvas, text, font, width):
+    """The lines a word-wrapped FontString draws: greedy at spaces, then a word too wide for a row is broken at the
+    longest measured prefix, as SetNonSpaceWrap has the client do for a long token such as a condition list."""
+    lines = []
+    for logical in text.split("\n"):
+        for line in wowmock.wrap_text(canvas, logical, font, width):
+            while canvas.text_width(line, font) > width:
+                cut = len(line)
+                while cut > 1 and canvas.text_width(line[:cut], font) > width:
+                    cut -= 1
+                lines.append(line[:cut])
+                line = line[cut:]
+            lines.append(line)
+    return lines
+
+
+def text_content(ui, text, font, width=None, line_height=None):
+    """The extent a FontString renders: its widest line and the height of every line it draws."""
+    canvas = wowmock.Canvas(ui, 1, 1)
+    lines = wrap_lines(canvas, text, font, width) if width else text.split("\n")
+    widest = max((canvas.text_width(line, font) for line in lines), default=0)
+    return {"w": widest, "h": len(lines) * (line_height or font.height)}
+
+
+def preview_indent(canvas):
+    """The measured width of the Recipes preview's hanging indent."""
+    return canvas.text_width(RECIPES_HANGING_INDENT, MONO)
+
+
+def wrap_indented_rows(canvas, text, font, width, indent):
+    """The rows an indented preview draws: UI/Editor.lua's greedy word wrap, but every row after a logical line's
+    first is narrowed by `indent` and starts that far in, so only a real newline reaches the left edge. A word too
+    wide for its row is broken at the longest measured prefix, as the client breaks a long token."""
+    rows = []
+    for logical in text.split("\n"):
+        first = True
+        line = ""
+        for word in logical.split(" "):
+            row_width = width if first else width - indent
+            candidate = f"{line} {word}" if line else word
+            if not line or canvas.text_width(candidate, font) <= row_width:
+                line = candidate
+            else:
+                rows.append((line, not first))
+                first = False
+                line = word
+        row_width = width if first else width - indent
+        while canvas.text_width(line, font) > row_width:
+            cut = len(line)
+            while cut > 1 and canvas.text_width(line[:cut], font) > row_width:
+                cut -= 1
+            rows.append((line[:cut], not first))
+            first = False
+            line = line[cut:]
+            row_width = width - indent
+        rows.append((line, not first))
+    return rows
 
 
 # The Hunter macros the list shows. The bodies are the source of both the summaries and the editor text.
@@ -315,6 +398,12 @@ COMPLETION_CARET = COMPLETION_BODY.rindex("/cast [") + len("/cast [") + 1  # byt
 RECIPE_BODY = "pet"
 RECIPE_CARET = 4
 RECIPE_SPELL_NAMES = {136: "Mend Pet", 982: "Revive Pet", 1130: "Hunter's Mark", 1499: "Freezing Trap"}
+# The Recipes popup's sample: a Hunter who knows the pet spells but has not learned Freezing Trap, whose level the
+# client reports. The popup's own Lua model decides availability; the renderer only lays the rows out.
+RECIPE_CLASS_NAME = "Hunter"
+RECIPE_KNOWN = {136: True, 982: True, 1130: True, 1499: False}
+RECIPE_LEVELS = {1499: 20}
+RECIPE_SELECTED = "Mark and send the pet"
 LIVE = {
     "actionbar": "no",
     "bar": "no",
@@ -381,6 +470,10 @@ def sample():
     recipe_spells = ",\n".join(
         f"[{spell_id}] = {lua_string(name)}" for spell_id, name in sorted(RECIPE_SPELL_NAMES.items())
     )
+    recipe_known = ",\n".join(
+        f"[{spell_id}] = {'true' if known else 'false'}" for spell_id, known in sorted(RECIPE_KNOWN.items())
+    )
+    recipe_levels = ",\n".join(f"[{spell_id}] = {level}" for spell_id, level in sorted(RECIPE_LEVELS.items()))
     script = f"""
 local ns = {{}}
 for _, file in ipairs({{
@@ -448,6 +541,12 @@ print("LENGTH\\t" .. ns.Length(completion))
 local recipeSpells = {{
 {recipe_spells}
 }}
+local recipeKnown = {{
+{recipe_known}
+}}
+local recipeLevels = {{
+{recipe_levels}
+}}
 local recipes = {{}}
 for _, recipe in ipairs(ns.Recipes.List) do
     if not recipe.class or recipe.class == "HUNTER" then
@@ -468,6 +567,29 @@ for index, item in ipairs(recipeResult.items) do
     print("RECIPE_ITEM\\t" .. index .. "\\t" .. item.kind .. "\\t" .. clean(item.label) .. "\\t"
         .. clean(item.detail) .. "\\t" .. clean(item.insert))
 end
+print("RECIPE_HEADING\\t" .. clean(ns.L["%s recipes"]:format({lua_string(RECIPE_CLASS_NAME)})))
+print("RECIPE_HINT\\t" .. clean(ns.L["Choose a recipe to preview its macro."]))
+for index, recipe in ipairs(ns.Recipes.List) do
+    if not recipe.class or recipe.class == "HUNTER" then
+        local state = ns.Recipes.State(recipe, function(spellID) return recipeSpells[spellID] end,
+            function(spellID) return recipeKnown[spellID] == true end,
+            function(spellID) return recipeLevels[spellID] end)
+        local title = ns.L[recipe.title] or recipe.title
+        local note = ""
+        if not state.available then
+            note = state.level and ns.L["Learn at level %d"]:format(state.level) or ns.L["Not learned"]
+        end
+        print("RECIPE_ROW\\t" .. index .. "\\t" .. clean(title) .. "\\t" .. clean(note) .. "\\t"
+            .. (state.available and "1" or "0"))
+        if state.body then
+            local lineIndex = 0
+            for line in (state.body .. "\\n"):gmatch("(.-)\\n") do
+                print("RECIPE_BODY\\t" .. index .. "\\t" .. lineIndex .. "\\t" .. clean(line))
+                lineIndex = lineIndex + 1
+            end
+        end
+    end
+end
 """
     result = subprocess.run(["luajit", "-e", script], cwd=ROOT, capture_output=True, text=True, check=True)
     data = {
@@ -481,6 +603,7 @@ end
         "complete": None,
         "length": 0,
         "recipe": {"from": 1, "to": 0, "items": []},
+        "recipes_popup": {"heading": "", "hint": "", "rows": [], "bodies": {}},
     }
     for line in result.stdout.splitlines():
         parts = line.split("\t")
@@ -529,6 +652,16 @@ end
                     "insert": parts[5] if len(parts) > 5 else "",
                 }
             )
+        elif parts[0] == "RECIPE_HEADING":
+            data["recipes_popup"]["heading"] = parts[1]
+        elif parts[0] == "RECIPE_HINT":
+            data["recipes_popup"]["hint"] = parts[1]
+        elif parts[0] == "RECIPE_ROW":
+            data["recipes_popup"]["rows"].append(
+                {"key": int(parts[1]), "title": parts[2], "note": parts[3], "available": parts[4] == "1"}
+            )
+        elif parts[0] == "RECIPE_BODY":
+            data["recipes_popup"]["bodies"].setdefault(int(parts[1]), []).append(parts[3])
     return data
 
 
@@ -1112,6 +1245,14 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
         "Import",
         h=BUTTON_HEIGHT,
     )
+    button(
+        canvas,
+        X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + IMPORT_WIDTH + FOOTER_GAP * 4,
+        button_y,
+        RECIPES_WIDTH,
+        "Recipes",
+        h=BUTTON_HEIGHT,
+    )
     button(canvas, X + WINDOW_WIDTH + INSET_RIGHT - BUTTON_WIDTH, button_y, BUTTON_WIDTH, "Save", h=BUTTON_HEIGHT)
     button(
         canvas,
@@ -1161,6 +1302,7 @@ def window_layout(ui):
             "y": Y - SEARCH_TOP,
             "w": COUNT_WIDTH,
             "h": SEARCH_HEIGHT,
+            "content": text_content(ui, f"{min(len(MACROS[SELECTED][2]), 255)}/255", FONTS["GameFontHighlightSmall"]),
         },
         {
             "name": "list",
@@ -1210,6 +1352,14 @@ def window_layout(ui):
             "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + FOOTER_GAP * 3,
             "y": button_y,
             "w": IMPORT_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "recipes",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + IMPORT_WIDTH + FOOTER_GAP * 4,
+            "y": button_y,
+            "w": RECIPES_WIDTH,
             "h": BUTTON_HEIGHT,
         },
         {
@@ -1458,6 +1608,176 @@ def import_layout():
     }
 
 
+def recipes_geometry():
+    x = X + (WINDOW_WIDTH - RECIPES_PANEL_WIDTH) // 2
+    y = Y + (WINDOW_HEIGHT - RECIPES_PANEL_HEIGHT) // 2
+    return x, y, RECIPES_PANEL_WIDTH, RECIPES_PANEL_HEIGHT
+
+
+def draw_recipes(canvas, popup):
+    """The Recipes popup: a class-and-general list, the full macro beside it, and an Import button."""
+    x, y, w, h = recipes_geometry()
+    background(canvas, x, y, w, h)
+    canvas.text(
+        x + RECIPES_HEADING_LEFT, y + RECIPES_HINT_TOP, popup["heading"], FONTS["GameFontNormal"], GOLD, width=w - 24
+    )
+    canvas.text(
+        x + 12,
+        y + RECIPES_HINT_TOP + 18,
+        popup["hint"],
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        width=w - 24,
+    )
+    content_y = y + RECIPES_CONTENT_TOP
+    list_h = h - RECIPES_CONTENT_TOP - RECIPES_BOX_BOTTOM
+    list_x = x + RECIPES_BODY_INSET
+    preview_x = list_x + RECIPES_LIST_WIDTH + RECIPES_GAP
+    # The preview inset runs to the frame's own right inset, so the two boxes use the same margin on both sides.
+    preview_w = (x + w - RECIPES_BODY_INSET) - preview_x
+    inset(canvas, list_x, content_y, RECIPES_LIST_WIDTH, list_h)
+    inset(canvas, preview_x, content_y, preview_w, list_h)
+    scroll_x = list_x + RECIPES_INSET
+    scroll_y = content_y + RECIPES_INSET
+    # The rows fill the inset; the scrollbar overlays their last few units, as the client's own lists do.
+    scroll_w = RECIPES_LIST_WIDTH - RECIPES_INSET * 2
+    scroll_h = list_h - RECIPES_INSET * 2
+    rows = popup["rows"]
+    selected_key = next((row["key"] for row in rows if row["title"] == RECIPE_SELECTED), None)
+    for index, row in enumerate(rows):
+        row_y = scroll_y + index * RECIPES_ROW_HEIGHT
+        if row_y + RECIPES_ROW_HEIGHT > scroll_y + scroll_h:
+            break
+        selected = row["key"] == selected_key
+        if selected:
+            canvas.fill(scroll_x, row_y, scroll_w, RECIPES_ROW_HEIGHT, (1, 0.82, 0.2, 0.10))
+            canvas.fill(scroll_x, row_y + 3, 2, RECIPES_ROW_HEIGHT - 6, (1, 0.82, 0.2, 1))
+        title_colour = GOLD if selected else (MUTED if not row["available"] else WHITE)
+        # The row's text stops short of the scrollbar that can sit over its right edge.
+        canvas.text(
+            scroll_x + 8, row_y + 4, row["title"], FONTS["GameFontHighlight"], title_colour, width=scroll_w - 30
+        )
+        if row["note"]:
+            canvas.text(
+                scroll_x + 8,
+                row_y + 21,
+                row["note"],
+                FONTS["GameFontHighlightSmall"],
+                (0.6, 0.6, 0.6),
+                width=scroll_w - 30,
+            )
+    if rows and len(rows) * RECIPES_ROW_HEIGHT > scroll_h:
+        visible = scroll_h / (len(rows) * RECIPES_ROW_HEIGHT)
+        wowmock.minimal_scrollbar(
+            canvas,
+            list_x + RECIPES_LIST_WIDTH - RECIPES_INSET - RECIPES_SCROLL_RIGHT - RECIPES_SCROLL_WIDTH,
+            scroll_y,
+            scroll_h,
+            visible=min(1, visible),
+        )
+    text_x = preview_x + RECIPES_PREVIEW_PADDING
+    text_y = content_y + RECIPES_PREVIEW_PADDING
+    text_w = preview_w - 2 * RECIPES_PREVIEW_PADDING - (RECIPES_SCROLL_WIDTH + RECIPES_SCROLL_GAP)
+    text_bottom = content_y + list_h - RECIPES_PREVIEW_PADDING
+    indent = preview_indent(canvas)
+    lines = wrap_indented_rows(canvas, "\n".join(popup["bodies"].get(selected_key, [])), MONO, text_w, indent)
+    for index, (line, continuation) in enumerate(lines):
+        line_y = text_y + index * LINE_HEIGHT
+        if line_y + LINE_HEIGHT > text_bottom:
+            break
+        line_x = text_x + (indent if continuation else 0)
+        canvas.text(line_x, line_y, line, MONO, width=text_w - (indent if continuation else 0))
+    if len(lines) * LINE_HEIGHT > text_bottom - text_y:
+        wowmock.minimal_scrollbar(
+            canvas,
+            preview_x + preview_w - RECIPES_PREVIEW_PADDING - RECIPES_SCROLL_WIDTH,
+            text_y,
+            text_bottom - text_y,
+            visible=(text_bottom - text_y) / (len(lines) * LINE_HEIGHT),
+        )
+    button(
+        canvas,
+        x + w - 10 - RECIPES_BUTTON_WIDTH,
+        y + h - RECIPES_BOTTOM - RECIPES_BUTTON_HEIGHT,
+        RECIPES_BUTTON_WIDTH,
+        "Import",
+        h=RECIPES_BUTTON_HEIGHT,
+    )
+    wowmock.portrait_frame_art(canvas, x, y, w, h, IDENTITY_ICON, "Recipes")
+    return x, y, w, h
+
+
+def recipes_layout(ui, popup):
+    x, y, w, h = recipes_geometry()
+    content_y = y + RECIPES_CONTENT_TOP
+    list_h = h - RECIPES_CONTENT_TOP - RECIPES_BOX_BOTTOM
+    list_x = x + RECIPES_BODY_INSET
+    preview_x = list_x + RECIPES_LIST_WIDTH + RECIPES_GAP
+    preview_w = (x + w - RECIPES_BODY_INSET) - preview_x
+    text_w = preview_w - 2 * RECIPES_PREVIEW_PADDING - (RECIPES_SCROLL_WIDTH + RECIPES_SCROLL_GAP)
+    rows = popup["rows"]
+    selected_key = next((row["key"] for row in rows if row["title"] == RECIPE_SELECTED), None)
+    body = "\n".join(popup["bodies"].get(selected_key, []))
+    canvas = wowmock.Canvas(ui, 1, 1)
+    indent = preview_indent(canvas)
+    lines = wrap_indented_rows(canvas, body, MONO, text_w, indent)
+    content = {
+        "w": max(
+            (canvas.text_width(line, MONO) + (indent if continuation else 0) for line, continuation in lines), default=0
+        ),
+        "h": len(lines) * LINE_HEIGHT,
+    }
+    return {
+        "frame": {"x": x, "y": y, "w": w, "h": h},
+        "widgets": [
+            {
+                "name": "recipe-list-inset",
+                "role": "panel",
+                "x": list_x,
+                "y": content_y,
+                "w": RECIPES_LIST_WIDTH,
+                "h": list_h,
+                "insets": {"left": RECIPES_BODY_INSET},
+            },
+            {
+                "name": "recipe-list",
+                "role": "list",
+                "x": list_x + RECIPES_INSET,
+                "y": content_y + RECIPES_INSET,
+                "w": RECIPES_LIST_WIDTH - RECIPES_INSET * 2,
+                "h": list_h - RECIPES_INSET * 2,
+            },
+            {
+                "name": "recipe-preview-inset",
+                "role": "panel",
+                "x": preview_x,
+                "y": content_y,
+                "w": preview_w,
+                "h": list_h,
+                "insets": {"right": RECIPES_BODY_INSET},
+            },
+            {
+                "name": "recipe-preview",
+                "role": "text",
+                "x": preview_x + RECIPES_PREVIEW_PADDING,
+                "y": content_y + RECIPES_PREVIEW_PADDING,
+                "w": text_w,
+                "h": list_h - 2 * RECIPES_PREVIEW_PADDING,
+                "scroll": True,
+                "content": content,
+            },
+            {
+                "name": "recipes-import",
+                "role": "button",
+                "x": x + w - 10 - RECIPES_BUTTON_WIDTH,
+                "y": y + h - RECIPES_BOTTOM - RECIPES_BUTTON_HEIGHT,
+                "w": RECIPES_BUTTON_WIDTH,
+                "h": RECIPES_BUTTON_HEIGHT,
+            },
+        ],
+    }
+
+
 def picker_layout(ui):
     editor_x, editor_y, editor_w, editor_h = editor_geometry()
     status_x, status_y, status_w, status_h = status_geometry()
@@ -1515,6 +1835,14 @@ def picker_layout(ui):
             "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + FOOTER_GAP * 3,
             "y": button_y,
             "w": IMPORT_WIDTH,
+            "h": BUTTON_HEIGHT,
+        },
+        {
+            "name": "recipes",
+            "role": "button",
+            "x": X + LIST_LEFT + BUTTON_WIDTH + DELETE_WIDTH + HISTORY_WIDTH + IMPORT_WIDTH + FOOTER_GAP * 4,
+            "y": button_y,
+            "w": RECIPES_WIDTH,
             "h": BUTTON_HEIGHT,
         },
         {
@@ -1623,9 +1951,13 @@ def draw_shorten(canvas):
     return x, y, w, h
 
 
-def shorten_layout():
+def shorten_layout(ui):
     x, y, w, h = shorten_geometry()
     box_y = y + SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8
+    diff_h = h - (SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8) - SHORTEN_BOX_BOTTOM
+    diff_w = w - 20
+    diff_text_w = diff_w - SHORTEN_PANEL_INSET * 2 - 4
+    diff = "\n".join(line for _ in range(6) for line in (f"-{SHORTEN_OLD_LINE}", f"+{SHORTEN_NEW_LINE}"))
     return {
         "frame": {"x": x, "y": y, "w": w, "h": h},
         "widgets": [
@@ -1634,8 +1966,9 @@ def shorten_layout():
                 "role": "text",
                 "x": x + 10,
                 "y": box_y,
-                "w": w - 20,
-                "h": h - (SHORTEN_HINT_TOP + SHORTEN_HINT_HEIGHT + 8) - SHORTEN_BOX_BOTTOM,
+                "w": diff_w,
+                "h": diff_h,
+                "content": text_content(ui, diff, MONO, width=diff_text_w, line_height=18),
             },
             {
                 "name": "shorten-cancel",
@@ -1657,13 +1990,14 @@ def shorten_layout():
     }
 
 
-def layout(ui):
+def layout(ui, popup):
     return {
         "scenes": [
             window_layout(ui),
             history_layout(),
             import_layout(),
-            shorten_layout(),
+            recipes_layout(ui, popup),
+            shorten_layout(ui),
             picker_layout(ui),
         ]
     }
@@ -1733,6 +2067,17 @@ def main():
     wowmock.scene(ui, [(shorten_canvas, 0, 0)]).save(output / "shorten.png")
     print(output / "shorten.png")
 
+    recipes_canvas = window(
+        ui,
+        body=MACROS[SELECTED][2],
+        current_line=CURRENT_LINE,
+        caret_column=len(MACROS[SELECTED][2].split("\n")[CURRENT_LINE]),
+        data=window_data,
+    )
+    draw_recipes(recipes_canvas, data["recipes_popup"])
+    wowmock.scene(ui, [(recipes_canvas, 0, 0)]).save(output / "recipes-popup.png")
+    print(output / "recipes-popup.png")
+
     picker_canvas = window(
         ui,
         body=MACROS[SELECTED][2],
@@ -1781,7 +2126,9 @@ def main():
     )
     wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "recipes.png")
     print(output / "recipes.png")
-    (output / "layout.json").write_text(json.dumps(layout(ui), indent=2) + "\n", encoding="utf-8")
+    (output / "layout.json").write_text(
+        json.dumps(layout(ui, data["recipes_popup"]), indent=2) + "\n", encoding="utf-8"
+    )
 
 
 if __name__ == "__main__":

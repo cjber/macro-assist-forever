@@ -111,11 +111,16 @@ function M.install(sim)
 		{ name = "Mend Pet", id = 136, icon = 132179 },
 		{ name = "Revive Pet", id = 982, icon = 136081 },
 		{ name = "Feign Death", id = 5384, icon = 136145 },
-		{ name = "Freezing Trap", id = 1499, icon = 135848 },
 		{ name = "Hunter's Mark", id = 1130, icon = 132212 },
 		{ name = "Aspect of the Cheetah", id = 5118, icon = 132242 },
 		{ name = "Serpent Sting", id = 1978, icon = 132208 },
 		{ name = "Concussive Shot", id = 5116, icon = 135860 },
+	}
+	-- The client can name a spell the player has not learned yet: Freezing Trap is not in the spellbook, but its name
+	-- still resolves, so the Recipes popup lists its recipe and greys it with the client's learn level. The level is
+	-- the client's answer, never a value inferred from the character's level.
+	local unlearned = {
+		{ name = "Freezing Trap", id = 1499, icon = 135848, levelLearned = 20 },
 	}
 	-- A flyout last in the book, as Pet Utilities sits on the Beast Mastery tab. Call Pet is known; Feed Pet is not,
 	-- so only the first belongs in the addon's spell list.
@@ -215,6 +220,7 @@ function M.install(sim)
 	end
 	local spellByID = {}
 	local spellByName = {}
+	sim.spellNameHidden = {}
 	for _, spell in ipairs(spells) do
 		spellByID[spell.id] = spell
 		spellByName[spell.name:lower()] = spell
@@ -225,11 +231,38 @@ function M.install(sim)
 			spellByName[slot.name:lower()] = slot
 		end
 	end
+	for _, spell in ipairs(unlearned) do
+		spellByID[spell.id] = spell
+		spellByName[spell.name:lower()] = spell
+	end
+	-- What the player has learned, as C_SpellBook.IsSpellKnown answers it. The scenario can add or remove a spell to
+	-- prove the popup follows SPELLS_CHANGED.
+	sim.spellKnown = {}
+	for _, spell in ipairs(spells) do
+		sim.spellKnown[spell.id] = true
+	end
+	for _, flyout in ipairs(flyouts) do
+		for _, slot in ipairs(flyout.slots) do
+			if slot.known then
+				sim.spellKnown[slot.id] = true
+			end
+		end
+	end
+	sim.impl["C_SpellBook.IsSpellKnown"] = function(spellID)
+		return sim.spellKnown[spellID] == true
+	end
+	sim.impl["C_Spell.GetSpellLevelLearned"] = function(spellID)
+		local spell = spellByID[spellID]
+		return spell and spell.levelLearned
+	end
 	sim.impl["C_Spell.GetSpellTexture"] = function(spellID)
 		local spell = spellByID[spellID]
 		return spell and spell.icon or 134400
 	end
 	sim.impl["C_Spell.GetSpellInfo"] = function(name)
+		if type(name) == "number" and sim.spellNameHidden and sim.spellNameHidden[name] then
+			return nil
+		end
 		local spell = type(name) == "number" and spellByID[name] or spellByName[tostring(name):lower()]
 		if spell then
 			return {
