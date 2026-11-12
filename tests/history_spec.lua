@@ -156,6 +156,7 @@ local kind, index = ns.History.Restore(snapshot, {
 	end,
 	edit = function(actual, name, icon, body)
 		calls.edit = { actual, name, icon, body }
+		return true, actual
 	end,
 	create = function()
 		error("a live macro must be edited, not created")
@@ -166,6 +167,23 @@ equal(index, 121, "restore returns the edited macro index")
 equal(calls.find, "Arcane Shot", "restore looks the macro up by name")
 equal(calls.edit[3], snapshot.icon, "restore writes the snapshot icon")
 equal(calls.edit[4], snapshot.body, "restore writes the snapshot body")
+
+-- An edit the client refuses is a failed restore, not an edit at the old index.
+local refusedKind, refusedIndex, refusedReason = ns.History.Restore(snapshot, {
+	inCombat = false,
+	find = function()
+		return 121
+	end,
+	edit = function()
+		return false
+	end,
+	create = function()
+		error("a refused edit must not fall through to create")
+	end,
+})
+equal(refusedKind, nil, "a refused edit reports no restore kind")
+equal(refusedIndex, nil, "a refused edit reports no index")
+equal(refusedReason, "refused", "a refused edit reports why the restore failed")
 
 -- A deleted macro is created again, in the tab its record remembers.
 calls = {}

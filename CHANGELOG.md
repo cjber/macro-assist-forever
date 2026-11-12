@@ -12,6 +12,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
   free name, Replace asks for a second click, and both are off in combat.
 - **Renaming a macro keeps the editor on it.** Further edits and Save continue to change the renamed macro, leaving
   neighbouring macros untouched.
+- **A history restore the game refuses leaves everything as it was.** The macro, its saved history and the editor text
+  stay unchanged instead of reporting a restore that did not happen.
 
 ## [0.4.3] - 2026-11-12
 

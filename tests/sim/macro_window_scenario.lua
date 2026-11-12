@@ -1048,6 +1048,35 @@ scenario("renaming across another macro keeps Save on the renamed macro", functi
 	)
 end)
 
+scenario("clicking a row while a rename is pending keeps the clicked macro", function(sim)
+	world.install(sim)
+	sim:login()
+	sim:input(function()
+		sim.G.CreateMacro("Zulu", 134400, "/cast Zulu", true)
+		sim.events.fire("UPDATE_MACROS")
+	end)
+	local window = open(sim)
+	characterTab(sim, window)
+	sim:click(rowNamed(window, "Zulu"))
+	sim:advance(0.05)
+
+	-- Rename Zulu to Aaa with an edited body, then click Trap without pressing Save. Leaving Zulu saves the edit and
+	-- moves it from the end of the list to the front, so the clicked row's old index now points at Pet.
+	setText(sim, window, "/cast Zulu Two", true)
+	sim:click(window.header.rename)
+	sim:advance(0.1)
+	window.header.nameEdit:SetText("Aaa")
+	sim:click(rowNamed(window, "Trap"))
+	sim:advance(0.1)
+	equal(window.header.name:GetText(), "Trap", "clicking a row selected the macro that moved into its index")
+	equal(textOf(window), "/cast Freezing Trap", "the editor did not load the clicked macro")
+	equal(
+		select(3, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName("Aaa"))),
+		"/cast Zulu Two",
+		"leaving the row did not save the pending rename"
+	)
+end)
+
 scenario("Import checks pasted text, creates the macro and opens the picker", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)
@@ -1334,6 +1363,44 @@ scenario("a deleted macro stays restorable from History", function(sim)
 	sim:click(window.history.CloseButton)
 	sim:advance(0.1)
 	check(rowNamed(window, "Trap"), "the restored macro is not in the list")
+end)
+
+scenario("a refused history restore leaves the macro, draft and history alone", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	-- Fill the per-macro history to its limit, so a refused write must restore the evicted oldest snapshot too.
+	for index = 1, 21 do
+		setText(sim, window, "/cast Wing Clip " .. index, true)
+		sim:click(window.saveButton)
+		sim:advance(0.02)
+	end
+	local name = window.header.name:GetText()
+	local record = sim.G.MacroAssistForeverDB.history[name]
+	local entries = #record.entries
+	local oldest = record.entries[entries]
+	local live = select(3, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName(name)))
+	equal(entries, 20, "the history limit did not keep the full record")
+	setText(sim, window, "/cast Draft", true)
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	local entry = historyEntry(window, "Line 1 changed")
+	check(entry, "History has no snapshot to restore")
+	sim:click(entry)
+	sim:advance(0.1)
+	check(window.history.restoreButton:IsEnabled(), "Restore is not enabled for the chosen snapshot")
+
+	sim.G.EditMacro = function()
+		return nil
+	end
+	sim:click(window.history.restoreButton)
+	sim:advance(0.1)
+	equal(textOf(window), "/cast Draft", "a refused restore discarded the draft")
+	check(window.saveButton:IsEnabled(), "a refused restore cleared the dirty state")
+	equal(select(3, sim.G.GetMacroInfo(sim.G.GetMacroIndexByName(name))), live, "a refused restore changed the macro")
+	local after = sim.G.MacroAssistForeverDB.history[name].entries
+	equal(#after, entries, "a refused restore changed the history length")
+	equal(after[#after], oldest, "a refused restore dropped the oldest history entry")
+	equal(window.header.name:GetText(), name, "a refused restore moved the selection")
 end)
 
 scenario("history restore is off in combat", function(sim)

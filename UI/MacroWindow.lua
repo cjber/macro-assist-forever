@@ -168,6 +168,9 @@ local ACTION_SLOTS = 180
 
 ---@class MacroAssistCharacterScroll : Frame, ScrollBoxListMixin
 
+---@class MacroAssistDiffRow : Frame
+---@field Text FontString
+
 ---@class MacroAssistFrame : Frame
 ---@field TitleContainer MacroAssistTitleContainer
 ---@field PortraitContainer MacroAssistPortraitContainer
@@ -181,6 +184,9 @@ local ACTION_SLOTS = 180
 ---@field charactersPanel Frame
 ---@field currentCharacter? string
 ---@field refreshCharacterSources fun()
+---@field refreshCharacterPreview fun()
+---@field closeCharacters fun()
+---@field updateCharacters fun()
 ---@field editorSurface Frame
 ---@field statusBar Frame
 ---@field explainPanel MacroAssistExplainPanel
@@ -1218,8 +1224,23 @@ function Window:WriteMacro(index, name, icon, body)
 		return false
 	end
 	local oldName, oldIcon, oldBody = GetMacroInfo(index)
+	local snapshot
+	local previousRecord
 	if oldName then
-		ns.History.Snapshot(MacroAssistForeverDB, {
+		-- The pre-write record, so a refused edit puts back its metadata and entries exactly, including an oldest
+		-- entry the snapshot's limit evicted.
+		local record = MacroAssistForeverDB.history and MacroAssistForeverDB.history[oldName]
+		if record then
+			previousRecord = {}
+			for field, value in pairs(record) do
+				previousRecord[field] = value
+			end
+			previousRecord.entries = {}
+			for entryIndex, entry in ipairs(record.entries or {}) do
+				previousRecord.entries[entryIndex] = entry
+			end
+		end
+		snapshot = ns.History.Snapshot(MacroAssistForeverDB, {
 			name = oldName,
 			icon = oldIcon,
 			body = oldBody,
@@ -1228,9 +1249,13 @@ function Window:WriteMacro(index, name, icon, body)
 	end
 	-- The client keeps macros in name order, so EditMacro returns the macro's new index after a rename. The caller
 	-- gets both the write result and the live index, because keeping the old one leaves Save pointing at whichever
-	-- macro moved into it. A result with no live index is a refused write, not a success on the old index.
+	-- macro moved into it. A result with no live index is a refused write, not a success on the old index, and the
+	-- snapshot taken before it is rolled back so a refusal leaves no history entry.
 	local actual = EditMacro(index, name, icon, body)
 	if type(actual) ~= "number" or actual <= 0 then
+		if oldName and snapshot then
+			MacroAssistForeverDB.history[oldName] = previousRecord
+		end
 		return false
 	end
 	if name and oldName and name ~= oldName then
@@ -1325,7 +1350,19 @@ function Window:SelectMacro(actual)
 	if self.picking then
 		self:LeavePicker()
 	end
+	local wasSelected = self.selected
 	self:LeaveSelected()
+	local nowSelected = self.selected
+	-- Leaving the old selection can save a rename, and the client then moves that macro to its alphabetical index.
+	-- The clicked row's index was read before that move, so shift the target by exactly the interval the selected
+	-- macro crossed: the rows it passed move one place toward the old index.
+	if wasSelected and nowSelected and wasSelected ~= nowSelected then
+		if wasSelected < actual and actual <= nowSelected then
+			actual = actual - 1
+		elseif nowSelected <= actual and actual < wasSelected then
+			actual = actual + 1
+		end
+	end
 	self.selected = actual
 	self:LoadSelected()
 	self:RefreshList()
@@ -1877,7 +1914,7 @@ function Window:RestoreSnapshot(key, entry)
 			return self:FindMacro(name)
 		end,
 		edit = function(index, name, icon, body)
-			self:WriteMacro(index, name, icon, body)
+			return self:WriteMacro(index, name, icon, body)
 		end,
 		create = function(name, icon, body, character)
 			return self:WriteCreate(name, icon, body, character)
