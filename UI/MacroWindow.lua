@@ -604,7 +604,7 @@ function Window.Create()
 			for _, macro in ipairs(plan.conflicts) do
 				local index = Window.FindMacro(Window, macro.name)
 				if index then
-					EditMacro(index, macro.name, macro.icon, macro.body)
+					Window:WriteMacro(index, macro.name, macro.icon, macro.body)
 				end
 			end
 		end
