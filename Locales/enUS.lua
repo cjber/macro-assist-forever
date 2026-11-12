@@ -3,6 +3,11 @@ local _, ns = ...
 ---@type table<string, string | boolean>
 ns.L = {
 	["Macro Assist Forever report"] = true,
+	["Characters"] = true,
+	["Copy from another character"] = true,
+	["Choose Keep both or Replace."] = true,
+	["Keep both"] = true,
+	["Replace"] = true,
 	["%s could not start. Reinstall %s to fix this."] = true,
 	["%s: %s is out of date. Update it to fix this."] = true,
 	["%s: %s are out of date. Update them to fix this."] = true,

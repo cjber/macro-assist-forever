@@ -60,9 +60,8 @@ function Characters.PlanCopy(source, destination, toCharacter, keepBoth)
 	for _, macro in ipairs(macros or {}) do
 		if existing[macro.name] then
 			plan.conflicts[#plan.conflicts + 1] = macro
-		elseif keepBoth then
-			plan.create[#plan.create + 1] = macro
-		else
+		end
+		if keepBoth or not existing[macro.name] then
 			plan.create[#plan.create + 1] = macro
 		end
 	end

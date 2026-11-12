@@ -474,6 +474,10 @@ function Window.Create()
 	import:SetSize(IMPORT_WIDTH, BUTTON_HEIGHT)
 	import:SetPoint("LEFT", history, "RIGHT", FOOTER_GAP, 0)
 	import:SetText(L["Import"])
+	local characters = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
+	characters:SetSize(IMPORT_WIDTH, BUTTON_HEIGHT)
+	characters:SetPoint("LEFT", import, "RIGHT", FOOTER_GAP, 0)
+	characters:SetText(L["Characters"])
 	local save = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	save:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
 	save:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, 8)
@@ -486,6 +490,7 @@ function Window.Create()
 	frame.deleteButton = delete
 	frame.historyButton = history
 	frame.importButton = import
+	frame.charactersButton = characters
 	frame.newButton = new
 	frame.saveButton = save
 	frame.cancelButton = cancel
@@ -513,6 +518,97 @@ function Window.Create()
 	frame.shortenPanel = ns.ShortenPanel.Create(frame, function(text)
 		Window:ApplyShorten(text)
 	end)
+	local characterPanel = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+	characterPanel:SetPoint("TOPLEFT", frame, "TOPLEFT", 70, -70)
+	characterPanel:SetSize(440, 300)
+	characterPanel:SetFrameLevel(frame:GetFrameLevel() + 20)
+	characterPanel:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8X8",
+		edgeFile = "Interface\\Buttons\\WHITE8X8",
+		edgeSize = 1,
+	})
+	characterPanel:SetBackdropColor(0.03, 0.03, 0.04, 0.98)
+	characterPanel:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
+	local title = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	title:SetPoint("TOPLEFT", 14, -12)
+	title:SetText(L["Copy from another character"])
+	local close = CreateFrame("Button", nil, characterPanel, "UIPanelCloseButton")
+	close:SetPoint("TOPRIGHT", -2, -2)
+	close:SetScript("OnClick", function()
+		characterPanel:Hide()
+	end)
+	local status = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	status:SetPoint("TOPLEFT", 14, -42)
+	status:SetWidth(400)
+	status:SetJustifyH("LEFT")
+	characterPanel.status = status
+	local sourceButtons = {}
+	local selectedSource
+	local function refreshSources()
+		for _, button in ipairs(sourceButtons) do
+			button:Hide()
+		end
+		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		for index, record in ipairs(ns.CharacterMacros.Sources(MacroAssistForeverDB, current)) do
+			local button = sourceButtons[index] or CreateFrame("Button", nil, characterPanel, "UIPanelButtonTemplate")
+			button:SetSize(390, 26)
+			button:SetPoint("TOPLEFT", 14, -70 - (index - 1) * 30)
+			button:SetText(record.name .. " - " .. record.realm)
+			button:SetScript("OnClick", function()
+				selectedSource = record
+				status:SetText(L["Choose Keep both or Replace."])
+			end)
+			button:Show()
+			sourceButtons[index] = button
+		end
+	end
+	local function copySelected(keepBoth, replace)
+		if not selectedSource or InCombatLockdown() then
+			return
+		end
+		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		local target = Window.tab == 2 and "character" or "general"
+		local destination = MacroAssistForeverDB.characters[current][target]
+		local plan = ns.CharacterMacros.PlanCopy(selectedSource, destination, target == "character", keepBoth)
+		for _, macro in ipairs(plan.create) do
+			local copiedName = macro.name
+			if keepBoth and plan.conflicts then
+				local suffix = 2
+				while Window.FindMacro(Window, copiedName) do
+					copiedName = macro.name .. " " .. suffix
+					suffix = suffix + 1
+				end
+			end
+			Window:WriteCreate(copiedName, macro.icon, macro.body, target == "character")
+		end
+		if replace then
+			for _, macro in ipairs(plan.conflicts) do
+				local index = Window.FindMacro(Window, macro.name)
+				if index then
+					EditMacro(index, macro.name, macro.icon, macro.body)
+				end
+			end
+		end
+		characterPanel:Hide()
+		Window:RefreshList()
+	end
+	local keep = CreateFrame("Button", nil, characterPanel, "UIPanelButtonTemplate")
+	keep:SetSize(180, 26)
+	keep:SetPoint("BOTTOMLEFT", 14, 14)
+	keep:SetText(L["Keep both"])
+	keep:SetScript("OnClick", function()
+		copySelected(true, false)
+	end)
+	local replace = CreateFrame("Button", nil, characterPanel, "UIPanelButtonTemplate")
+	replace:SetSize(180, 26)
+	replace:SetPoint("BOTTOMRIGHT", -14, 14)
+	replace:SetText(L["Replace"])
+	replace:SetScript("OnClick", function()
+		copySelected(false, true)
+	end)
+	characterPanel:Hide()
+	frame.charactersPanel = characterPanel
+	frame.refreshCharacterSources = refreshSources
 	local lastWidth
 	editorSurface:SetScript("OnSizeChanged", function(_, width)
 		if width > 1 and width ~= lastWidth and frame:IsShown() then
@@ -564,6 +660,11 @@ function Window.Create()
 	end)
 	import:SetScript("OnClick", function()
 		Window:OpenImport()
+	end)
+	characters:SetScript("OnClick", function()
+		Window:SaveCurrent()
+		refreshSources()
+		characterPanel:Show()
 	end)
 	new:SetScript("OnClick", function()
 		Window:New()
