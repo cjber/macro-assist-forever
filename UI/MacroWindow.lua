@@ -522,6 +522,7 @@ function Window.Create()
 		Window:ApplyShorten(text)
 	end)
 	local characterPanel = CreateFrame("Frame", nil, frame, "ButtonFrameTemplate")
+	characterPanel:Hide()
 	characterPanel:SetPoint("TOPLEFT", frame, "TOPLEFT", 70, -70)
 	characterPanel:SetSize(440, 300)
 	characterPanel:SetFrameLevel(frame:GetFrameLevel() + 20)
@@ -529,8 +530,8 @@ function Window.Create()
 	characterPanel:SetToplevel(true)
 	characterPanel:EnableMouse(true)
 	characterPanel.TitleContainer.TitleText:SetText(L["Copy from another character"])
+	characterPanel.PortraitContainer.portrait:SetTexture(ns.Icon)
 	characterPanel.Inset:Hide()
-	characterPanel:SetScript("OnShow", function() end)
 	local title = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	title:Hide()
 	local selectedSource
@@ -592,8 +593,12 @@ function Window.Create()
 	status:SetJustifyH("LEFT")
 	characterPanel.status = status
 	local function setActionState(enabled)
-		keep:SetEnabled(enabled)
-		replace:SetEnabled(enabled)
+		if keep and keep.SetEnabled then
+			keep:SetEnabled(enabled)
+		end
+		if replace and replace.SetEnabled then
+			replace:SetEnabled(enabled)
+		end
 	end
 	local function refreshSources()
 		selectedSource = nil
