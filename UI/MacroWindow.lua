@@ -556,7 +556,22 @@ function Window.Create()
 			button:SetText(record.name .. " - " .. record.realm)
 			button:SetScript("OnClick", function()
 				selectedSource = record
-				status:SetText(L["Choose Keep both or Replace."])
+				local clickedCurrent = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+				local target = Window.tab == 2 and "character" or "general"
+				local destination = MacroAssistForeverDB.characters[clickedCurrent][target]
+				local plan = ns.CharacterMacros.PlanCopy(record, destination, target == "character", true)
+				local lines = { L["Choose Keep both or Replace."] }
+				for _, conflict in ipairs(plan.conflicts) do
+					local oldBody
+					for _, existing in ipairs(destination) do
+						if existing.name == conflict.name then
+							oldBody = existing.body
+							break
+						end
+					end
+					lines[#lines + 1] = conflict.name .. ":\n- " .. (oldBody or "") .. "\n+ " .. (conflict.body or "")
+				end
+				status:SetText(table.concat(lines, "\n\n"))
 			end)
 			button:Show()
 			sourceButtons[index] = button
