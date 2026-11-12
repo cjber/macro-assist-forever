@@ -521,16 +521,20 @@ function Window.Create()
 	frame.shortenPanel = ns.ShortenPanel.Create(frame, function(text)
 		Window:ApplyShorten(text)
 	end)
-	local characterPanel = CreateFrame("Frame", nil, frame, "InsetFrameTemplate")
+	local characterPanel = CreateFrame("Frame", nil, frame, "ButtonFrameTemplate")
 	characterPanel:SetPoint("TOPLEFT", frame, "TOPLEFT", 70, -70)
 	characterPanel:SetSize(440, 300)
 	characterPanel:SetFrameLevel(frame:GetFrameLevel() + 20)
+	characterPanel:SetFrameStrata("DIALOG")
+	characterPanel:SetToplevel(true)
+	characterPanel:EnableMouse(true)
+	characterPanel.TitleContainer.TitleText:SetText(L["Copy from another character"])
+	characterPanel.Inset:Hide()
+	characterPanel:SetScript("OnShow", function() end)
 	local title = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	title:SetPoint("TOPLEFT", 14, -12)
-	title:SetText(L["Copy from another character"])
+	title:Hide()
 	local selectedSource
 	local replaceArmed = false
-	local replace
 	local sourceScroll = CreateFrame("Frame", nil, characterPanel, "WowScrollBoxList")
 	sourceScroll:SetPoint("TOPLEFT", 14, -122)
 	sourceScroll:SetPoint("BOTTOMRIGHT", -36, 48)
@@ -540,11 +544,13 @@ function Window.Create()
 	local sourceView = CreateScrollBoxListLinearView()
 	sourceView:SetElementExtent(30)
 	local sourceProvider = CreateDataProvider()
+	local keep, replace
+	local currentCharacter = frame.currentCharacter
 	local function SelectSource(source)
 		selectedSource = source
 		replaceArmed = false
 		replace:SetText(L["Replace"])
-		local clickedCurrent = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		local clickedCurrent = currentCharacter or ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 		local target = Window.tab == 2 and "character" or "general"
 		local destination = MacroAssistForeverDB.characters[clickedCurrent][target]
 		local plan = ns.CharacterMacros.PlanMacro(source, destination, true)
@@ -572,9 +578,7 @@ function Window.Create()
 	end)
 	ScrollUtil.InitScrollBoxListWithScrollBar(sourceScroll, sourceBar, sourceView)
 	characterPanel.sourceScroll = sourceScroll
-	local close = CreateFrame("Button", nil, characterPanel, "UIPanelCloseButton")
-	close:SetPoint("TOPRIGHT", -2, -2)
-	close:SetScript("OnClick", function()
+	characterPanel.CloseButton:SetScript("OnClick", function()
 		characterPanel:Hide()
 		selectedSource = nil
 		replaceArmed = false
@@ -587,22 +591,34 @@ function Window.Create()
 	status:SetMaxLines(3)
 	status:SetJustifyH("LEFT")
 	characterPanel.status = status
+	local function setActionState(enabled)
+		keep:SetEnabled(enabled)
+		replace:SetEnabled(enabled)
+	end
 	local function refreshSources()
 		selectedSource = nil
 		replaceArmed = false
 		replace:SetText(L["Replace"])
-		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
-		sourceProvider:Flush()
+		local current = currentCharacter or ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		(sourceProvider --[[@as DataProviderMixin]]):Flush()
 		for _, source in ipairs(ns.CharacterMacros.Macros(MacroAssistForeverDB, current)) do
-			sourceProvider:Insert(source)
+			(sourceProvider --[[@as DataProviderMixin]]):Insert(source)
 		end
-		sourceScroll:SetDataProvider(sourceProvider, ScrollBoxConstants.RetainScrollPosition)
+		local hasSources = sourceProvider:GetSize() > 0
+		if not hasSources then
+			status:SetText(L["No other character macros available"])
+		end
+		setActionState(hasSources)
+		(sourceScroll --[[@as ScrollBoxListMixin]]):SetDataProvider(
+			sourceProvider --[[@as DataProviderMixin]],
+			ScrollBoxConstants.RetainScrollPosition
+		)
 	end
 	local function copySelected(keepBoth, replaceConflicts)
 		if not selectedSource or InCombatLockdown() then
 			return
 		end
-		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		local current = currentCharacter or ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 		local target = Window.tab == 2 and "character" or "general"
 		local destination = MacroAssistForeverDB.characters[current][target]
 		local function FindDestination(targetName)
@@ -644,7 +660,7 @@ function Window.Create()
 		replace:SetText(L["Replace"])
 		Window:RefreshList()
 	end
-	local keep = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
+	keep = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
 	keep:SetSize(180, 26)
 	keep:SetPoint("BOTTOMLEFT", 14, 14)
 	keep:SetText(L["Keep both"])
@@ -664,6 +680,7 @@ function Window.Create()
 		end
 		copySelected(false, true)
 	end)
+	setActionState(false)
 	characterPanel:Hide()
 	frame.charactersPanel = characterPanel
 	frame.refreshCharacterSources = refreshSources
@@ -721,6 +738,7 @@ function Window.Create()
 	end)
 	characters:SetScript("OnClick", function()
 		Window:SaveCurrent()
+		currentCharacter = frame.currentCharacter
 		refreshSources()
 		characterPanel:Show()
 	end)
@@ -1718,7 +1736,7 @@ end
 function Window:OnShow()
 	local frame = self.frame
 	MacroAssistForeverDB = MacroAssistForeverDB or {}
-	ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+	frame.currentCharacter = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 	frame:RegisterEvent("UPDATE_MACROS")
 	frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 	frame:RegisterEvent("PLAYER_REGEN_ENABLED")

@@ -1355,8 +1355,16 @@ def draw_characters(canvas):
     x, y, w, h = X + 70, Y + 70, 440, 300
     inset(canvas, x, y, w, h)
     canvas.text(x + 14, y + 12, "Copy from another character", FONTS["GameFontNormal"], WHITE)
-    canvas.text(x + 14, y + 42, "General One: - /cast Heal / + /cast Other", FONTS["GameFontHighlightSmall"], MUTED, width=400)
-    for row, label in enumerate(("Other - Forever · general · General One", "Other - Forever · character · Character One")):
+    canvas.text(
+        x + 14,
+        y + 42,
+        "General One: - /cast Heal / + /cast Other",
+        FONTS["GameFontHighlightSmall"],
+        MUTED,
+        width=400,
+    )
+    labels = ("Other - Forever · general · General One", "Other - Forever · character · Character One")
+    for row, label in enumerate(labels):
         button(canvas, x + 14, y + 126 + row * 30, 390, label, h=26)
     wowmock.minimal_scrollbar(canvas, x + 410, y + 126, 124, visible=0.35)
     canvas.text(x + w - 24, y + 10, "×", FONTS["GameFontNormal"], WHITE)
