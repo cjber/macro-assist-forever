@@ -1,29 +1,31 @@
 {
-  "input_digest": "9d402d035c341686d443b8036d9ab91eb58a3d667f5a258200fd123ae1adb0cf",
-  "runtime_sha256": "9d402d035c341686d443b8036d9ab91eb58a3d667f5a258200fd123ae1adb0cf",
-  "candidate": "b8f74087c465dcbce14b10dbedf3ad6638696ff374c816733a96f47dd0c27259",
-  "tested_artifact": "release-package",
+  "input_digest": "f592c225301da26ed53fa5d671ebfa4f3eb8b52c439f7e7a495916f81973dee4",
+  "runtime_sha256": "f592c225301da26ed53fa5d671ebfa4f3eb8b52c439f7e7a495916f81973dee4",
+  "candidate": "c90a67c7a4a9a97ba1b323bc4dcb3bc1853906bacb3aaa4f0892cd63de380ddb",
+  "tested_artifact": "source-tree",
   "client_build": "1.60.1.70888 (Interface 16001)",
+  "source_commit": "36ee9876fa293ef35874be4d03b165494e99dd39",
+  "notes": "Recorded on Hel Io in the player's live client from an installed source-tree build of this commit (git archive); visual_proof --compare reported no missing or differing runtime files, the install additionally carries the ignored store icon media/icon-400.png. Every other Forever addon's ForeverCore 1.8.2 sync build was loaded in the same session. BugGrabber recorded no addon errors (the session's two errors were the recorder's own /run lines calling a missing client API).",
   "flows": [
     {
-      "name": "Macro Assist's window opens on ForeverCore 1.8.1",
+      "name": "Macro Assist's window opens on ForeverCore 1.8.2",
       "steps": [
-        "Install the packaged candidate with its bundled ForeverCore v1.8.1 and /reload",
-        "Print the loaded versions: ForeverCore v1.8.1 and MacroAssistForever v0.4.2-3-g3238644, both loaded, ProfessionTabs.minor 2",
+        "Install the candidate with ForeverCore v1.8.2 and /reload",
+        "Print every Forever addon's loaded version into a chat tab with no channels: ForeverCore v1.8.2 plus this candidate, all loaded",
         "Type /macroassist",
-        "Confirm the Macros window opens with its list, editor and status line"
+        "The Macros window opens with its list, editor and status line"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/328823e9708f8e8ea7847dc01bd53905/raw/55de9fd8b9c4d5fdf425aa1a72db5386128d3749/sync181-versions.png",
-      "sha256": "68bb8f958f2dab34bbf7a541f311f8141db7ebeaca4a51e39fbe9bf4c725e7c6"
+      "url": "https://gist.githubusercontent.com/cjber/5cd61b138c1e01654d7aadd509568514/raw/82bfd62fbba753c8cc0a35be3f8e1c07fb2ac713/sync182-macro-window.png",
+      "sha256": "5e3d7122ab8d4bcca440594208202758cd151ba7656a02057d3e0e687d3a5b23"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/328823e9708f8e8ea7847dc01bd53905/raw/55de9fd8b9c4d5fdf425aa1a72db5386128d3749/sync181-macroassist-b8f7408.png",
-      "sha256": "98a40d72c5697ff0d351143e6c634ef02eb4393a1966dd73d9af636631721716"
+      "url": "https://gist.githubusercontent.com/cjber/5cd61b138c1e01654d7aadd509568514/raw/82bfd62fbba753c8cc0a35be3f8e1c07fb2ac713/sync182-versions.png",
+      "sha256": "0a95af5dcd4392712f85093832d05c14411d76b4099d3b60185209cbdf0e1e1b"
     }
   ]
 }
