@@ -613,7 +613,12 @@ function Window.Create()
 		if not hasSources then
 			status:SetText(L["No other character macros available"])
 		end
-		setActionState(hasSources)
+		if keep and keep.SetEnabled then
+			keep:SetEnabled(hasSources)
+		end
+		if replace and replace.SetEnabled then
+			replace:SetEnabled(hasSources)
+		end
 		(sourceScroll --[[@as ScrollBoxListMixin]]):SetDataProvider(
 			sourceProvider --[[@as DataProviderMixin]],
 			ScrollBoxConstants.RetainScrollPosition
