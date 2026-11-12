@@ -1375,11 +1375,14 @@ def draw_characters(canvas):
 
 def characters_layout():
     x, y, w, h = X + 70, Y + 70, 440, 300
-    return {"frame": {"x": x, "y": y, "w": w, "h": h}, "widgets": [
-        {"name": "characters-sources", "role": "list", "x": x + 14, "y": y + 126, "w": 390, "h": 124},
-        {"name": "characters-keep", "role": "button", "x": x + 14, "y": y + h - 40, "w": 180, "h": 26},
-        {"name": "characters-replace", "role": "button", "x": x + 216, "y": y + h - 40, "w": 180, "h": 26},
-    ]}
+    return {
+        "frame": {"x": x, "y": y, "w": w, "h": h},
+        "widgets": [
+            {"name": "characters-sources", "role": "list", "x": x + 14, "y": y + 126, "w": 390, "h": 124},
+            {"name": "characters-keep", "role": "button", "x": x + 14, "y": y + h - 40, "w": 180, "h": 26},
+            {"name": "characters-replace", "role": "button", "x": x + 216, "y": y + h - 40, "w": 180, "h": 26},
+        ],
+    }
 
 
 # The Import box's sample text: a short macro already pasted and checked, so the scene shows the ready line and count.

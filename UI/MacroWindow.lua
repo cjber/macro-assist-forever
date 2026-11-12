@@ -134,6 +134,8 @@ local ACTION_SLOTS = 180
 ---@class MacroAssistPortraitContainer : Frame
 ---@field portrait Texture
 
+---@class MacroAssistCharacterScroll : Frame, ScrollBoxListMixin
+
 ---@class MacroAssistFrame : Frame
 ---@field TitleContainer MacroAssistTitleContainer
 ---@field PortraitContainer MacroAssistPortraitContainer
@@ -145,6 +147,7 @@ local ACTION_SLOTS = 180
 ---@field listInset Frame
 ---@field charactersButton Button
 ---@field charactersPanel Frame
+---@field currentCharacter? string
 ---@field refreshCharacterSources fun()
 ---@field editorSurface Frame
 ---@field statusBar Frame
@@ -536,7 +539,7 @@ function Window.Create()
 	title:Hide()
 	local selectedSource
 	local replaceArmed = false
-	local sourceScroll = CreateFrame("Frame", nil, characterPanel, "WowScrollBoxList") --[[@as ScrollBoxListMixin]]
+	local sourceScroll = CreateFrame("Frame", nil, characterPanel, "WowScrollBoxList") --[[@as MacroAssistCharacterScroll]]
 	sourceScroll:SetPoint("TOPLEFT", 14, -122)
 	sourceScroll:SetPoint("BOTTOMRIGHT", -36, 48)
 	local sourceBar = CreateFrame("EventFrame", nil, characterPanel, "MinimalScrollBar")
