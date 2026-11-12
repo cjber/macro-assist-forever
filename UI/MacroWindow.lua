@@ -521,17 +521,10 @@ function Window.Create()
 	frame.shortenPanel = ns.ShortenPanel.Create(frame, function(text)
 		Window:ApplyShorten(text)
 	end)
-	local characterPanel = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+	local characterPanel = CreateFrame("Frame", nil, frame, "InsetFrameTemplate")
 	characterPanel:SetPoint("TOPLEFT", frame, "TOPLEFT", 70, -70)
 	characterPanel:SetSize(440, 300)
 	characterPanel:SetFrameLevel(frame:GetFrameLevel() + 20)
-	characterPanel:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8X8",
-		edgeFile = "Interface\\Buttons\\WHITE8X8",
-		edgeSize = 1,
-	})
-	characterPanel:SetBackdropColor(0.03, 0.03, 0.04, 0.98)
-	characterPanel:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
 	local title = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	title:SetPoint("TOPLEFT", 14, -12)
 	title:SetText(L["Copy from another character"])
@@ -589,6 +582,8 @@ function Window.Create()
 	local status = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	status:SetPoint("TOPLEFT", 14, -42)
 	status:SetWidth(400)
+	status:SetHeight(18)
+	status:SetMaxLines(1)
 	status:SetJustifyH("LEFT")
 	characterPanel.status = status
 	local function refreshSources()
@@ -609,6 +604,17 @@ function Window.Create()
 		local current = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 		local target = Window.tab == 2 and "character" or "general"
 		local destination = MacroAssistForeverDB.characters[current][target]
+		local function FindDestination(targetName)
+			local account, characterCount = GetNumMacros()
+			local first = target == "character" and (Constants.MacroConsts.MAX_ACCOUNT_MACROS + 1) or 1
+			local last = target == "character" and Constants.MacroConsts.MAX_ACCOUNT_MACROS + characterCount or account
+			for index = first, last do
+				local existingName = GetMacroInfo(index)
+				if existingName == targetName then
+					return index
+				end
+			end
+		end
 		local plan = ns.CharacterMacros.PlanMacro(selectedSource, destination, keepBoth)
 		for _, macro in ipairs(plan.create) do
 			local copiedName = macro.name
@@ -626,7 +632,7 @@ function Window.Create()
 		end
 		if replaceConflicts then
 			for _, macro in ipairs(plan.conflicts) do
-				local index = Window.FindMacro(Window, macro.name)
+				local index = FindDestination(macro.name)
 				if index then
 					Window:WriteMacro(index, macro.name, macro.icon, macro.body)
 				end
