@@ -1,23 +1,23 @@
 {
-  "input_digest": "5ff8ad3258c8d9a2f96c9d4f3f95c8a382b8e3a39851c1a1b8faeb2a95d5d789",
-  "runtime_sha256": "5ff8ad3258c8d9a2f96c9d4f3f95c8a382b8e3a39851c1a1b8faeb2a95d5d789",
-  "candidate": "5226df19e4bac58308e30ee8ad9cfdfe58d9647154d00a313da3c1ee11b923f6",
+  "input_digest": "80d77cc3c6d220a244cdc75ee681a44c23800969a69735845a0f9b46b65891ed",
+  "runtime_sha256": "80d77cc3c6d220a244cdc75ee681a44c23800969a69735845a0f9b46b65891ed",
+  "candidate": "051ec99308ad128ca80a8f003a36086939d95bfc3ebbe31afa92410061044a2f",
   "client_build": "1.60.1.70938 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "edf8bd0317a5d32e4f0462aa6280bc958aaefdf1",
+  "source_commit": "8e8c8233e9f76ef07f102f4fe1c00f07cdf2cf6b",
   "flows": [
     {
-      "name": "macroassist report",
+      "name": "Recipes status line beside Import",
       "steps": [
-        "/macroassist report"
+        "/home/cjber/.cache/agent-scratch/proof-e6a4/flows/recipe-trap.lua"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/c6cc00bb3874c558ccb2b062cea0cf34/raw/f4339a42a71074cf225bc092e1d49a76e9bf0a72/1-macroassist-report.png",
-      "sha256": "18cac51e2c2273059af467532313d8b73c50bda7f1fcf6cc71d29b2f99973daa"
+      "url": "https://gist.githubusercontent.com/cjber/d8ae51d269c2f288d7e1e7e7aceea85d/raw/8da1dbc07a725567d3ba97e47657bcd0bb4a529b/1-recipes-status-line-beside-import.png",
+      "sha256": "f09dca04eff23c2b274ef15ef5f852ffb2bcceadcf6f53a7765c671838c80f49"
     }
   ]
 }

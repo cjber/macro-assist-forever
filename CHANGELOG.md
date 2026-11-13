@@ -14,6 +14,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
   neighbouring macros untouched.
 - **A history restore the game refuses leaves everything as it was.** The macro, its saved history and the editor text
   stay unchanged instead of reporting a restore that did not happen.
+- **The Recipes status line sits beside Import.** "Learn at level 20." and the other messages no longer draw over
+  the third recipe row, staying on the Import button's row at the bottom of the popup. (#167)
 
 ## [0.5.1] - 2026-11-13
 

@@ -366,9 +366,12 @@ function Panel.Create(parent, onImport)
 		Panel.Measure(frame)
 	end)
 
+	-- The line's own LEFT and RIGHT points (its vertical centre) sit on the frame's bottom corners plus the Import
+	-- button's half height, so it is centred on Import's row. Measured from the frame's LEFT and RIGHT instead, the y
+	-- was the popup's vertical centre and the line drew over the third list row.
 	local status = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	status:SetPoint("LEFT", frame, "LEFT", 12, BOTTOM + BUTTON_HEIGHT / 2)
-	status:SetPoint("RIGHT", frame, "RIGHT", -10 - BUTTON_WIDTH - GAP, BOTTOM + BUTTON_HEIGHT / 2)
+	status:SetPoint("LEFT", frame, "BOTTOMLEFT", 12, BOTTOM + BUTTON_HEIGHT / 2)
+	status:SetPoint("RIGHT", frame, "BOTTOMRIGHT", -10 - BUTTON_WIDTH - GAP, BOTTOM + BUTTON_HEIGHT / 2)
 	status:SetJustifyH("LEFT")
 	status:SetWordWrap(false)
 	frame.status = status
