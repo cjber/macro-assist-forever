@@ -8,6 +8,12 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 - **Recipes shows the whole macro, not just its first line.** The preview draws every laid-out row of the selected
   recipe on its own, indents every wrapped row, and scrolls when the macro is taller than the box. (#165)
 
+## [0.5.1] - 2026-11-13
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
 ## [0.5.0] - 2026-11-13
 
 <!-- discord-image: docs/screenshots/recipes-popup.png -->
