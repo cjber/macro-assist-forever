@@ -15,6 +15,33 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 - **A history restore the game refuses leaves everything as it was.** The macro, its saved history and the editor text
   stay unchanged instead of reporting a restore that did not happen.
 
+## [0.5.1] - 2026-11-13
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
+## [0.5.0] - 2026-11-13
+
+<!-- discord-image: docs/screenshots/recipes-popup.png -->
+
+- **Recipes for your class, checked against your spellbook.** Recipes in the macro window opens a native popup with
+  the general recipes and your class's, each with its whole macro beside the list. A recipe with a spell you have not
+  learned is greyed, with the level the client reports, and Import creates it through the same checked path as an
+  imported macro.
+
+## [0.4.5] - 2026-11-12
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
+## [0.4.4] - 2026-11-12
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
 ## [0.4.3] - 2026-11-12
 
 <!-- forever-core-sync -->

@@ -45,6 +45,10 @@ local COLOUR_RED = "|cffff4040"
 local COLOUR_YELLOW = "|cffffd100"
 local COLOUR_MUTED = "|cff9d9d9d"
 
+-- The pitch of one editor row: the font's size plus the spacing between rows. The Recipes preview draws rows from
+-- the same layout and font, so it takes the same pitch.
+local LINE_HEIGHT = FONT_SIZE + LINE_SPACING
+
 local function EnsureFont()
 	if _G[FONT_NAME] then
 		return
@@ -246,17 +250,21 @@ end
 -- Every visual row of the macro, in drawing order. A row takes as many whole words as fit at the measured width;
 -- the spaces after its last word stay on that row and the next row starts with a word, which is the client's
 -- word-wrap shape. A word too wide for a whole row is broken at the longest measured prefix, as the client does.
--- The alternative, GetNumLines on a prefix, sees a truncated word as a complete one and can split a word that the
--- full line would have moved whole, so the width search is used. Rows are computed on text or width changes only.
+-- `indent` narrows every wrapped row after a logical line's first, so a hanging indent leaves the first column for
+-- real line starts only. The alternative, GetNumLines on a prefix, sees a truncated word as a complete one and can
+-- split a word that the full line would have moved whole, so the width search is used. Rows are computed on text or
+-- width changes only.
 ---@param text string
 ---@param width number
 ---@param lineHeight number
 ---@param measure MacroAssistTextMeasure
+---@param indent number?
 ---@return MacroAssistEditorRow[]
-function Editor.LayoutRows(text, width, lineHeight, measure)
+function Editor.LayoutRows(text, width, lineHeight, measure, indent)
 	local parsed = ns.Parser.Parse(text)
 	local rows = {}
 	local y = 0
+	local hanging = indent or 0
 	for lineIndex, line in ipairs(parsed.lines) do
 		local length = #line.text
 		if length == 0 then
@@ -277,6 +285,7 @@ function Editor.LayoutRows(text, width, lineHeight, measure)
 				local nextStart
 				local placedEnd
 				local index = start
+				local rowWidth = rowIndex == 0 and width or width - hanging
 				while true do
 					local wordStart, wordEnd = NextWord(line.text, index)
 					if not wordStart or not wordEnd then
@@ -284,14 +293,14 @@ function Editor.LayoutRows(text, width, lineHeight, measure)
 						break
 					end
 					local candidate = line.text:sub(start, wordEnd)
-					if measure.width(candidate) <= width then
+					if measure.width(candidate) <= rowWidth then
 						placedEnd = wordEnd
 					elseif placedEnd then
 						finish = wordStart - 1
 						nextStart = wordStart
 						break
 					else
-						finish = FitEnd(line.text, start, wordEnd, width, measure)
+						finish = FitEnd(line.text, start, wordEnd, rowWidth, measure)
 						nextStart = finish + 1
 						break
 					end
@@ -527,7 +536,7 @@ function Editor.Create(parent, statusParent)
 			return type(width) == "number" and width or 0
 		end,
 	}
-	self.lineHeight = FONT_SIZE + LINE_SPACING
+	self.lineHeight = LINE_HEIGHT
 	self:UpdateMetrics()
 
 	-- The status strip under the code surface: problems on the left, the live result beside them, and the
@@ -1457,4 +1466,6 @@ function Editor:PositionPopup()
 	self.popup:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -y)
 end
 
+-- The pitch of one row, for callers that draw the editor's rows outside the editor, such as the Recipes preview.
+Editor.LineHeight = LINE_HEIGHT
 ns.Editor = Editor

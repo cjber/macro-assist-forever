@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""Check the screenshot scenes' recorded widgets against their window bounds and one another."""
+"""Check the screenshot scenes' recorded widgets, and the text they render, against their bounds and one another."""
 
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIN_GAP = 8
+# A FontString's measured extent may differ from its box by a rounding unit and still fit.
+CONTENT_SLACK = 1
+# A box that declares the frame inset it is anchored to may be a rounding unit off and still be at that inset.
+INSET_SLACK = 1
 # The approved split layout puts the footer buttons 6 units apart, so these two pairs use their own gap.
 INTENTIONAL_GAPS = {
     frozenset(("new", "delete")): 6,
     frozenset(("delete", "history")): 6,
     frozenset(("history", "import")): 6,
+    frozenset(("import", "recipes")): 6,
+    frozenset(("recipes", "characters")): 6,
     frozenset(("cancel", "save")): 6,
     frozenset(("import-cancel", "import-button")): 6,
     frozenset(("shorten-cancel", "shorten-apply")): 6,
@@ -42,6 +48,28 @@ def check_scene(scene):
                 inside = inside and right <= frame["x"] + frame["w"]
         if not inside:
             errors.append(f"{widget['name']} lies outside the frame")
+        # A box anchored to the frame's own edge must sit at the inset it declares. One that stops short leaves an
+        # unused strip between its edge and the frame's inset, which is how a text box can make a fitting line wrap.
+        distances = {
+            "left": x - frame["x"],
+            "right": frame["x"] + frame["w"] - right,
+            "top": y - frame["y"],
+            "bottom": frame["y"] + frame["h"] - bottom,
+        }
+        for side, inset in (widget.get("insets") or {}).items():
+            if abs(distances[side] - inset) > INSET_SLACK:
+                errors.append(
+                    f"{widget['name']} sits {distances[side]:.0f} from the frame's {side} edge, not its {inset} inset"
+                )
+        content = widget.get("content")
+        if content:
+            # A FontString draws its measured extent inside its own box. The text may run wider than the box even
+            # when the widget itself sits inside the frame, so check the rendered width, and the height unless the
+            # box scrolls the text instead of clipping it.
+            if content["w"] > widget["w"] + CONTENT_SLACK:
+                errors.append(f"{widget['name']} text is {content['w']:.1f} wide in a {widget['w']} box")
+            if content["h"] > widget["h"] + CONTENT_SLACK and not widget.get("scroll"):
+                errors.append(f"{widget['name']} text is {content['h']:.1f} tall in a {widget['h']} box")
     interactive = [widget for widget in widgets if widget["role"] in {"button", "tabs", "input"}]
     for index, first in enumerate(interactive):
         for second in interactive[index + 1 :]:

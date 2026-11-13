@@ -74,6 +74,16 @@ equal(#long, 2, "a word wider than the row breaks in two")
 equal(long[1].text, "superlo", "the first piece is the longest that fits")
 equal(long[2].text, "ngword", "the second piece keeps the rest")
 
+-- A hanging indent narrows every row a wrap created, never the logical line's first row, so a run that fit the full
+-- width can wrap again and only a real newline starts at the left edge.
+local fullRows = ns.Editor.LayoutRows("aaaa bbbb cccccc", 100, LINE_HEIGHT, widths)
+equal(#fullRows, 2, "the run fits two full-width rows")
+local hangingRows = ns.Editor.LayoutRows("aaaa bbbb cccccc", 100, LINE_HEIGHT, widths, 50)
+equal(#hangingRows, 3, "the hanging indent narrows the wrapped row")
+equal(hangingRows[1].text, "aaaa bbbb ", "the first row keeps the whole width")
+equal(hangingRows[2].text, "ccccc", "the narrowed row takes the longest prefix")
+equal(hangingRows[3].text, "c", "the rest moves to a further row")
+
 -- The click rule: rows on three logical lines, wide enough that nothing wraps.
 local lines = ns.Editor.LayoutRows("one two\nthree four\nfive", 1000, LINE_HEIGHT, widths)
 equal(#lines, 3, "the three logical lines are three rows")

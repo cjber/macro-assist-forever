@@ -234,6 +234,35 @@ local function PlayerClass()
 	end
 end
 
+-- Whether the player knows a spell. The name alone does not prove it: the client can name a spell the character has
+-- not learned yet, so the recipe browser asks the spellbook instead and leaves the recipe greyed when the answer is
+-- no. C_SpellBook.IsSpellKnown is documented in the pinned build's SpellBookDocumentation.lua; a client without the
+-- call leaves every spell recipe unavailable rather than guessing.
+---@param spellID integer
+---@return boolean?
+local function SpellKnown(spellID)
+	if type(C_SpellBook) == "table" and type(C_SpellBook.IsSpellKnown) == "function" then
+		local ok, known = pcall(C_SpellBook.IsSpellKnown, spellID)
+		if ok and type(known) == "boolean" then
+			return known
+		end
+	end
+end
+
+-- The level the client says the player learns this spell at. C_Spell.GetSpellLevelLearned is documented in the pinned
+-- build's SpellDocumentation.lua. The recipe browser uses it only for a spell the player has not learned, and shows no
+-- level when the client gives none, so no Classic level is ever invented here.
+---@param spellID integer
+---@return integer?
+local function SpellLearnedAt(spellID)
+	if type(C_Spell) == "table" and type(C_Spell.GetSpellLevelLearned) == "function" then
+		local ok, level = pcall(C_Spell.GetSpellLevelLearned, spellID)
+		if ok and type(level) == "number" and level > 0 then
+			return level
+		end
+	end
+end
+
 -- The recipes this character can use, each already rendered with its spell names. A class recipe is left out until
 -- UnitClass names the player's class, and a recipe whose spell the client does not know is left out entirely. The
 -- resolved names stay beside the body so completion can match the player's own word for the spell.
@@ -267,6 +296,20 @@ end
 function ns.Context.Rebuild()
 	ctx.spells = Spellbook()
 	ctx.recipes = AvailableRecipes()
+end
+
+-- Every recipe this character can browse, general first and then the player's class, each with its rendered macro and
+-- its spellbook state. The recipe browser calls this when it opens and again when the spellbook changes.
+---@return MacroAssistRecipeState[]
+function ns.Context.RecipeStates()
+	local class = PlayerClass()
+	local states = {}
+	for _, recipe in ipairs(ns.Recipes.List) do
+		if recipe.class == nil or recipe.class == class then
+			states[#states + 1] = ns.Recipes.State(recipe, SpellName, SpellKnown, SpellLearnedAt)
+		end
+	end
+	return states
 end
 
 ns.Context.Rebuild()

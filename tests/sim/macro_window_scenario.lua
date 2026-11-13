@@ -854,6 +854,132 @@ scenario("plain words offer checked recipes and Tab inserts one", function(sim)
 	end
 end)
 
+scenario("the Recipes popup lists class recipes, greys unlearned spells and imports through the window", function(sim)
+	world.install(sim)
+	sim.world.player.classFile = "HUNTER"
+	sim.world.player.className = "Hunter"
+	sim:login()
+	local window = open(sim)
+	characterTab(sim, window)
+	local panel = window.recipesPanel
+	check(panel, "the window did not build the Recipes popup")
+	check(not panel:IsShown(), "the Recipes popup is shown before it is asked for")
+
+	sim:click(window.recipesButton)
+	sim:advance(0.1)
+	check(panel:IsShown(), "Recipes did not open the popup")
+	equal(panel.heading:GetText(), "Hunter recipes", "the heading does not name the player's class")
+
+	local function recipeRow(title)
+		local found
+		panel.scrollBox:ForEachFrame(function(row)
+			if row:IsShown() and row.state and row.Title:GetText() == title then
+				found = row
+			end
+		end)
+		return found
+	end
+
+	equal(#panel.states, 8, "the list does not hold the three general and five Hunter recipes")
+	local general, hunter = 0, 0
+	for _, state in ipairs(panel.states) do
+		if state.recipe.class == nil then
+			general = general + 1
+		else
+			hunter = hunter + 1
+			equal(state.recipe.class, "HUNTER", "another class's recipe was listed")
+		end
+	end
+	equal(general, 3, "the general recipes are not listed")
+	equal(hunter, 5, "the Hunter recipes are not listed")
+
+	-- The last Hunter recipe is the unlearned one, so scroll it into view before reading its row.
+	panel.scrollBox:ScrollToElementDataIndex(8)
+	sim:advance(0.1)
+	local trap = recipeRow("Trap your mouseover")
+	check(trap, "the unlearned Hunter recipe is missing")
+	check(not trap.state.available, "the unlearned recipe is available")
+	equal(trap.Note:GetText(), "Learn at level 20", "the client's learn level is not shown")
+
+	local pet = recipeRow("Send the pet")
+	check(pet, "the pet recipe is missing")
+	sim:click(pet)
+	check(panel.selected == pet.state, "clicking a recipe did not select it")
+	check(panel.previewText:GetText():find("/petattack", 1, true) ~= nil, "the preview does not show the whole macro")
+	check(
+		panel.previewText:GetText():find("\n/petattack", 1, true) ~= nil,
+		"a real macro line starts at the preview's left edge"
+	)
+	check(panel.importButton:IsEnabled(), "Import is disabled for an available recipe")
+
+	local before = select(2, sim.G.GetNumMacros())
+	sim:click(panel.importButton)
+	sim:advance(0.2)
+	check(not panel:IsShown(), "Import left the Recipes popup open")
+	check(window.picker:IsShown(), "Import did not open the icon picker")
+	check(select(2, sim.G.GetNumMacros()) == before + 1, "Import did not create a character macro")
+	-- The client inserts a new macro in name order, so the created index comes from the store, not from the count it
+	-- started at: "New macro" sorts before the fixture's "Trap".
+	local actual = sim.G.GetMacroIndexByName("New macro")
+	check(actual ~= nil and actual ~= 0, "Import did not create the recipe macro")
+	equal(
+		select(3, sim.G.GetMacroInfo(actual)),
+		"#showtooltip\n/petattack [@mouseover,harm,nodead][]",
+		"Import did not write the recipe body"
+	)
+
+	-- Recipes returns from the picker and leaves the list where it was.
+	sim:click(window.recipesButton)
+	sim:advance(0.1)
+	check(panel:IsShown(), "Recipes did not reopen")
+	check(not window.picker:IsShown(), "Recipes left the picker open")
+
+	-- Learning the spell turns the greyed row into a usable one on the client's SPELLS_CHANGED.
+	sim.spellKnown[1499] = true
+	sim:input(function()
+		sim.events.fire("SPELLS_CHANGED")
+	end)
+	panel.scrollBox:ScrollToElementDataIndex(8)
+	sim:advance(0.1)
+	trap = recipeRow("Trap your mouseover")
+	check(trap.state.available, "the learned recipe is still unavailable after SPELLS_CHANGED")
+	equal(trap.Note:GetText(), "", "the learned recipe kept its level hint")
+	sim:click(trap)
+	check(panel.importButton:IsEnabled(), "Import is disabled after the spell is learned")
+
+	-- Unknown spell information stays explicit and turns Import off.
+	sim.spellNameHidden[1499] = true
+	sim:input(function()
+		sim.events.fire("SPELLS_CHANGED")
+	end)
+	panel.scrollBox:ScrollToElementDataIndex(8)
+	sim:advance(0.1)
+	trap = recipeRow("Trap your mouseover")
+	check(not trap.state.available, "a recipe with no spell name is available")
+	check(not panel.importButton:IsEnabled(), "Import is enabled without a rendered body")
+	equal(
+		panel.status:GetText(),
+		"This recipe needs a spell this client does not know.",
+		"the popup does not explain the unknown spell"
+	)
+
+	-- Combat leaves the list readable and Import off.
+	sim.spellNameHidden[1499] = nil
+	sim:input(function()
+		sim.events.fire("SPELLS_CHANGED")
+	end)
+	sim:enterCombat()
+	check(panel:IsShown(), "combat closed the Recipes popup")
+	check(not panel.importButton:IsEnabled(), "Import is enabled in combat")
+	equal(
+		panel.status:GetText(),
+		"A macro can't be created, changed or deleted in combat.",
+		"combat does not explain why Import is off"
+	)
+	sim:leaveCombat()
+	check(panel.importButton:IsEnabled(), "Import is still off after combat")
+end)
+
 scenario("a macro over the limit offers a shorter rewrite, previews it and applies it", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)
