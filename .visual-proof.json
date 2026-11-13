@@ -1,30 +1,49 @@
 {
-  "input_digest": "8ef3baceffef8750f1eb39a60567cedc35de6be3a2229b6d95a8b5a453746cb4",
-  "runtime_sha256": "8ef3baceffef8750f1eb39a60567cedc35de6be3a2229b6d95a8b5a453746cb4",
-  "candidate": "3bc915a34f88cf647e43247a9af3af38540397f0463e09ba15fb57706983838b",
+  "input_digest": "65e034d53cdf4bde1c154107e0a5123bfd9f8b91914f0c11e3d2f68b39807759",
+  "runtime_sha256": "65e034d53cdf4bde1c154107e0a5123bfd9f8b91914f0c11e3d2f68b39807759",
+  "candidate": "9c01605c4c4c3ce08a760e93af7415f77781fc60023f828ef5220524c65d3e5a",
   "tested_artifact": "source-tree",
   "client_build": "1.60.1.70938 (Interface 16001)",
-  "source_commit": "052142ca0180092c4537c43cb26511c7f2ec4149",
-  "notes": "Recorded on Hel Io in the headless client from a source-tree build of this commit (forever_client.py build-dev) linked into AddOns, with the store ForeverCore v1.10.0 and the other four 1.10.0 sync builds (Tweaks, Legacy, Commissions, Macro Assist, Field Guide) loaded in the same session. BugGrabber recorded no errors this session; the errors listed in the report window are earlier sessions' history.",
+  "source_commit": "b7d224fc3b45a1821e0c1f95670246c8c543ca6d",
+  "notes": "Recorded on Hel Io (level 21 hunter) from a source-tree build of this commit (build-dev, v0.5.0-dev+b7d224f) linked into AddOns, with ForeverCore built from forever-core d9d59f5 in the same session. The status line drawn over the list in the unlearned recipe's capture is the existing anchor bug cjber/macro-assist-forever#167, not this change.",
   "flows": [
     {
-      "name": "Macro Assist Forever on ForeverCore 1.10.0",
+      "name": "Recipes preview, short macro",
       "steps": [
-        "Link the candidate build with the store ForeverCore v1.10.0 and /reload",
-        "Print every Forever addon's loaded version: ForeverCore v1.10.0 and each sync build loaded, 0 BugGrabber errors this session",
-        "Run /macroassist report: the addon's report window opens on this build, with ForeverCore 1.10.0's performance section"
+        "/macroassist, then Recipes",
+        "Stop the attack and the cast is selected: the preview shows #showtooltip, /stopattack and /stopcasting on three lines"
+      ],
+      "result": "pass"
+    },
+    {
+      "name": "Recipes preview, wrapped row",
+      "steps": [
+        "Select Mark and send the pet",
+        "The preview shows all four rows; the /cast line wraps and its second row, Hunter's Mark, is indented"
+      ],
+      "result": "pass"
+    },
+    {
+      "name": "Recipes preview, unlearned recipe",
+      "steps": [
+        "Select Trap your mouseover (Learn at level 20)",
+        "The preview shows the whole macro with the wrapped Freezing Trap row indented, and Import is disabled"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/61e1d759a57ff98eb48b76f8121cf66a/raw/9ce32ab1c30b24a4b41552cd2ad58f5346a1240c/sync110-macro-report.png",
-      "sha256": "40f52f479b6395028e612e1803047cc431eaf159018f3c25c39d87b355a87f06"
+      "url": "https://gist.githubusercontent.com/cjber/b238e645887ffbeb53f11afb2f54a0cc/raw/5eb6c19f9962e12cfcca76a0f57ce325d73963b3/165-recipes-first.png",
+      "sha256": "10251d9e2277d1bb905c37a5dd39a958835b6b8c3bcd0b36c2c17fdf13f9aa5c"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/61e1d759a57ff98eb48b76f8121cf66a/raw/9ce32ab1c30b24a4b41552cd2ad58f5346a1240c/sync110-versions.png",
-      "sha256": "66d10d46b3140bbd2797f47ca2fe716284b6b74d2dc5ba0ed7393970eac409b0"
+      "url": "https://gist.githubusercontent.com/cjber/b238e645887ffbeb53f11afb2f54a0cc/raw/5eb6c19f9962e12cfcca76a0f57ce325d73963b3/165-recipes-long.png",
+      "sha256": "63ff557b62fb6cb778eed3126976de12c371e8121639bb38067a34c520e85f25"
+    },
+    {
+      "url": "https://gist.githubusercontent.com/cjber/b238e645887ffbeb53f11afb2f54a0cc/raw/5eb6c19f9962e12cfcca76a0f57ce325d73963b3/165-recipes-unlearned.png",
+      "sha256": "06c7e7a3639cbd73bb0c41e2832f5330a7520478e02bd8143984311826229ccd"
     }
   ]
 }
