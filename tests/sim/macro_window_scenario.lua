@@ -905,11 +905,17 @@ scenario("the Recipes popup lists class recipes, greys unlearned spells and impo
 	check(pet, "the pet recipe is missing")
 	sim:click(pet)
 	check(panel.selected == pet.state, "clicking a recipe did not select it")
-	check(panel.previewText:GetText():find("/petattack", 1, true) ~= nil, "the preview does not show the whole macro")
-	check(
-		panel.previewText:GetText():find("\n/petattack", 1, true) ~= nil,
-		"a real macro line starts at the preview's left edge"
-	)
+	-- Every laid-out row is drawn by its own FontString; one string with a newline would draw only its first line.
+	local texts = {}
+	for _, row in ipairs(panel.previewRows) do
+		if row:IsShown() then
+			texts[#texts + 1] = row:GetText()
+		end
+	end
+	local preview = table.concat(texts, "\n")
+	check(preview:find("/petattack", 1, true) ~= nil, "the preview does not show the whole macro")
+	check(preview:find("\n/petattack", 1, true) ~= nil, "a real macro line starts at the preview's left edge")
+	equal(#texts * panel.lineHeight, panel.previewChild:GetHeight(), "the scroll child does not hold every preview row")
 	check(panel.importButton:IsEnabled(), "Import is disabled for an available recipe")
 
 	local before = select(2, sim.G.GetNumMacros())
