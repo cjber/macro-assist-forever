@@ -37,6 +37,7 @@ local BOX_BOTTOM = 40
 -- starts at the left edge. The editor's own rows wrap at the same measured words; only the indent is the preview's.
 local HANGING_INDENT = "  "
 
+local PREVIEW_TEXT = { 1, 1, 1 }
 local MUTED = { 0.55, 0.55, 0.55 }
 local ROW_MUTED = { 0.6, 0.6, 0.6 }
 local RED = { 1, 0.25, 0.25 }
@@ -59,7 +60,8 @@ local RED = { 1, 0.25, 0.25 }
 ---@field empty FontString
 ---@field preview ScrollFrame
 ---@field previewChild Frame
----@field previewText FontString
+---@field previewRows FontString[]
+---@field previewColor number[]
 ---@field previewValue string?
 ---@field textMeasure MacroAssistTextMeasure
 ---@field lineHeight number
@@ -93,9 +95,12 @@ local function Heading()
 	return L["Recipes"]
 end
 
--- The preview is a ScrollFrame so a long macro is still complete. The rows are the editor's own measured rows, drawn
--- into one FontString with a hanging indent on every row a wrap created: only a real newline starts at the left
--- edge, and the child's height gives the scroll range. No timer or OnUpdate is involved.
+-- The preview is a ScrollFrame so a long macro is still complete. The rows are the editor's own measured rows, and
+-- each one gets its own FontString: this client draws only the first line of a word-wrap-off FontString, however many
+-- newlines its text holds, so one string for the whole macro would stop after the first row. A wrapped row carries
+-- the hanging indent, so only a real newline starts at the left edge, and the child's height, one row pitch per row,
+-- gives the scroll range. Row FontStrings are reused, so selecting recipes does not create more of them than the
+-- tallest macro needs. No timer or OnUpdate is involved.
 ---@param frame MacroAssistRecipesPanel
 function Panel.Measure(frame)
 	local width = frame.preview:GetWidth()
@@ -104,18 +109,28 @@ function Panel.Measure(frame)
 	end
 	local indent = frame.textMeasure.width(HANGING_INDENT)
 	local rows = ns.Editor.LayoutRows(frame.previewValue or "", width, frame.lineHeight, frame.textMeasure, indent)
-	local parts = {}
+	local color = frame.previewColor or PREVIEW_TEXT
 	for index, row in ipairs(rows) do
-		parts[index] = row.row > 0 and (HANGING_INDENT .. row.text) or row.text
+		local font = frame.previewRows[index]
+		if not font then
+			font = frame.previewChild:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
+			font:SetJustifyH("LEFT")
+			font:SetJustifyV("TOP")
+			-- The layout already wrapped the row at the measured words, so the FontString must not wrap it again.
+			font:SetWordWrap(false)
+			frame.previewRows[index] = font
+		end
+		font:SetWidth(width)
+		font:SetText(row.row > 0 and (HANGING_INDENT .. row.text) or row.text)
+		font:SetPoint("TOPLEFT", frame.previewChild, "TOPLEFT", 0, -row.y)
+		font:SetTextColor(color[1], color[2], color[3])
+		font:Show()
 	end
-	local height = math.max(1, #rows * frame.lineHeight)
+	for index = #rows + 1, #frame.previewRows do
+		frame.previewRows[index]:Hide()
+	end
 	frame.previewChild:SetWidth(width)
-	frame.previewChild:SetHeight(height)
-	-- A word-wrap-off FontString has one line of height until it is told how many rows the layout produced, so every
-	-- row after the first would be cut off with an ellipsis. The height is the same one the child scrolls.
-	frame.previewText:SetWidth(width)
-	frame.previewText:SetHeight(height)
-	frame.previewText:SetText(table.concat(parts, "\n"))
+	frame.previewChild:SetHeight(math.max(1, #rows * frame.lineHeight))
 	frame.preview:UpdateScrollChildRect()
 	frame.preview:SetVerticalScroll(0)
 end
@@ -174,13 +189,13 @@ local function ShowState(frame)
 	local state = frame.selected
 	if state and state.body then
 		frame.previewValue = Escape(state.body)
-		frame.previewText:SetTextColor(1, 1, 1)
+		frame.previewColor = PREVIEW_TEXT
 	elseif state then
 		frame.previewValue = L["This recipe needs a spell this client does not know."]
-		frame.previewText:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+		frame.previewColor = MUTED
 	else
 		frame.previewValue = L["No recipe selected."]
-		frame.previewText:SetTextColor(MUTED[1], MUTED[2], MUTED[3])
+		frame.previewColor = MUTED
 	end
 	Panel.Measure(frame)
 	UpdateStatus(frame)
@@ -342,14 +357,6 @@ function Panel.Create(parent, onImport)
 	previewChild:SetWidth(1)
 	previewChild:SetHeight(1)
 	preview:SetScrollChild(previewChild)
-	local previewText = previewChild:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
-	previewText:SetPoint("TOPLEFT", previewChild, "TOPLEFT", 0, 0)
-	previewText:SetWidth(1)
-	previewText:SetJustifyH("LEFT")
-	previewText:SetJustifyV("TOP")
-	-- The rows are already wrapped at the editor's measured words, so the FontString must not wrap them again; a
-	-- token wider than a row was broken by the layout itself.
-	previewText:SetWordWrap(false)
 	-- A hidden copy of the same font object measures a row and the hanging indent, exactly as the editor does.
 	local previewMeasure = previewChild:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
 	previewMeasure:SetAlpha(0)
@@ -365,7 +372,8 @@ function Panel.Create(parent, onImport)
 	frame.lineHeight = ns.Editor.LineHeight
 	frame.preview = preview
 	frame.previewChild = previewChild
-	frame.previewText = previewText
+	frame.previewRows = {}
+	frame.previewColor = PREVIEW_TEXT
 	preview:SetScript("OnSizeChanged", function()
 		Panel.Measure(frame)
 	end)
