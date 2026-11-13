@@ -1,30 +1,23 @@
 {
-  "input_digest": "8ef3baceffef8750f1eb39a60567cedc35de6be3a2229b6d95a8b5a453746cb4",
-  "runtime_sha256": "8ef3baceffef8750f1eb39a60567cedc35de6be3a2229b6d95a8b5a453746cb4",
-  "candidate": "3bc915a34f88cf647e43247a9af3af38540397f0463e09ba15fb57706983838b",
-  "tested_artifact": "source-tree",
+  "input_digest": "5ff8ad3258c8d9a2f96c9d4f3f95c8a382b8e3a39851c1a1b8faeb2a95d5d789",
+  "runtime_sha256": "5ff8ad3258c8d9a2f96c9d4f3f95c8a382b8e3a39851c1a1b8faeb2a95d5d789",
+  "candidate": "5226df19e4bac58308e30ee8ad9cfdfe58d9647154d00a313da3c1ee11b923f6",
   "client_build": "1.60.1.70938 (Interface 16001)",
-  "source_commit": "052142ca0180092c4537c43cb26511c7f2ec4149",
-  "notes": "Recorded on Hel Io in the headless client from a source-tree build of this commit (forever_client.py build-dev) linked into AddOns, with the store ForeverCore v1.10.0 and the other four 1.10.0 sync builds (Tweaks, Legacy, Commissions, Macro Assist, Field Guide) loaded in the same session. BugGrabber recorded no errors this session; the errors listed in the report window are earlier sessions' history.",
+  "tested_artifact": "source-tree",
+  "source_commit": "edf8bd0317a5d32e4f0462aa6280bc958aaefdf1",
   "flows": [
     {
-      "name": "Macro Assist Forever on ForeverCore 1.10.0",
+      "name": "macroassist report",
       "steps": [
-        "Link the candidate build with the store ForeverCore v1.10.0 and /reload",
-        "Print every Forever addon's loaded version: ForeverCore v1.10.0 and each sync build loaded, 0 BugGrabber errors this session",
-        "Run /macroassist report: the addon's report window opens on this build, with ForeverCore 1.10.0's performance section"
+        "/macroassist report"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/61e1d759a57ff98eb48b76f8121cf66a/raw/9ce32ab1c30b24a4b41552cd2ad58f5346a1240c/sync110-macro-report.png",
-      "sha256": "40f52f479b6395028e612e1803047cc431eaf159018f3c25c39d87b355a87f06"
-    },
-    {
-      "url": "https://gist.githubusercontent.com/cjber/61e1d759a57ff98eb48b76f8121cf66a/raw/9ce32ab1c30b24a4b41552cd2ad58f5346a1240c/sync110-versions.png",
-      "sha256": "66d10d46b3140bbd2797f47ca2fe716284b6b74d2dc5ba0ed7393970eac409b0"
+      "url": "https://gist.githubusercontent.com/cjber/c6cc00bb3874c558ccb2b062cea0cf34/raw/f4339a42a71074cf225bc092e1d49a76e9bf0a72/1-macroassist-report.png",
+      "sha256": "18cac51e2c2273059af467532313d8b73c50bda7f1fcf6cc71d29b2f99973daa"
     }
   ]
 }
