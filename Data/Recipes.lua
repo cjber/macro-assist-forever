@@ -171,11 +171,65 @@ local function Render(recipe, spellName)
 	return body
 end
 
+-- The selected recipe's state for this character: its rendered macro, whether every spell it needs is known, and the
+-- level the client says the missing spells are learned at. The level is nil when the client does not state one for
+-- every missing spell, so nothing guesses a Classic level or infers one from the character's level. A recipe with no
+-- spells needs nothing from the spellbook and is always available.
+---@class MacroAssistRecipeState
+---@field recipe MacroAssistRecipe
+---@field body string? the rendered macro, or nil when the client cannot name a required spell
+---@field available boolean every required spell is known and the body rendered
+---@field missing integer[] the spell IDs this character has not learned
+---@field level integer? the highest level the client gives for the missing spells, or nil
+
+-- `isKnown` answers from C_SpellBook.IsSpellKnown and `levelLearned` from C_Spell.GetSpellLevelLearned, or from nil
+-- when the client does not have that call. Keeping both out of this file lets the specs cover the rule without a
+-- client, and keeps the recipe data free of a second catalogue of spell levels.
+---@param recipe MacroAssistRecipe
+---@param spellName MacroAssistSpellName
+---@param isKnown MacroAssistSpellKnown
+---@param levelLearned MacroAssistSpellLevel
+---@return MacroAssistRecipeState
+local function State(recipe, spellName, isKnown, levelLearned)
+	local missing = {}
+	local level
+	local everyLevelKnown = true
+	for _, spellID in ipairs(recipe.spells or {}) do
+		if isKnown(spellID) ~= true then
+			missing[#missing + 1] = spellID
+			local learnedAt = levelLearned(spellID)
+			if type(learnedAt) == "number" and learnedAt > 0 then
+				if not level or learnedAt > level then
+					level = learnedAt
+				end
+			else
+				everyLevelKnown = false
+			end
+		end
+	end
+	if not everyLevelKnown then
+		level = nil
+	end
+	local body = Render(recipe, spellName)
+	return {
+		recipe = recipe,
+		body = body,
+		available = body ~= nil and #missing == 0,
+		missing = missing,
+		level = level,
+	}
+end
+
+---@alias MacroAssistSpellName fun(spellID: integer): string?
+---@alias MacroAssistSpellKnown fun(spellID: integer): boolean?
+---@alias MacroAssistSpellLevel fun(spellID: integer): integer?
+
 ---@class MacroAssistRecipes
 ---@field List MacroAssistRecipe[]
----@field Render fun(recipe: MacroAssistRecipe, spellName: fun(spellID: integer): string?): string?
+---@field Render fun(recipe: MacroAssistRecipe, spellName: MacroAssistSpellName): string?
 
 ns.Recipes = {
 	List = recipes,
 	Render = Render,
+	State = State,
 }
