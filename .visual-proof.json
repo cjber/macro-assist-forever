@@ -1,26 +1,23 @@
 {
-  "input_digest": "4ea372a930614e6e84e6f71e902cd2df7c305e43319e2158e311eac7c06044ac",
-  "runtime_sha256": "4ea372a930614e6e84e6f71e902cd2df7c305e43319e2158e311eac7c06044ac",
-  "candidate": "25e9061e40ff85e510c67c0dea1976e44c97379ab095f850fb098e4f197f94e7",
-  "tested_artifact": "source-tree",
+  "input_digest": "80d77cc3c6d220a244cdc75ee681a44c23800969a69735845a0f9b46b65891ed",
+  "runtime_sha256": "80d77cc3c6d220a244cdc75ee681a44c23800969a69735845a0f9b46b65891ed",
+  "candidate": "051ec99308ad128ca80a8f003a36086939d95bfc3ebbe31afa92410061044a2f",
   "client_build": "1.60.1.70938 (Interface 16001)",
-  "source_commit": "618fcde22f8799095afb65ba05bfbddcd9351e39",
-  "notes": "Recorded on Hel Io (level 21 hunter) from a source-tree build of this commit (build-dev, v0.5.0-dev+618fcde) linked into AddOns. The preview showing only its first line is #165, fixed separately in PR #166.",
+  "tested_artifact": "source-tree",
+  "source_commit": "8e8c8233e9f76ef07f102f4fe1c00f07cdf2cf6b",
   "flows": [
     {
-      "name": "Recipes status line",
+      "name": "Recipes status line beside Import",
       "steps": [
-        "/macroassist, then Recipes",
-        "Select Trap your mouseover (Learn at level 20)",
-        "Learn at level 20. sits at the bottom left, level with the disabled Import button, and the recipe rows are clear"
+        "/home/cjber/.cache/agent-scratch/proof-e6a4/flows/recipe-trap.lua"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/b238e645887ffbeb53f11afb2f54a0cc/raw/a0a557da071b7e506247ecb17d1f821f956c9459/168-status.png",
-      "sha256": "a65a45dd92f5a8a71bf435c4e1ff9ee4e229bef3f1f0eaa02e92f6d87c272674"
+      "url": "https://gist.githubusercontent.com/cjber/d8ae51d269c2f288d7e1e7e7aceea85d/raw/8da1dbc07a725567d3ba97e47657bcd0bb4a529b/1-recipes-status-line-beside-import.png",
+      "sha256": "f09dca04eff23c2b274ef15ef5f852ffb2bcceadcf6f53a7765c671838c80f49"
     }
   ]
 }
