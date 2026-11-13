@@ -1,30 +1,26 @@
 {
-  "input_digest": "8ef3baceffef8750f1eb39a60567cedc35de6be3a2229b6d95a8b5a453746cb4",
-  "runtime_sha256": "8ef3baceffef8750f1eb39a60567cedc35de6be3a2229b6d95a8b5a453746cb4",
-  "candidate": "3bc915a34f88cf647e43247a9af3af38540397f0463e09ba15fb57706983838b",
+  "input_digest": "4ea372a930614e6e84e6f71e902cd2df7c305e43319e2158e311eac7c06044ac",
+  "runtime_sha256": "4ea372a930614e6e84e6f71e902cd2df7c305e43319e2158e311eac7c06044ac",
+  "candidate": "25e9061e40ff85e510c67c0dea1976e44c97379ab095f850fb098e4f197f94e7",
   "tested_artifact": "source-tree",
   "client_build": "1.60.1.70938 (Interface 16001)",
-  "source_commit": "052142ca0180092c4537c43cb26511c7f2ec4149",
-  "notes": "Recorded on Hel Io in the headless client from a source-tree build of this commit (forever_client.py build-dev) linked into AddOns, with the store ForeverCore v1.10.0 and the other four 1.10.0 sync builds (Tweaks, Legacy, Commissions, Macro Assist, Field Guide) loaded in the same session. BugGrabber recorded no errors this session; the errors listed in the report window are earlier sessions' history.",
+  "source_commit": "618fcde22f8799095afb65ba05bfbddcd9351e39",
+  "notes": "Recorded on Hel Io (level 21 hunter) from a source-tree build of this commit (build-dev, v0.5.0-dev+618fcde) linked into AddOns. The preview showing only its first line is #165, fixed separately in PR #166.",
   "flows": [
     {
-      "name": "Macro Assist Forever on ForeverCore 1.10.0",
+      "name": "Recipes status line",
       "steps": [
-        "Link the candidate build with the store ForeverCore v1.10.0 and /reload",
-        "Print every Forever addon's loaded version: ForeverCore v1.10.0 and each sync build loaded, 0 BugGrabber errors this session",
-        "Run /macroassist report: the addon's report window opens on this build, with ForeverCore 1.10.0's performance section"
+        "/macroassist, then Recipes",
+        "Select Trap your mouseover (Learn at level 20)",
+        "Learn at level 20. sits at the bottom left, level with the disabled Import button, and the recipe rows are clear"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/61e1d759a57ff98eb48b76f8121cf66a/raw/9ce32ab1c30b24a4b41552cd2ad58f5346a1240c/sync110-macro-report.png",
-      "sha256": "40f52f479b6395028e612e1803047cc431eaf159018f3c25c39d87b355a87f06"
-    },
-    {
-      "url": "https://gist.githubusercontent.com/cjber/61e1d759a57ff98eb48b76f8121cf66a/raw/9ce32ab1c30b24a4b41552cd2ad58f5346a1240c/sync110-versions.png",
-      "sha256": "66d10d46b3140bbd2797f47ca2fe716284b6b74d2dc5ba0ed7393970eac409b0"
+      "url": "https://gist.githubusercontent.com/cjber/b238e645887ffbeb53f11afb2f54a0cc/raw/a0a557da071b7e506247ecb17d1f821f956c9459/168-status.png",
+      "sha256": "a65a45dd92f5a8a71bf435c4e1ff9ee4e229bef3f1f0eaa02e92f6d87c272674"
     }
   ]
 }
