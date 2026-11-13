@@ -576,6 +576,10 @@ scenario("the Recipes popup lists class recipes, greys unlearned spells and impo
 		panel.previewText:GetText():find("\n/petattack", 1, true) ~= nil,
 		"a real macro line starts at the preview's left edge"
 	)
+	check(
+		panel.previewText:GetHeight() >= panel.previewChild:GetHeight(),
+		"the preview FontString is shorter than the rows the child scrolls"
+	)
 	check(panel.importButton:IsEnabled(), "Import is disabled for an available recipe")
 
 	local before = select(2, sim.G.GetNumMacros())

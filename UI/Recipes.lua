@@ -108,10 +108,14 @@ function Panel.Measure(frame)
 	for index, row in ipairs(rows) do
 		parts[index] = row.row > 0 and (HANGING_INDENT .. row.text) or row.text
 	end
+	local height = math.max(1, #rows * frame.lineHeight)
 	frame.previewChild:SetWidth(width)
+	frame.previewChild:SetHeight(height)
+	-- A word-wrap-off FontString has one line of height until it is told how many rows the layout produced, so every
+	-- row after the first would be cut off with an ellipsis. The height is the same one the child scrolls.
 	frame.previewText:SetWidth(width)
+	frame.previewText:SetHeight(height)
 	frame.previewText:SetText(table.concat(parts, "\n"))
-	frame.previewChild:SetHeight(math.max(1, #rows * frame.lineHeight))
 	frame.preview:UpdateScrollChildRect()
 	frame.preview:SetVerticalScroll(0)
 end
@@ -433,4 +437,5 @@ ns.RecipesPanel = {
 	Close = Panel.Close,
 	Refresh = Panel.Refresh,
 	SetState = Panel.SetState,
+	Measure = Panel.Measure,
 }

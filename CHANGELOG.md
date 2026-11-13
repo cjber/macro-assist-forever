@@ -5,6 +5,9 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **Recipes shows the whole macro, not just its first line.** The preview wraps the selected recipe's rows, indents
+  every wrapped row, and scrolls to the end when the macro is taller than the box. (#165)
+
 ## [0.5.0] - 2026-11-13
 
 <!-- discord-image: docs/screenshots/recipes-popup.png -->
