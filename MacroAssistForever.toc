@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Dependencies: ForeverCore
-## X-Forever-Core: v1.10.0
+## X-Forever-Core: v1.11.0
 ## Title: Macro Assist Forever
 ## Notes: A macro list and editor with completions, live checks and a bundled mono font.
 ## Author: cjber
