@@ -10,6 +10,18 @@ All notable changes to Macro Assist Forever are documented here. The format is b
   learned is greyed, with the level the client reports, and Import creates it through the same checked path as an
   imported macro.
 
+## [0.4.5] - 2026-11-12
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
+## [0.4.4] - 2026-11-12
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
 ## [0.4.3] - 2026-11-12
 
 <!-- forever-core-sync -->
