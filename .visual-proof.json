@@ -1,31 +1,30 @@
 {
-  "input_digest": "93423de503f9cb2eb0827586970aec6f43e246b3c6863c40347103cf9c27c00e",
-  "runtime_sha256": "93423de503f9cb2eb0827586970aec6f43e246b3c6863c40347103cf9c27c00e",
-  "candidate": "6cdda814d682e59fdec7ad4de22111fc967a9cdfed9ce3658d82ac326518a74e",
+  "input_digest": "8ef3baceffef8750f1eb39a60567cedc35de6be3a2229b6d95a8b5a453746cb4",
+  "runtime_sha256": "8ef3baceffef8750f1eb39a60567cedc35de6be3a2229b6d95a8b5a453746cb4",
+  "candidate": "3bc915a34f88cf647e43247a9af3af38540397f0463e09ba15fb57706983838b",
   "tested_artifact": "source-tree",
-  "client_build": "1.60.1.70888 (Interface 16001)",
-  "source_commit": "a08c40a0bb9d6579e1bab342cfee49038f65ff36",
-  "notes": "Recorded on Hel Io in the player's live client from an installed source-tree build of this commit (git archive); --compare reported no missing or differing runtime files, the install additionally carries the ignored store icon. Every other Forever addon's 1.9.0 sync build was loaded in the same session. The only BugGrabber entries this session were the recorder's own over-long /run lines.",
+  "client_build": "1.60.1.70938 (Interface 16001)",
+  "source_commit": "052142ca0180092c4537c43cb26511c7f2ec4149",
+  "notes": "Recorded on Hel Io in the headless client from a source-tree build of this commit (forever_client.py build-dev) linked into AddOns, with the store ForeverCore v1.10.0 and the other four 1.10.0 sync builds (Tweaks, Legacy, Commissions, Macro Assist, Field Guide) loaded in the same session. BugGrabber recorded no errors this session; the errors listed in the report window are earlier sessions' history.",
   "flows": [
     {
-      "name": "Macro Assist's window opens on ForeverCore 1.9.0",
+      "name": "Macro Assist Forever on ForeverCore 1.10.0",
       "steps": [
-        "Install the candidate with the store ForeverCore v1.9.0 and /reload",
-        "Print every Forever addon's loaded version into a chat tab with no channels: store ForeverCore v1.9.0 plus each 1.9.0 sync build, all loaded, and BugGrabber shows no addon errors this session",
-        "Type /macroassist",
-        "The Macros window opens with its list, editor and status line"
+        "Link the candidate build with the store ForeverCore v1.10.0 and /reload",
+        "Print every Forever addon's loaded version: ForeverCore v1.10.0 and each sync build loaded, 0 BugGrabber errors this session",
+        "Run /macroassist report: the addon's report window opens on this build, with ForeverCore 1.10.0's performance section"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/627a1b4cf36d973bb26ba262c81eb601/raw/67bd0b623f26040eed9f66dd363a477dbb684579/sync190-macro-window.png",
-      "sha256": "3a57ae9ce898a7d63bb551827879cc1e5894b0711d7d58356c1d3f12cc23ab29"
+      "url": "https://gist.githubusercontent.com/cjber/61e1d759a57ff98eb48b76f8121cf66a/raw/9ce32ab1c30b24a4b41552cd2ad58f5346a1240c/sync110-macro-report.png",
+      "sha256": "40f52f479b6395028e612e1803047cc431eaf159018f3c25c39d87b355a87f06"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/627a1b4cf36d973bb26ba262c81eb601/raw/67bd0b623f26040eed9f66dd363a477dbb684579/sync190-versions.png",
-      "sha256": "9731b84977a7daf94152f9129b9ea996b4c467006f822f7acc430332fa8f08ec"
+      "url": "https://gist.githubusercontent.com/cjber/61e1d759a57ff98eb48b76f8121cf66a/raw/9ce32ab1c30b24a4b41552cd2ad58f5346a1240c/sync110-versions.png",
+      "sha256": "66d10d46b3140bbd2797f47ca2fe716284b6b74d2dc5ba0ed7393970eac409b0"
     }
   ]
 }
