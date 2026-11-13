@@ -5,6 +5,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **Recipes shows the whole macro, not just its first line.** The preview draws every laid-out row of the selected
+  recipe on its own, indents every wrapped row, and scrolls when the macro is taller than the box. (#165)
 - **The Recipes status line sits beside Import.** "Learn at level 20." and the other messages no longer draw over
   the third recipe row, staying on the Import button's row at the bottom of the popup. (#167)
 
