@@ -5,6 +5,9 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **The Recipes status line sits beside Import.** "Learn at level 20." and the other messages no longer draw over
+  the third recipe row, staying on the Import button's row at the bottom of the popup. (#167)
+
 ## [0.5.1] - 2026-11-13
 
 <!-- forever-core-sync -->
