@@ -29,11 +29,15 @@ python3 tools/deadcode.py --check
 python3 tools/changelog.py --check
 python3 tools/forever_tools/credits.py --check # Data/Credits.lua and both thanks blocks are current (WFA-31)
 python3 tools/gen_icon_names.py --check
-ruff check tools && ruff format --check tools
+uv run --project tools --frozen --group dev ruff check tools &&
+uv run --project tools --frozen --group dev ruff format --check tools
 ```
 
 CI runs the same gate in the jobs `deadcode`, `check`, `python`, `typecheck`, `project-rules` (changelog), `workflows`,
-`secrets` and `package`, each on every pull request. The `check`, `typecheck` and `package` jobs check out
+`secrets` and `package`, each on every pull request. The Lua tools (LuaJIT, luac5.1, luacheck, LuaLS, StyLua and
+gitleaks) come from forever-core's `.github/actions/toolchain`, which reads the pins in `tools/toolchain.json`; the
+Python tools (ruff, ty, zizmor and actionlint) run with `uv run --project tools --frozen --group dev` from
+`tools/pyproject.toml` and `tools/uv.lock`. The `check`, `typecheck` and `package` jobs check out
 cjber/forever-core at the ref in `tools/forever-core.txt` into `forever-core/` and set `FOREVER_CORE` to it. The
 separate `core-shared` workflow runs the client load rule, the menu rule and the vendored-tooling drift check.
 `tools/deadcode.py`, `tools/deadcode-allow.txt`, `tools/check_client_load.py`, `tools/check_menu_scroll.py` and
@@ -64,6 +68,10 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
 - Run `stylua --check .`, `luacheck .`, every `tests/*_spec.lua` under LuaJIT, and `python3 tools/changelog.py --check`
   before proposing changes.
 - Sign commits with `git commit -S`; do not add `-s` sign-off lines.
+- Release: load `.agents/skills/release/SKILL.md` when preparing or publishing a release.
+  A cloud session cannot push tags: once the version's PR is merged and `.github/workflows/ci.yml` passed on main,
+  smoke that exact commit with the headless client, then start the Release workflow on main with `version` (and
+  `commit` for an older main commit); it tags that commit and publishes.
 
 ## Rules
 
