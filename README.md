@@ -13,20 +13,21 @@
 
 ## Features
 
-- **Every macro in one searchable list.** General and character tabs hang off the window's right edge, as in the game's spellbook, and each macro shows its icon, name and a short summary of its main action with a count of the other cases. The selected row has a soft gold fill and left bar, and the count sits beside the search box, which filters by name or summary as you type. The header names the action bar slots the selected macro sits in and the key that presses each one, and a macro on no bar is marked in the list.
+- **Every macro in one searchable list.** General and character tabs hang off the window's right edge, and each macro shows its icon, name and a summary of its main action with a count of other cases. The selected row has a soft gold fill and left bar, and the search box filters by name or summary. The header names the action bar slots the selected macro sits in and the key that presses each, and a macro on no bar is marked.
 - **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
-- **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing it can explain.
-- **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through the suggestions, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
+- **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing to explain.
+- **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through them, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
 - **Recipes for your class, checked against your spellbook.** Typing `pet` or `heal mouseover` offers checked recipes in the completion list, with spell names in your client's language, and Tab inserts the whole macro. Recipes opens the same catalogue in a popup with the general and class macros beside a full preview; an unlearned spell greys its recipe with the client's level, and Import creates it through the checked path.
-- **Live conditions and spells.** Condition values come from the game right now, and the spellbook supplies your spell names and the ranks you know.
-- **Problems with a fix.** A wavy underline marks text the game cannot run. Hover it for the explanation, then press Tab or click it to apply the suggested fix.
+- **Live conditions and spells.** Condition values come from the game right now, and the spellbook supplies your spell names and ranks.
+- **Problems with a fix.** A wavy underline marks text the game cannot run. Hover it for the explanation, then press Tab or click it to apply the fix.
 - **A status bar that says what fires now.** It shows the first problem in full with Tab to fix, the action the first matching line would take with your current target, and the character count out of 255 with a meter.
-- **An icon picker in the window.** Click the header icon or Rename and the code gives way to one grid: the macro's Automatic icon and the icons of what it casts first, then your spellbook, then every icon in the game. Search by icon file name or by your own spells and items, or filter by class, spell school or item slot. The name is editable in the header, a pick shows at once, and Save keeps it.
-- **Rename, New, Save, Cancel and Delete.** Delete asks for a second click. New adds a macro and opens the picker with its name ready to type. Drag a row or the header icon to an action bar to place the macro there.
-- **Import a macro by pasting it.** Addons cannot reach the web, so Import takes text from wago.io or another character, checks it with the same parser and diagnostics as the editor, and refuses prose, MySlot exports and anything over 255 characters. A macro that passes opens the name and icon picker.
-- **Shorten a macro that is over 255.** The status line offers Shorten when a lossless rewrite exists, the preview shows only the changed lines, and Apply puts the rewrite in the editor without saving. It trims redundant whitespace, uses the shortest alias of each command from the same data entry, and drops clauses the checker calls unreachable.
-- **History with Restore.** Every save, rename and delete keeps the macro's previous name, icon and text, the newest 20 for each macro. History lists them with their time and what changed, and Restore puts one back. Deleted macros stay in a Deleted section until you restore them.
-- **Safe to open in combat.** Every button that writes to your macros is turned off in combat, Restore included, with a line in the status row saying why. Edits are saved when the window closes out of combat.
+- **An icon picker in the window.** Click the header icon or Rename and the code gives way to one grid: the macro's Automatic icon and the icons of what it casts first, then your spellbook, then every icon in the game. Search by icon or spell name, or filter by class, spell school or item slot. The name is editable in the header, a pick shows at once, and Save keeps it.
+- **Rename, New, Save, Cancel and Delete.** Delete asks for a second click. New adds a macro and opens the picker with its name ready to type. Drag a row or the header icon onto an action bar to place it.
+- **Import a macro by pasting it.** Addons cannot reach the web, so Import takes pasted text, checks it with the same parser and diagnostics as the editor, and refuses prose, MySlot exports and anything over 255 characters. A macro that passes opens the name and icon picker.
+- **Copy a macro from another character.** Characters lists the other characters' macros and shows the differing lines before Keep both or Replace. Replace asks for a second click, and both are off in combat.
+- **Shorten a macro that is over 255.** The status line offers Shorten when a lossless rewrite exists, the preview shows only the changed lines, and Apply puts the rewrite in the editor without saving. It trims redundant whitespace, uses each command's shortest alias, and drops clauses the checker calls unreachable.
+- **History with Restore.** Every save, rename and delete keeps the previous name, icon and text, the newest 20 for each macro. History lists them with their time and what changed, and Restore puts one back. Deleted macros stay in a Deleted section until restored.
+- **Safe to open in combat.** Every button that writes to your macros is off in combat, Restore included, with a line saying why. Edits are saved when the window closes out of combat.
 
 <p align="center"><img src="docs/screenshots/window.png" alt="The macro list beside the mono editor"></p>
 
@@ -48,6 +49,10 @@ Recipes lists the general and class macros beside the whole macro; an unlearned 
 
 History keeps the previous versions of each macro, with a Deleted section for macros that can be restored.
 
+<p align="center"><img src="docs/screenshots/characters.png" alt="The Characters panel listing another character's macros and the differing lines"></p>
+
+Characters copies a macro from another character, showing the lines that differ before Keep both or Replace.
+
 <p align="center"><img src="docs/screenshots/picker.png" alt="The icon picker in place of the editor, with the macro's own icons first"></p>
 
 The icon picker: the macro's Automatic icon and what it casts, your spellbook, then every icon, with search and filters.
@@ -68,11 +73,11 @@ Put the `MacroAssistForever` folder in `World of Warcraft/_forever_/Interface/Ad
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. The General tab holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Import checks pasted text and opens the same picker. Recipes browses the general and class macros, and Import creates the one selected. Plain words such as `pet` or `heal mouseover` offer checked recipes in the completion list, which Tab turns into a whole macro. Rename opens the picker; Back to code returns to the editor. Cancel restores the saved text, Save writes immediately, and History restores an earlier version. Closing the window also saves your text out of combat.
+Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Import checks pasted text and opens the same picker. Characters copies a macro from another character into the open tab. Recipes browses the general and class macros, and Import creates the one selected. Plain words such as `pet` or `heal mouseover` offer checked recipes in the completion list, which Tab turns into a whole macro. Rename opens the picker; Back to code returns to the editor. Cancel restores the saved text, Save writes immediately, and History restores an earlier version. Closing the window saves your text out of combat.
 
 ## Works alongside
 
-Macro Assist Forever covers Blizzard's macro panel but leaves the panel, its keybind and the macro store in place. It does not run macros for you.
+Macro Assist Forever covers Blizzard's macro panel but leaves the panel, its keybind and macro store in place, and never runs macros for you.
 
 ## Development
 
