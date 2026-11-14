@@ -16,6 +16,10 @@ Conditions are offered with their live value, and a wavy underline marks a probl
 
 History keeps the previous versions of each macro, with a Deleted section for macros that can be restored.
 
+![The Characters copy panel listing another character's macros and the differing lines](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/characters.png)
+
+Characters copies a macro from another character, showing the lines that differ before Keep both or Replace.
+
 ![The icon picker in place of the editor, with the macro's own icons first](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/picker.png)
 
 The icon picker: the macro's Automatic icon and what it casts, your spellbook, then every icon, with search and filters.
@@ -28,7 +32,7 @@ These images are generated previews of the Macro Assist UI.
 
 ## Features
 
-- **Every macro in one searchable list.** General and character tabs hang off the window's right edge, as in the game's spellbook, and each macro shows its icon, name and a short summary of its main action with a count of the other cases. The count sits beside the search box, which filters by name or summary as you type.
+- **Every macro in one searchable list.** General and character tabs hang off the window's right edge, as in the game's spellbook, and each macro shows its icon, name and a short summary of its main action with a count of the other cases. The count sits beside the search box, which filters by name or summary as you type. Characters copies a macro from another character, with the differing lines shown before Keep both or Replace.
 - **A real editor with a plain-English panel.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a current-line highlight, and colour for commands, conditions, units and spells. The bottom of the panel shows one row per click and modifier branch, read from the macro's own parse.
 - **Completions with live values.** Type `/` for a command, `[` for a condition, `@` for a unit or a spell name; Up and Down move the suggestions, Tab inserts one, and each shows its value in the game right now. The spellbook supplies your spell names and the ranks you know.
 - **Recipes for your class.** Recipes opens the general and class macros beside a full preview. A recipe with a spell you have not learned is greyed, with the level the client reports, and Import creates it through the same checked path as an imported macro.
@@ -41,7 +45,7 @@ These images are generated previews of the Macro Assist UI.
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. General holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Rename, or a click on the header icon, opens the picker; Back to code returns to the editor. Recipes lists the general and class macros, with the whole macro beside the list; pick one and Import creates it. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing also saves your text out of combat.
+Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Rename, or a click on the header icon, opens the picker; Back to code returns to the editor. Recipes lists the general and class macros, with the whole macro beside the list; pick one and Import creates it. Characters copies a macro from another character into the open tab. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing also saves your text out of combat.
 
 For a bug report, paste `/macroassist report`.
 
