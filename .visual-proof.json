@@ -1,23 +1,23 @@
 {
-  "input_digest": "612deb98a1c5ca352bb0e4349eb7140b25334430108ef33d1df86b4f5c55d3c8",
-  "runtime_sha256": "612deb98a1c5ca352bb0e4349eb7140b25334430108ef33d1df86b4f5c55d3c8",
-  "candidate": "57305ee1869e70718ea12142ae112dece4a6966dce5d452ea94173debbd7b8de",
+  "input_digest": "24d0b55441f69d873dbacc584ebf84ba6340a3270da093abf81676fa296434c9",
+  "runtime_sha256": "24d0b55441f69d873dbacc584ebf84ba6340a3270da093abf81676fa296434c9",
+  "candidate": "68f96da9e3c8169ed3d15d580e29bcf07b8413ae5035ab7526bce98078e6ecb7",
   "client_build": "1.60.1.70938 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "de749426bf57606bee689b54c447254ea1d7a89d",
+  "source_commit": "65eaf3d92d2f8eee4a2a083b188772402c6b21b2",
   "flows": [
     {
-      "name": "Recipes preview, wrapped row",
+      "name": "macros",
       "steps": [
-        "/home/cjber/.cache/agent-scratch/proof-e6a4/flows/recipe-mark.lua"
+        "/macroassist"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/e3ee9aea50ec7c39271d1a74ece8f692/raw/907083ff2c16f3c9bc5772b88d30661dd78ee663/1-recipes-preview-wrapped-row.png",
-      "sha256": "a83b0b375d5da1bf81c0e70a831009020491581f48419130faf8f6172f85db38"
+      "url": "https://gist.githubusercontent.com/cjber/c577ce6cb522fb496e0febf03804da40/raw/2384e07b9ca1eb23fce8b401f56bdcdbe1a77945/1-macros.png",
+      "sha256": "2e27e90cecd6c028cde5f09098b76bc73e365daf9a96afbfd69c136eb9e3aa6a"
     }
   ]
 }
