@@ -38,3 +38,6 @@ externals:
 
 move-folders:
   MacroAssistForever/ForeverCore: ForeverCore
+
+required-dependencies:
+  - forevercore
