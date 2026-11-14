@@ -138,6 +138,7 @@ end
 ---@field fontHeight number
 ---@field wrapWidth number
 ---@field setting boolean
+---@field textDrag { owner: Frame, text: string }?
 ---@field inCombat boolean
 ---@field onEdited? fun()
 ---@field onExplain? fun()
@@ -199,6 +200,14 @@ local function TrimToWidth(text, measure, width)
 end
 
 local IsSpace = ns.Lexer.IsSpace
+
+-- A word boundary is the whitespace the lexer knows plus a newline, so a word never runs from one macro line into
+-- the next. The roster drop replaces exactly one such run and leaves every other byte alone.
+---@param byte integer?
+---@return boolean
+local function IsBreak(byte)
+	return byte == nil or byte == 10 or IsSpace(byte)
+end
 
 -- The next run of non-space characters from `index`, with its byte range, or nil when only spaces remain.
 ---@param line string
@@ -404,6 +413,54 @@ function Editor.ClickCursor(rows, downRow, upRow, cursorRow, x, measure)
 		return nil
 	end
 	return Editor.ClickTarget(row, x, measure)
+end
+
+-- The whitespace-delimited word at a 0-based cursor position, as inclusive 1-based byte offsets. A caret at the
+-- beginning of a word picks that word; a caret at its end picks it too; a caret in the middle of a run of spaces
+-- picks nothing. The drop uses this so a name replaces exactly the word the pointer landed on.
+---@param text string
+---@param cursor integer
+---@return integer? from
+---@return integer? to
+function Editor.WordAt(text, cursor)
+	local length = #text
+	if length == 0 then
+		return nil
+	end
+	local position = math.max(0, math.min(cursor or 0, length))
+	local after = position + 1
+	local before = position
+	local index
+	if after <= length and not IsBreak(text:byte(after)) then
+		index = after
+	elseif before >= 1 and not IsBreak(text:byte(before)) then
+		index = before
+	else
+		return nil
+	end
+	local from, to = index, index
+	while from > 1 and not IsBreak(text:byte(from - 1)) do
+		from = from - 1
+	end
+	while to < length and not IsBreak(text:byte(to + 1)) do
+		to = to + 1
+	end
+	return from, to
+end
+
+-- `text` with the word at `cursor` replaced by `insert`, plus the 0-based caret after it. nil when the cursor is
+-- not on or beside a word, so a drop in the middle of spaces can insert without touching a neighbouring word.
+---@param text string
+---@param cursor integer
+---@param insert string
+---@return string? text
+---@return integer? caret
+function Editor.ReplaceWord(text, cursor, insert)
+	local from, to = Editor.WordAt(text, cursor)
+	if not from or type(insert) ~= "string" then
+		return nil
+	end
+	return text:sub(1, from - 1) .. insert .. text:sub(to + 1), from - 1 + #insert
 end
 
 ---@class MacroAssistCompletionState
@@ -731,6 +788,9 @@ function Editor.Create(parent, statusParent)
 		local position = self.edit:GetCursorPosition()
 		self:ReleaseClick(row, x - left, position and Editor.RowAtCursor(self.rows, position))
 	end)
+	self.edit:SetScript("OnReceiveDrag", function()
+		self:ReceiveDrag()
+	end)
 	self.edit:SetScript("OnEditFocusGained", function()
 		self:UpdateHighlight()
 	end)
@@ -770,6 +830,7 @@ function Editor.Create(parent, statusParent)
 		return false
 	end)
 	self.edit:SetScript("OnEscapePressed", function()
+		self:EndTextDrag(nil, false)
 		self.click = nil
 		if self.popup:IsShown() then
 			self:HideCompletion()
@@ -933,6 +994,85 @@ function Editor:MoveCursor(position)
 	self.resolvingClick = true
 	self.edit:SetCursorPosition(position)
 	self.resolvingClick = false
+end
+
+-- Forever has no native text cursor payload. The source owns this gesture until OnDragStop, not
+-- OnReceiveDrag, which belongs to native item/spell payloads. Never borrow or clear those payloads.
+---@param owner Frame
+---@param text string
+function Editor:BeginTextDrag(owner, text)
+	self.textDrag = nil
+	if not GetCursorInfo() and type(text) == "string" and text ~= "" then
+		self.textDrag = { owner = owner, text = text }
+	end
+end
+
+---@param owner Frame?
+---@param drop boolean?
+---@return boolean
+function Editor:EndTextDrag(owner, drop)
+	local drag = self.textDrag
+	if not drag or (owner and drag.owner ~= owner) then
+		return false
+	end
+	self.textDrag = nil
+	if not drop or GetCursorInfo() or not self.edit:IsShown() or not self.edit:IsMouseOver() then
+		return false
+	end
+	return self:DropTextUnderPointer(drag.text)
+end
+
+-- Replaces the word at a 0-based cursor with `text`. With no word under that position the name is inserted there
+-- instead, never written over a neighbouring word. The edit is marked dirty through the window's usual callback.
+---@param text string
+---@param cursor integer
+---@return boolean
+function Editor:DropTextAt(text, cursor)
+	if type(text) ~= "string" or text == "" then
+		return false
+	end
+	local source = self:GetText()
+	local position = math.max(0, math.min(cursor or #source, #source))
+	local newText, caret = Editor.ReplaceWord(source, position, text)
+	if not newText or not caret then
+		newText = source:sub(1, position) .. text .. source:sub(position + 1)
+		caret = position + #text
+	end
+	self.setting = true
+	self.edit:SetText(newText)
+	self.setting = false
+	self.edit:SetCursorPosition(caret)
+	self.edit:SetFocus()
+	self:HideCompletion()
+	self:RefreshAll()
+	if self.onEdited then
+		self.onEdited()
+	end
+	return true
+end
+
+-- Native cursor delivery cancels a custom roster gesture without consuming the item or spell.
+---@return boolean
+function Editor:ReceiveDrag()
+	self:EndTextDrag(nil, false)
+	return false
+end
+
+---@param text string
+---@return boolean
+function Editor:DropTextUnderPointer(text)
+	local x, y = self:PointerPosition()
+	local left = self.edit:GetLeft()
+	if not x or not y or type(left) ~= "number" then
+		return false
+	end
+	local index = self:PointerRow(y)
+	local row = index and self.rows[index]
+	if not row then
+		return false
+	end
+	local cursor = Editor.ClickTarget(row, x - left, self.textMeasure)
+	return self:DropTextAt(text, cursor)
 end
 
 function Editor:RefreshAll()

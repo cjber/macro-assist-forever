@@ -23,6 +23,8 @@ read_globals = {
 	"NUM_BAG_SLOTS", "NORMAL_FONT_COLOR", "BreakUpLargeNumbers",
 	"PickupMacro", "ScrollBoxConstants", "ScrollUtil", "SecureCmdOptionParse", "SetPortraitTexture", "UnitClass",
 	"UnitName", "UnitFullName", "GetRealmName",
+	-- The party and raid roster.
+	"C_ClassColor", "GetNumGroupMembers", "IsInRaid", "GetCursorInfo",
 	-- The slash command, the addon compartment and the gamepad input style.
 	"C_InputInterfaceStyle", "ShowMacroFrame",
 	"SLASH_MACROASSISTFOREVER1", "SLASH_MACROASSISTFOREVER2",

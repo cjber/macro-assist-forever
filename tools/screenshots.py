@@ -29,6 +29,7 @@ HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
 IMPORT = (ROOT / "UI" / "Import.lua").read_text(encoding="utf-8")
 RECIPES = (ROOT / "UI" / "Recipes.lua").read_text(encoding="utf-8")
 SHORTEN = (ROOT / "UI" / "Shorten.lua").read_text(encoding="utf-8")
+ROSTER = (ROOT / "UI" / "Roster.lua").read_text(encoding="utf-8")
 XML = (ROOT / "UI" / "MacroWindow.xml").read_text(encoding="utf-8")
 FONT_FILE = ROOT / "media" / "fonts" / "JetBrainsMono-Regular.ttf"
 SQUIGGLE = Image.open(ROOT / "media" / "squiggle.tga").convert("RGBA")
@@ -85,6 +86,14 @@ CHARACTERS_WIDTH = number("CHARACTERS_WIDTH")
 FOOTER_GAP = number("FOOTER_GAP")
 RENAME_WIDTH = number("RENAME_WIDTH")
 RENAME_HEIGHT = number("RENAME_HEIGHT")
+ROSTER_WIDTH = number("ROSTER_WIDTH")
+ROSTER_GAP = number("ROSTER_GAP")
+ROSTER_TITLE_HEIGHT = number("TITLE_HEIGHT", ROSTER)
+ROSTER_TITLE_GAP = number("TITLE_GAP", ROSTER)
+ROSTER_INSET_PADDING = number("INSET_PADDING", ROSTER)
+ROSTER_SCROLL_GAP = number("SCROLL_GAP", ROSTER)
+ROSTER_SCROLL_WIDTH = number("SCROLL_WIDTH", ROSTER)
+ROSTER_ROW_HEIGHT = number("ROW_HEIGHT", ROSTER)
 SEARCH_LEFT = number("SEARCH_LEFT")
 SEARCH_TOP = number("SEARCH_TOP")
 SEARCH_WIDTH = number("SEARCH_WIDTH")
@@ -315,6 +324,22 @@ TAB_SELECTED = 1
 BAR_TEXT = "Character macro, slot 61 (Shift-1)"
 ON_BAR = {0}
 
+# The roster scene's party, in group order with the player first. Colours are the client's class colours.
+ROSTER_MEMBERS = [
+    ("Barry", "WARRIOR"),
+    ("Alphonse", "MAGE"),
+    ("Bertie", "PRIEST"),
+    ("Cass", "DRUID"),
+    ("Dorian", "HUNTER"),
+]
+CLASS_COLORS = {
+    "WARRIOR": wowmock.rgb("c79c6e"),
+    "MAGE": wowmock.rgb("69ccf0"),
+    "PRIEST": wowmock.rgb("ffffff"),
+    "DRUID": wowmock.rgb("ff7d0a"),
+    "HUNTER": wowmock.rgb("abd473"),
+}
+
 # The picker scene's sample data. The Arcane macro's saved icon is Automatic, as a #showtooltip macro starts, so the
 # header, the list row and the selected grid cell all show the question mark.
 PICKER_ICON = "inv_misc_questionmark"
@@ -395,6 +420,9 @@ COMPLETION_BODY = "\n".join(
 )
 COMPLETION_LINE = 5
 COMPLETION_CARET = COMPLETION_BODY.rindex("/cast [") + len("/cast [") + 1  # byte offset after `[`
+# The roster scene: an assignment macro whose placeholder is the word a dropped name replaces.
+ROSTER_BODY = "/raid Tank 1: <name>\n/cast [@mouseover,harm,nodead][] Arcane Shot"
+ROSTER_LINE = 0
 # The recipe scene: plain words on a line offer the Hunter recipes whose words match, with their spell names resolved.
 RECIPE_BODY = "pet"
 RECIPE_CARET = 4
@@ -512,6 +540,10 @@ print("COMPLETION_SUMMARY\\t" .. clean(ns.ExplainSummary(completion)))
 for index, line in ipairs(ns.Parser.Parse(completion).lines) do
     print("LINE\\t" .. index .. "\\t" .. clean(ns.Highlight.Line(line)))
 end
+local roster = {lua_string(ROSTER_BODY)}
+for index, line in ipairs(ns.Parser.Parse(roster).lines) do
+    print("ROSTER_LINE\\t" .. index .. "\\t" .. clean(ns.Highlight.Line(line)))
+end
 local live = {{
 {live}
 }}
@@ -599,6 +631,7 @@ end
         "macro_lines": {},
         "completion_summary": "",
         "lines": {},
+        "roster_lines": {},
         "diagnostics": [],
         "items": [],
         "complete": None,
@@ -618,6 +651,8 @@ end
             data["completion_summary"] = parts[1]
         elif parts[0] == "LINE":
             data["lines"][int(parts[1])] = parts[2]
+        elif parts[0] == "ROSTER_LINE":
+            data["roster_lines"][int(parts[1])] = parts[2]
         elif parts[0] == "DIAG":
             data["diagnostics"].append(
                 {
@@ -790,14 +825,103 @@ def editor_geometry():
     editor_x = X + LIST_LEFT + LIST_WIDTH + COLUMN_GAP
     top = -HEADER_TOP + HEADER_HEIGHT + GAP
     editor_y = Y + top
-    editor_w = WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP
+    editor_w = WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP - ROSTER_WIDTH - ROSTER_GAP
     editor_h = WINDOW_HEIGHT - BOTTOM_OFFSET - STATUS_HEIGHT - top
     return editor_x, editor_y, editor_w, editor_h
+
+
+def roster_geometry():
+    """The compact roster panel beside the editor, inside the window's right inset."""
+    editor_x, editor_y, editor_w, editor_h = editor_geometry()
+    return editor_x + editor_w + ROSTER_GAP, editor_y, ROSTER_WIDTH, editor_h
+
+
+def draw_roster(canvas, members, title="Party"):
+    """The compact roster: a title over a native inset and one class-coloured name row per member."""
+    roster_x, roster_y, roster_w, roster_h = roster_geometry()
+    canvas.text(roster_x + 2, roster_y, title, FONTS["GameFontNormalSmall"])
+    inset_y = roster_y + ROSTER_TITLE_HEIGHT + ROSTER_TITLE_GAP
+    inset_h = roster_h - (ROSTER_TITLE_HEIGHT + ROSTER_TITLE_GAP)
+    inset(canvas, roster_x, inset_y, roster_w, inset_h)
+    row_x = roster_x + ROSTER_INSET_PADDING
+    row_y = inset_y + ROSTER_INSET_PADDING
+    row_w = roster_w - ROSTER_INSET_PADDING * 2 - ROSTER_SCROLL_WIDTH - ROSTER_SCROLL_GAP
+    row_h = ROSTER_ROW_HEIGHT
+    bottom = inset_y + inset_h - ROSTER_INSET_PADDING
+    for name, class_file in members:
+        if row_y + row_h > bottom:
+            break
+        canvas.text(
+            row_x + 8,
+            row_y + 3,
+            name,
+            FONTS["GameFontHighlightSmall"],
+            CLASS_COLORS.get(class_file, WHITE),
+            width=row_w - 8,
+            box_height=row_h,
+        )
+        row_y += row_h
+    wowmock.minimal_scrollbar(
+        canvas,
+        row_x + row_w + ROSTER_SCROLL_GAP,
+        inset_y + ROSTER_INSET_PADDING,
+        inset_h - ROSTER_INSET_PADDING * 2,
+        visible=0.7,
+    )
 
 
 def status_geometry():
     editor_x, editor_y, editor_w, editor_h = editor_geometry()
     return editor_x + STATUS_INSET, editor_y + editor_h, editor_w - 2 * STATUS_INSET, STATUS_HEIGHT
+
+
+def editor_rows(canvas, body, width, cursor):
+    """Run the runtime's row layout and highlighting with widths measured by this canvas's font."""
+    # LayoutRows asks about contiguous slices. Measure those exact strings with Pillow rather than
+    # estimating a character count or reimplementing the runtime's word and UTF-8 boundary rules.
+    slices = {
+        line[start:end]
+        for line in body.split("\n")
+        for start in range(len(line))
+        for end in range(start + 1, len(line) + 1)
+    }
+    widths = ",\n".join(f"[{lua_string(text)}] = {canvas.text_width(text, MONO)!r}" for text in sorted(slices))
+    script = f"""
+local ns = {{}}
+for _, file in ipairs({{
+    "Locales/enUS.lua", "Core/Lexer.lua", "Core/Parser.lua", "Core/Highlight.lua", "UI/Editor.lua",
+}}) do
+    assert(loadfile(file))("MacroAssistForever", ns)
+end
+local widths = {{ [""] = 0, {widths} }}
+local body = {lua_string(body)}
+local measure = {{width = function(text) return assert(widths[text]) end}}
+local rows = ns.Editor.LayoutRows(body, {width!r}, {LINE_HEIGHT!r}, measure)
+local parsed = ns.Parser.Parse(body)
+print("CARET\\t" .. (ns.Editor.RowAtCursor(rows, {cursor}) or 0))
+for _, row in ipairs(rows) do
+    local line = parsed.lines[row.line]
+    local highlighted = ns.Highlight.Slice(line, row.from - line.from + 1, row.to - line.from)
+    print(table.concat({{row.line, row.row, row.from - 1, row.to - 1, row.y, highlighted}}, "\\t"))
+end
+"""
+    result = subprocess.run(["luajit", "-"], input=script, cwd=ROOT, capture_output=True, text=True, check=True)
+    output = result.stdout.splitlines()
+    caret_row = int(output[0].split("\t")[1]) - 1
+    rows = []
+    for line in output[1:]:
+        logical, wrapped, first, last, y, highlighted = line.split("\t", 5)
+        rows.append(
+            {
+                "line": int(logical) - 1,
+                "row": int(wrapped),
+                "from": int(first),
+                "to": int(last),
+                "y": float(y),
+                "highlighted": highlighted,
+            }
+        )
+    return rows, caret_row
 
 
 def draw_editor(canvas, body, current_line, caret_column, data):
@@ -813,46 +937,52 @@ def draw_editor(canvas, body, current_line, caret_column, data):
     text_y = editor_y + 10
     text_w = editor_x + editor_w - 6 - text_x
     advance = canvas.text_width("M" * 32, MONO) / 32
-    # The current-line band sits under the text, inside the tooltip backdrop's own border.
-    canvas.fill(editor_x + 4, text_y + current_line * LINE_HEIGHT, editor_w - 8, LINE_HEIGHT, (1, 0.82, 0.2, 0.08))
-    for index, line in enumerate(lines):
-        top = text_y + index * LINE_HEIGHT
-        number_font = FONTS["GameFontHighlightSmall"]
-        canvas.text(
-            editor_x + 4,
-            top,
-            str(index + 1),
-            number_font,
-            WHITE if index == current_line else (0.4, 0.4, 0.4),
-            justify="RIGHT",
-            width=GUTTER_WIDTH - 10,
-            box_height=LINE_HEIGHT,
-        )
-        highlighted = data["lines"].get(index + 1, line)
-        canvas.text(text_x, top, highlighted, MONO, box_height=LINE_HEIGHT)
-    # The caret is our own white line above the coloured overlay, placed at the measured column, one line tall.
+    cursor = len(
+        (
+            "\n".join(lines[:current_line]) + ("\n" if current_line else "") + lines[current_line][: caret_column or 0]
+        ).encode()
+    )
+    rows, caret_row = editor_rows(canvas, body, text_w - 2, cursor)
+    encoded = body.encode()
+    canvas.fill(editor_x + 4, text_y + rows[caret_row]["y"], editor_w - 8, LINE_HEIGHT, (1, 0.82, 0.2, 0.08))
+    for row in rows:
+        top = text_y + row["y"]
+        if row["row"] == 0:
+            canvas.text(
+                editor_x + 4,
+                top,
+                str(row["line"] + 1),
+                FONTS["GameFontHighlightSmall"],
+                WHITE if row["line"] == current_line else (0.4, 0.4, 0.4),
+                justify="RIGHT",
+                width=GUTTER_WIDTH - 10,
+                box_height=LINE_HEIGHT,
+            )
+        canvas.text(text_x, top, row["highlighted"], MONO, box_height=LINE_HEIGHT)
     if caret_column is not None:
-        prefix = lines[current_line][:caret_column]
-        canvas.fill(
-            text_x + canvas.text_width(prefix, MONO),
-            text_y + current_line * LINE_HEIGHT,
-            1,
-            LINE_HEIGHT,
-            WHITE,
-        )
-    # One squiggle per diagnostic row, at the native 16 by 4 tile, just under the glyphs rather than at the bottom of
-    # the spaced line, where the extra SetSpacing would make it read as the next line's.
+        row = rows[caret_row]
+        prefix = encoded[row["from"] : cursor].decode()
+        canvas.fill(text_x + canvas.text_width(prefix, MONO), text_y + row["y"], 1, LINE_HEIGHT, WHITE)
+    # Split diagnostics across the same visual rows as runtime LayoutDiagnostics.
     for diagnostic in data["diagnostics"]:
-        line_index, start, end = locate(body, diagnostic["from"], diagnostic["to"])
-        y = text_y + line_index * LINE_HEIGHT + FONT_SIZE + 1
-        x = text_x + start * advance
-        width = max(advance, (end - start) * advance)
-        colour = (1, 0.25, 0.25, 0.95) if diagnostic["severity"] == "error" else (1, 0.82, 0.2, 0.95)
-        offset = 0
-        while offset < width:
-            canvas.draw(SQUIGGLE, x + offset, y, 16, SQUIGGLE_HEIGHT, colour)
-            offset += 16
-    return text_x, text_y, text_w, advance
+        for row in rows:
+            first = max(diagnostic["from"] - 1, row["from"])
+            last = min(diagnostic["to"], row["to"])
+            if first >= last:
+                continue
+            prefix = encoded[row["from"] : first].decode()
+            marked = encoded[first:last].decode()
+            y = text_y + row["y"] + FONT_SIZE + 1
+            x = text_x + canvas.text_width(prefix, MONO)
+            width = max(advance, canvas.text_width(marked, MONO))
+            colour = (1, 0.25, 0.25, 0.95) if diagnostic["severity"] == "error" else (1, 0.82, 0.2, 0.95)
+            offset = 0
+            while offset < width:
+                canvas.draw(SQUIGGLE, x + offset, y, 16, SQUIGGLE_HEIGHT, colour)
+                offset += 16
+    row = rows[caret_row]
+    caret_x = canvas.text_width(encoded[row["from"] : cursor].decode(), MONO)
+    return text_x, text_y, text_w, (caret_x, row["y"])
 
 
 def locate(body, first, last):
@@ -868,19 +998,18 @@ def locate(body, first, last):
     return start_line, first - 1 - line_start, line_end - line_start
 
 
-def draw_completion(canvas, completion, caret_column, text_x, text_y, text_w):
+def draw_completion(canvas, completion, caret_position, text_x, text_y, text_w):
     """The completion list, kept inside the code surface: mono label, muted trimmed help and a live value tag."""
-    lines, caret = completion[:2]
-    prefix = lines[caret][:caret_column]
+    caret_x, caret_y = caret_position
     editor_x, editor_y, editor_w, editor_h = editor_geometry()
     width = min(max(280, min(text_w, 560)), editor_w - 8)
     rows = min(POPUP_ROWS, len(completion[2]))
     height = rows * POPUP_ROW_HEIGHT + POPUP_INSET_TOP + POPUP_INSET_BOTTOM
-    x = text_x + canvas.text_width(prefix, MONO)
+    x = text_x + caret_x
     x = min(max(editor_x + 4, x), editor_x + editor_w - width - 4)
-    y = text_y + caret * LINE_HEIGHT + LINE_HEIGHT + 2
+    y = text_y + caret_y + LINE_HEIGHT + 2
     if y + height > editor_y + editor_h - 4:
-        y = text_y + caret * LINE_HEIGHT - height - 2
+        y = text_y + caret_y - height - 2
     y = max(editor_y + 4, min(y, editor_y + editor_h - height - 4))
     # A flat dark panel with a 1-unit white edge, from the client's white primitive rather than a tooltip file.
     canvas.fill(x, y, width, height, (0.07, 0.07, 0.08, 0.98))
@@ -1113,7 +1242,7 @@ def draw_picker(canvas, icon=PICKER_ICON):
     )
 
 
-def window(ui, *, body, current_line, caret_column, data, completion=None, picker=False, picker_icon=None):
+def window(ui, *, body, current_line, caret_column, data, completion=None, picker=False, picker_icon=None, roster=None):
     rail_width, _ = side_tab_extent(ui)
     canvas = ui.canvas(WINDOW_WIDTH + 2 * X + rail_width, WINDOW_HEIGHT + 2 * Y)
     background(canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -1214,7 +1343,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
         text_x = text_y = text_w = None
     else:
         # The full-height code surface, its gutter, the "What it does" panel at its bottom, and the status strip.
-        text_x, text_y, text_w, _ = draw_editor(canvas, body, current_line, caret_column, data)
+        text_x, text_y, text_w, caret_position = draw_editor(canvas, body, current_line, caret_column, data)
         editor_x, editor_y, editor_w, editor_h = editor_geometry()
         cases = data.get("explain", [])
         if cases and completion is None:
@@ -1226,6 +1355,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
             explain_panel(canvas, panel_x, panel_y, panel_w, cases)
         status_x, status_y, status_w, _ = status_geometry()
         status_bar(canvas, status_x, status_y, status_w, data["length"], "Arcane Shot on Defias Pillager", data)
+    draw_roster(canvas, ROSTER_MEMBERS if roster is None else roster)
     # The window's own buttons, with the edited macro treated as dirty so Save and Cancel are live.
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
     button(canvas, X + LIST_LEFT, button_y, BUTTON_WIDTH, "New", h=BUTTON_HEIGHT)
@@ -1278,7 +1408,7 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
     side_tabs(canvas, X + WINDOW_WIDTH + SIDE_TAB_X, Y + SIDE_TAB_TOP, TAB_SELECTED)
     # The popup is drawn last, over the editor text, as the editor's popup is in game.
     if completion:
-        draw_completion(canvas, completion, caret_column, text_x, text_y, text_w)
+        draw_completion(canvas, completion, caret_position, text_x, text_y, text_w)
     return canvas
 
 
@@ -1330,6 +1460,14 @@ def window_layout(ui):
             "h": RENAME_HEIGHT,
         },
         {"name": "editor", "role": "edit", "x": editor_x, "y": editor_y, "w": editor_w, "h": editor_h},
+        {
+            "name": "roster",
+            "role": "list",
+            "x": roster_geometry()[0],
+            "y": roster_geometry()[1],
+            "w": roster_geometry()[2],
+            "h": roster_geometry()[3],
+        },
         {"name": "status", "role": "status", "x": status_x, "y": status_y, "w": status_w, "h": status_h},
         {
             "name": "new",
@@ -2090,10 +2228,16 @@ def shorten_layout(ui):
     }
 
 
+def roster_layout(ui):
+    """The same window, with the party roster and an assignment macro in the editor."""
+    return window_layout(ui)
+
+
 def layout(ui, popup):
     return {
         "scenes": [
             window_layout(ui),
+            roster_layout(ui),
             history_layout(),
             import_layout(),
             recipes_layout(ui, popup),
@@ -2134,6 +2278,23 @@ def main():
     )
     wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "window.png")
     print(output / "window.png")
+
+    roster_data = {
+        **window_data,
+        "lines": data["roster_lines"],
+        "explain": [],
+        "diagnostics": [],
+        "length": len(ROSTER_BODY),
+    }
+    roster_canvas = window(
+        ui,
+        body=ROSTER_BODY,
+        current_line=ROSTER_LINE,
+        caret_column=len(ROSTER_BODY.split("\n")[ROSTER_LINE]),
+        data=roster_data,
+    )
+    wowmock.scene(ui, [(roster_canvas, 0, 0)]).save(output / "roster.png")
+    print(output / "roster.png")
 
     history_canvas = window(
         ui,
