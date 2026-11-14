@@ -21,16 +21,19 @@ local ROW_HEIGHT = 20
 ---@field Name FontString
 ---@field Highlight Texture
 
+---@class MacroAssistRosterScrollBox : Frame, ScrollBoxListMixin
+
 ---@class MacroAssistRosterPanel : Frame
 ---@field title FontString
 ---@field inset Frame
----@field scrollBox Frame
+---@field scrollBox MacroAssistRosterScrollBox
 ---@field scrollBar Frame
 ---@field empty FontString
 ---@field provider DataProviderMixin
 ---@field members MacroAssistRosterMember[]
 ---@field inGroup boolean
 ---@field raid boolean
+---@field Refresh fun(self: MacroAssistRosterPanel): MacroAssistRosterPanel
 
 local Panel = {}
 ns.RosterPanel = Panel
@@ -109,7 +112,7 @@ function Panel.Create(parent, editor)
 	panel.inset:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -(TITLE_HEIGHT + TITLE_GAP))
 	panel.inset:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, 0)
 
-	panel.scrollBox = CreateFrame("Frame", nil, panel.inset, "WowScrollBoxList")
+	panel.scrollBox = CreateFrame("Frame", nil, panel.inset, "WowScrollBoxList") --[[@as MacroAssistRosterScrollBox]]
 	panel.scrollBox:SetPoint("TOPLEFT", panel.inset, "TOPLEFT", INSET_PADDING, -INSET_PADDING)
 	panel.scrollBox:SetPoint(
 		"BOTTOMRIGHT",

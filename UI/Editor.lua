@@ -1034,7 +1034,7 @@ function Editor:DropTextAt(text, cursor)
 	local source = self:GetText()
 	local position = math.max(0, math.min(cursor or #source, #source))
 	local newText, caret = Editor.ReplaceWord(source, position, text)
-	if not newText then
+	if not newText or not caret then
 		newText = source:sub(1, position) .. text .. source:sub(position + 1)
 		caret = position + #text
 	end
