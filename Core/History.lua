@@ -332,7 +332,7 @@ end
 ---@class MacroAssistRestoreContext
 ---@field inCombat boolean?
 ---@field find fun(name: string): integer?
----@field edit fun(index: integer, name: string, icon: any, body: string)
+---@field edit fun(index: integer, name: string, icon: any, body: string): boolean, integer?
 ---@field create fun(name: string, icon: any, body: string, character: boolean): integer?
 ---@field character boolean?
 
@@ -340,7 +340,7 @@ end
 ---@param context MacroAssistRestoreContext
 ---@return string? kind "edit" or "create"
 ---@return integer? index
----@return string? reason "combat", "missing" or "full"
+---@return string? reason "combat", "missing", "full" or "refused"
 function History.Restore(snapshot, context)
 	if type(snapshot) ~= "table" or type(snapshot.name) ~= "string" or snapshot.name == "" then
 		return nil, nil, "missing"
@@ -350,8 +350,13 @@ function History.Restore(snapshot, context)
 	end
 	local index = context.find and context.find(snapshot.name) or nil
 	if index then
-		context.edit(index, snapshot.name, snapshot.icon, snapshot.body or "")
-		return "edit", index
+		-- The write reports whether the client took the edit and, after a rename, the macro's live index. A refused
+		-- write has no live index and must not be reported as a successful restore.
+		local ok, actual = context.edit(index, snapshot.name, snapshot.icon, snapshot.body or "")
+		if not ok or type(actual) ~= "number" or actual <= 0 then
+			return nil, nil, "refused"
+		end
+		return "edit", actual
 	end
 	if not context.create then
 		return nil, nil, "missing"

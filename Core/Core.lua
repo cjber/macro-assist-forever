@@ -45,6 +45,8 @@ end
 
 local addon = CreateFrame("Frame")
 addon:RegisterEvent("ADDON_LOADED")
+addon:RegisterEvent("PLAYER_LOGIN")
+addon:RegisterEvent("UPDATE_MACROS")
 
 -- Every saved key's default. A new option and an old save file agree because the load fills only a missing key.
 ns.DEFAULTS = {
@@ -146,6 +148,12 @@ function ns.Toggle()
 end
 
 addon:SetScript("OnEvent", function(_, event, name)
+	if event == "PLAYER_LOGIN" or event == "UPDATE_MACROS" then
+		if type(MacroAssistForeverDB) == "table" and ns.CharacterMacros then
+			ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		end
+		return
+	end
 	if event == "ADDON_LOADED" and name == addonName then
 		MacroAssistForeverDB = type(MacroAssistForeverDB) == "table" and MacroAssistForeverDB or {}
 		for key, value in pairs(ns.DEFAULTS) do

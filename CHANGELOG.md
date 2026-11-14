@@ -5,6 +5,15 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+<!-- discord-image: docs/screenshots/characters.png -->
+
+- **Copy a macro from another character.** Characters lists the other characters' General and character macros and
+  shows the lines that differ from the macro already using that name in a scrolling diff. Keep both saves it under a
+  free name, Replace asks for a second click, and both are off in combat.
+- **Renaming a macro keeps the editor on it.** Further edits and Save continue to change the renamed macro, leaving
+  neighbouring macros untouched.
+- **A history restore the game refuses leaves everything as it was.** The macro, its saved history and the editor text
+  stay unchanged instead of reporting a restore that did not happen.
 - **Recipes shows the whole macro, not just its first line.** The preview draws every laid-out row of the selected
   recipe on its own, indents every wrapped row, and scrolls when the macro is taller than the box. (#165)
 - **The Recipes status line sits beside Import.** "Learn at level 20." and the other messages no longer draw over

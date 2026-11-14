@@ -39,6 +39,7 @@ local DELETE_WIDTH = 90
 local HISTORY_WIDTH = 90
 local IMPORT_WIDTH = 90
 local RECIPES_WIDTH = 90
+local CHARACTERS_WIDTH = 90
 local FOOTER_GAP = 6
 local RENAME_WIDTH = 110
 local RENAME_HEIGHT = 22
@@ -69,6 +70,38 @@ local LEFT_PANEL_Y = -116
 local WHITE_ICON_FRAME = "Interface\\Common\\WhiteIconFrame"
 local MUTED = { 0.55, 0.55, 0.55 }
 local ROW_MUTED = { 0.6, 0.6, 0.6 }
+-- The copy dialog: the native ButtonFrameTemplate over the macro window, its guidance line, the scrollable list of
+-- other characters' macros, and a scrollable inset that shows every changed line of the selected copy. The inset
+-- scrolls because a 255-character body can wrap far past the panel, and the old fixed status line hid the incoming
+-- line entirely. One table keeps these constants from pushing Create past Lua 5.1's 60-upvalue limit.
+local COPY = {
+	width = 440,
+	height = 360,
+	inset = 10,
+	statusTop = 62,
+	statusHeight = 28,
+	sourceTop = 100,
+	sourceBottom = 200,
+	scrollRight = 36,
+	diffTop = 170,
+	diffBottom = 48,
+	buttonWidth = 180,
+	buttonHeight = 26,
+	buttonBottom = 14,
+	diffInset = 3,
+	scrollWidth = 18,
+	scrollGap = 4,
+	textInset = 2,
+	rowPadding = 2,
+	red = { 1, 0.25, 0.25 },
+	green = { 0.2, 1, 0.6 },
+	gold = { 1, 0.82, 0.2 },
+}
+COPY.textWidth = COPY.width
+	- COPY.inset * 2
+	- COPY.diffInset * 2
+	- (COPY.scrollWidth + COPY.scrollGap)
+	- COPY.textInset * 2
 -- Icon art carries a baked-in border. The client's item buttons crop 8% off every edge, so every spell or item
 -- icon we draw does the same and its frame never shows a second border inside ours.
 local ICON_TEXCOORD = { 0.08, 0.92, 0.08, 0.92 }
@@ -135,6 +168,11 @@ local ACTION_SLOTS = 180
 ---@class MacroAssistPortraitContainer : Frame
 ---@field portrait Texture
 
+---@class MacroAssistCharacterScroll : Frame, ScrollBoxListMixin
+
+---@class MacroAssistDiffRow : Frame
+---@field Text FontString
+
 ---@class MacroAssistFrame : Frame
 ---@field TitleContainer MacroAssistTitleContainer
 ---@field PortraitContainer MacroAssistPortraitContainer
@@ -144,6 +182,13 @@ local ACTION_SLOTS = 180
 ---@field searchBox MacroAssistSearchBox
 ---@field count FontString
 ---@field listInset Frame
+---@field charactersButton Button
+---@field charactersPanel Frame
+---@field currentCharacter? string
+---@field refreshCharacterSources fun()
+---@field refreshCharacterPreview fun()
+---@field closeCharacters fun()
+---@field updateCharacters fun()
 ---@field editorSurface Frame
 ---@field statusBar Frame
 ---@field explainPanel MacroAssistExplainPanel
@@ -481,6 +526,10 @@ function Window.Create()
 	recipes:SetSize(RECIPES_WIDTH, BUTTON_HEIGHT)
 	recipes:SetPoint("LEFT", import, "RIGHT", FOOTER_GAP, 0)
 	recipes:SetText(L["Recipes"])
+	local characters = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
+	characters:SetSize(CHARACTERS_WIDTH, BUTTON_HEIGHT)
+	characters:SetPoint("LEFT", recipes, "RIGHT", FOOTER_GAP, 0)
+	characters:SetText(L["Characters"])
 	local save = CreateFrame("Button", nil, frame, "SharedButtonSmallTemplate")
 	save:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT)
 	save:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, 8)
@@ -493,6 +542,7 @@ function Window.Create()
 	frame.deleteButton = delete
 	frame.historyButton = history
 	frame.importButton = import
+	frame.charactersButton = characters
 	frame.recipesButton = recipes
 	frame.newButton = new
 	frame.saveButton = save
@@ -524,6 +574,283 @@ function Window.Create()
 	frame.shortenPanel = ns.ShortenPanel.Create(frame, function(text)
 		Window:ApplyShorten(text)
 	end)
+	local characterPanel = CreateFrame("Frame", nil, frame, "ButtonFrameTemplate")
+	characterPanel:Hide()
+	characterPanel:SetPoint("TOPLEFT", frame, "TOPLEFT", 70, -70)
+	characterPanel:SetSize(COPY.width, COPY.height)
+	characterPanel:SetFrameLevel(frame:GetFrameLevel() + 20)
+	characterPanel:SetFrameStrata("DIALOG")
+	characterPanel:SetToplevel(true)
+	characterPanel:EnableMouse(true)
+	characterPanel.TitleContainer.TitleText:SetText(L["Copy from another character"])
+	characterPanel.PortraitContainer.portrait:SetTexture(ns.Icon)
+	characterPanel.Inset:Hide()
+	local selectedSource
+	local selectedTarget
+	local replaceArmed = false
+	local currentCharacter = frame.currentCharacter
+	local function destinationFor(scope)
+		local current = currentCharacter or ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		local record = MacroAssistForeverDB.characters[current]
+		record[scope] = record[scope] or {}
+		return record[scope]
+	end
+	local function FindDestination(scope, targetName)
+		local account, characterCount = GetNumMacros()
+		account, characterCount = account or 0, characterCount or 0
+		local first = scope == "character" and (MAX_ACCOUNT + 1) or 1
+		local last = scope == "character" and (MAX_ACCOUNT + characterCount) or account
+		for index = first, last do
+			if GetMacroInfo(index) == targetName then
+				return index
+			end
+		end
+	end
+
+	local status = characterPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	status:SetPoint("TOPLEFT", 14, -COPY.statusTop)
+	status:SetPoint("TOPRIGHT", characterPanel, "TOPRIGHT", -14, -COPY.statusTop)
+	status:SetHeight(COPY.statusHeight)
+	status:SetJustifyH("LEFT")
+	status:SetJustifyV("TOP")
+	status:SetWordWrap(true)
+	characterPanel.status = status
+
+	local sourceScroll = CreateFrame("Frame", nil, characterPanel, "WowScrollBoxList") --[[@as MacroAssistCharacterScroll]]
+	sourceScroll:SetPoint("TOPLEFT", 14, -COPY.sourceTop)
+	sourceScroll:SetPoint("BOTTOMRIGHT", -COPY.scrollRight, COPY.sourceBottom)
+	local sourceBar = CreateFrame("EventFrame", nil, characterPanel, "MinimalScrollBar")
+	sourceBar:SetPoint("TOPLEFT", sourceScroll, "TOPRIGHT", 6, 0)
+	sourceBar:SetPoint("BOTTOMLEFT", sourceScroll, "BOTTOMRIGHT", 6, 0)
+	local sourceView = CreateScrollBoxListLinearView()
+	sourceView:SetElementExtent(30)
+	local sourceProvider = CreateDataProvider() --[[@as DataProviderMixin]]
+	characterPanel.sourceScroll = sourceScroll
+
+	-- The copy's changed lines, one wrapped row each: the macro's name, then the old line in red and the incoming line
+	-- in green. The inset scrolls, so a long body is read in full instead of being cut off at a fixed line count.
+	local diffInset = CreateFrame("Frame", nil, characterPanel, "InsetFrameTemplate")
+	diffInset:SetPoint("TOPLEFT", COPY.inset, -COPY.diffTop)
+	diffInset:SetPoint("BOTTOMRIGHT", -COPY.inset, COPY.diffBottom)
+	local diffScroll = CreateFrame("Frame", nil, diffInset, "WowScrollBoxList") --[[@as MacroAssistCharacterScroll]]
+	diffScroll:SetPoint("TOPLEFT", COPY.diffInset, -COPY.diffInset)
+	diffScroll:SetPoint("BOTTOMRIGHT", -(COPY.scrollWidth + COPY.scrollGap + COPY.diffInset), COPY.diffInset)
+	local diffBar = CreateFrame("EventFrame", nil, diffInset, "MinimalScrollBar")
+	diffBar:SetPoint("TOPLEFT", diffScroll, "TOPRIGHT", COPY.scrollGap, 0)
+	diffBar:SetPoint("BOTTOMLEFT", diffScroll, "BOTTOMRIGHT", COPY.scrollGap, 0)
+	local diffView = CreateScrollBoxListLinearView()
+	diffView:SetElementExtentCalculator(function(_, data)
+		return data.height
+	end)
+	diffView:SetElementInitializer("MacroAssistDiffRowTemplate", function(row, data)
+		---@cast row MacroAssistDiffRow
+		local colour = data.kind == "old" and COPY.red
+			or data.kind == "new" and COPY.green
+			or data.kind == "name" and COPY.gold
+			or MUTED
+		row.Text:SetFontObject("MacroAssistMono")
+		row.Text:SetText((data.text or ""):gsub("|", "||"))
+		row.Text:SetTextColor(colour[1], colour[2], colour[3])
+	end)
+	ScrollUtil.InitScrollBoxListWithScrollBar(diffScroll, diffBar, diffView)
+	local diffProvider = CreateDataProvider() --[[@as DataProviderMixin]]
+	characterPanel.diffScroll = diffScroll
+	local measure = diffInset:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
+	measure:SetWidth(COPY.textWidth)
+	measure:SetJustifyH("LEFT")
+	measure:SetWordWrap(true)
+	measure:Hide()
+	local function DiffRowHeight(text)
+		measure:SetText((text or ""):gsub("|", "||"))
+		local height = measure:GetStringHeight()
+		if type(height) ~= "number" or height <= 0 then
+			return 19
+		end
+		return math.ceil(height) + COPY.rowPadding
+	end
+	local function ShowDiff(rows)
+		diffProvider:Flush()
+		for _, row in ipairs(rows or {}) do
+			local prefix = row.kind == "old" and "- " or row.kind == "new" and "+ " or ""
+			local text = prefix .. (row.text or "")
+			diffProvider:Insert({ kind = row.kind, text = text, height = DiffRowHeight(text) })
+		end
+		diffScroll:SetDataProvider(diffProvider --[[@as DataProviderMixin]], ScrollBoxConstants.RetainScrollPosition)
+	end
+
+	local keep, replace
+	local function setActionState()
+		local usable = selectedSource ~= nil and not (Window.combat == true or InCombatLockdown())
+		if keep and keep.SetEnabled then
+			keep:SetEnabled(usable)
+		end
+		if replace and replace.SetEnabled then
+			replace:SetEnabled(usable)
+		end
+		-- A confirmed Replace never survives combat: the macro it would write may have changed while the panel waited.
+		if replaceArmed and not usable then
+			replaceArmed = false
+			replace:SetText(L["Replace"])
+		end
+	end
+
+	-- The source selection freezes its destination scope, so a later click cannot replace a macro on another tab that
+	-- the player never saw.
+	local function PreviewSource(source, scope)
+		selectedSource = source
+		selectedTarget = scope
+		replaceArmed = false
+		replace:SetText(L["Replace"])
+		status:SetText(L["Choose Keep both or Replace."])
+		local destination = destinationFor(scope)
+		local plan = ns.CharacterMacros.PlanMacro(source, destination, true)
+		local existing
+		for _, macro in ipairs(destination) do
+			if plan.conflicts[1] and macro.name == plan.conflicts[1].name then
+				existing = macro
+				break
+			end
+		end
+		ShowDiff(ns.CharacterMacros.Diff(source.macro, existing))
+		setActionState()
+	end
+	local function SelectSource(source)
+		PreviewSource(source, Window.tab == 2 and "character" or "general")
+	end
+	sourceView:SetElementInitializer("SharedButtonSmallTemplate", function(button, source)
+		button:SetSize(390, 26)
+		button:SetText(
+			source.record.name .. " - " .. source.record.realm .. " · " .. source.scope .. " · " .. source.macro.name
+		)
+		button:SetScript("OnClick", function()
+			SelectSource(source)
+		end)
+	end)
+	ScrollUtil.InitScrollBoxListWithScrollBar(sourceScroll, sourceBar, sourceView)
+	local function closeCharacters()
+		characterPanel:Hide()
+		selectedSource = nil
+		selectedTarget = nil
+		replaceArmed = false
+		status:SetText("")
+		ShowDiff({})
+		if replace then
+			replace:SetText(L["Replace"])
+		end
+		setActionState()
+	end
+	characterPanel.CloseButton:SetScript("OnClick", function()
+		closeCharacters()
+	end)
+	local function refreshSources()
+		selectedSource = nil
+		selectedTarget = nil
+		replaceArmed = false
+		replace:SetText(L["Replace"])
+		local current = currentCharacter or ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
+		sourceProvider:Flush()
+		for _, source in ipairs(ns.CharacterMacros.Macros(MacroAssistForeverDB, current)) do
+			sourceProvider:Insert(source)
+		end
+		local hasSources = sourceProvider:GetSize() > 0
+		status:SetText(hasSources and L["Choose a macro to copy."] or L["No other character macros available"])
+		ShowDiff({})
+		setActionState()
+		sourceScroll:SetDataProvider(
+			sourceProvider --[[@as DataProviderMixin]],
+			ScrollBoxConstants.RetainScrollPosition
+		)
+	end
+	local function copySelected(keepBoth, replaceConflicts)
+		if not selectedSource or not selectedTarget or InCombatLockdown() then
+			return
+		end
+		if not Window:SaveCurrent() then
+			status:SetText(L["Save the macro before copying."])
+			return
+		end
+		local scope = selectedTarget
+		local destination = destinationFor(scope)
+		local plan = ns.CharacterMacros.PlanMacro(selectedSource, destination, keepBoth)
+		local created
+		for _, macro in ipairs(plan.create) do
+			-- The client keeps macro indexes in name order, so a new name is made unique in the whole store and the
+			-- index CreateMacro returns is the one the editor selects, as New and Import already do.
+			local copiedName = ns.CharacterMacros.UniqueName(macro.name, function(candidate)
+				return Window.FindMacro(Window, candidate) ~= nil
+			end)
+			local actual = Window:WriteCreate(copiedName, macro.icon, macro.body, scope == "character")
+			if not actual then
+				status:SetText(L["Macro limit reached"])
+				return
+			end
+			created = actual
+		end
+		local replaced = false
+		if replaceConflicts then
+			for _, macro in ipairs(plan.conflicts) do
+				local index = FindDestination(scope, macro.name)
+				if not index or not Window:WriteMacro(index, macro.name, macro.icon, macro.body) then
+					status:SetText(L["The macro was not replaced."])
+					return
+				end
+				if index == Window.selected then
+					replaced = true
+				end
+			end
+		end
+		if created then
+			-- A create can move the selected macro; select the created one before the next edit can land on it.
+			Window.drafts[created] = nil
+			Window.selected = created
+			Window.dirty = false
+			Window.pendingName = nil
+			Window.pendingIcon = nil
+			Window.desiredPosition = created - (Window.base or 0)
+			Window:LoadSelected()
+		elseif replaced then
+			-- Replace edited the selected macro's store but not the editor, and RefreshList has no reason to reload the
+			-- same index. Take the live body before the next Save can write the text the player no longer sees.
+			Window.drafts[Window.selected] = nil
+			Window.dirty = false
+			Window.pendingName = nil
+			Window.pendingIcon = nil
+			Window:LoadSelected()
+		end
+		closeCharacters()
+		Window:RefreshList()
+	end
+	keep = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
+	keep:SetSize(COPY.buttonWidth, COPY.buttonHeight)
+	keep:SetPoint("BOTTOMLEFT", 14, COPY.buttonBottom)
+	keep:SetText(L["Keep both"])
+	keep:SetScript("OnClick", function()
+		copySelected(true, false)
+	end)
+	replace = CreateFrame("Button", nil, characterPanel, "SharedButtonSmallTemplate")
+	replace:SetSize(COPY.buttonWidth, COPY.buttonHeight)
+	replace:SetPoint("BOTTOMRIGHT", -14, COPY.buttonBottom)
+	replace:SetText(L["Replace"])
+	replace:SetScript("OnClick", function()
+		if not replaceArmed then
+			replaceArmed = true
+			replace:SetText(L["Confirm"])
+			status:SetText(L["Click again to replace"])
+			return
+		end
+		copySelected(false, true)
+	end)
+	setActionState()
+	characterPanel:Hide()
+	frame.charactersPanel = characterPanel
+	frame.refreshCharacterSources = refreshSources
+	frame.refreshCharacterPreview = function()
+		if characterPanel:IsShown() and selectedSource and selectedTarget then
+			PreviewSource(selectedSource, selectedTarget)
+		end
+	end
+	frame.closeCharacters = closeCharacters
+	frame.updateCharacters = setActionState
 	local lastWidth
 	editorSurface:SetScript("OnSizeChanged", function(_, width)
 		if width > 1 and width ~= lastWidth and frame:IsShown() then
@@ -575,6 +902,25 @@ function Window.Create()
 	end)
 	import:SetScript("OnClick", function()
 		Window:OpenImport()
+	end)
+	characters:SetScript("OnClick", function()
+		Window:SaveCurrent()
+		if Window.picking then
+			Window:LeavePicker()
+		end
+		Window:CloseRecipes()
+		if frame.importPanel and frame.importPanel:IsShown() then
+			ns.ImportPanel.Close(frame.importPanel)
+		end
+		if frame.shortenPanel and frame.shortenPanel:IsShown() then
+			ns.ShortenPanel.Close(frame.shortenPanel)
+		end
+		if frame.history and frame.history:IsShown() then
+			frame.history:Hide()
+		end
+		currentCharacter = frame.currentCharacter
+		refreshSources()
+		characterPanel:Show()
 	end)
 	recipes:SetScript("OnClick", function()
 		Window:OpenRecipes()
@@ -677,6 +1023,11 @@ end
 function Window:SelectTab(index)
 	if index == self.tab then
 		return
+	end
+	-- The copy dialog's diff and its armed Replace belong to the tab that was open when the source was picked. Close
+	-- it here so a tab switch cannot confirm a write against a macro the player never saw.
+	if self.frame and self.frame.closeCharacters then
+		self.frame.closeCharacters()
 	end
 	if self.picking then
 		self:LeavePicker()
@@ -882,6 +1233,7 @@ end
 ---@param icon any
 ---@param body string?
 ---@return boolean
+---@return integer? actualIndex
 function Window:WriteMacro(index, name, icon, body)
 	if InCombatLockdown() then
 		return false
@@ -897,19 +1249,44 @@ function Window:WriteMacro(index, name, icon, body)
 		return false
 	end
 	local oldName, oldIcon, oldBody = GetMacroInfo(index)
+	local snapshot
+	local previousRecord
 	if oldName then
-		ns.History.Snapshot(MacroAssistForeverDB, {
+		-- The pre-write record, so a refused edit puts back its metadata and entries exactly, including an oldest
+		-- entry the snapshot's limit evicted.
+		local record = MacroAssistForeverDB.history and MacroAssistForeverDB.history[oldName]
+		if record then
+			previousRecord = {}
+			for field, value in pairs(record) do
+				previousRecord[field] = value
+			end
+			previousRecord.entries = {}
+			for entryIndex, entry in ipairs(record.entries or {}) do
+				previousRecord.entries[entryIndex] = entry
+			end
+		end
+		snapshot = ns.History.Snapshot(MacroAssistForeverDB, {
 			name = oldName,
 			icon = oldIcon,
 			body = oldBody,
 			tab = self:TabForIndex(index),
 		}, self:Now())
 	end
-	EditMacro(index, name, icon, body)
+	-- The client keeps macros in name order, so EditMacro returns the macro's new index after a rename. The caller
+	-- gets both the write result and the live index, because keeping the old one leaves Save pointing at whichever
+	-- macro moved into it. A result with no live index is a refused write, not a success on the old index, and the
+	-- snapshot taken before it is rolled back so a refusal leaves no history entry.
+	local actual = EditMacro(index, name, icon, body)
+	if type(actual) ~= "number" or actual <= 0 then
+		if oldName and snapshot then
+			MacroAssistForeverDB.history[oldName] = previousRecord
+		end
+		return false
+	end
 	if name and oldName and name ~= oldName then
 		ns.History.Rename(MacroAssistForeverDB, oldName, name)
 	end
-	return true
+	return true, actual
 end
 
 -- A new macro's starting state is snapshotted before the create; a create the client refuses leaves no record.
@@ -930,8 +1307,10 @@ function Window:WriteCreate(name, icon, body, character)
 		tab = character and 2 or 1,
 	}, self:Now())
 	local actual = CreateMacro(name, icon, body, character)
-	if not actual then
+	-- A full list may refuse with nil or 0 depending on the client; 0 is truthy in Lua, so both mean no macro.
+	if type(actual) ~= "number" or actual <= 0 then
 		ns.History.Remove(db, name, snapshot)
+		return nil
 	end
 	return actual
 end
@@ -969,8 +1348,15 @@ function Window:SaveCurrent()
 		name = self:PendingName() or name
 		icon = self.pendingIcon
 	end
-	if not self:WriteMacro(self.selected, name, icon, self.dirty and self.frame.editor:GetText() or body) then
+	local ok, actual = self:WriteMacro(self.selected, name, icon, self.dirty and self.frame.editor:GetText() or body)
+	if not ok then
 		return false
+	end
+	if actual and actual ~= self.selected then
+		-- A rename across another macro's name moved the selected macro. Follow the live index so this editor and
+		-- the next Save stay on the macro the player renamed, not on its old neighbour.
+		self.drafts[self.selected] = nil
+		self.selected = actual
 	end
 	self.drafts[self.selected] = nil
 	self.dirty = false
@@ -989,7 +1375,19 @@ function Window:SelectMacro(actual)
 	if self.picking then
 		self:LeavePicker()
 	end
+	local wasSelected = self.selected
 	self:LeaveSelected()
+	local nowSelected = self.selected
+	-- Leaving the old selection can save a rename, and the client then moves that macro to its alphabetical index.
+	-- The clicked row's index was read before that move, so shift the target by exactly the interval the selected
+	-- macro crossed: the rows it passed move one place toward the old index.
+	if wasSelected and nowSelected and wasSelected ~= nowSelected then
+		if wasSelected < actual and actual <= nowSelected then
+			actual = actual - 1
+		elseif nowSelected <= actual and actual < wasSelected then
+			actual = actual + 1
+		end
+	end
 	self.selected = actual
 	self:LoadSelected()
 	self:RefreshList()
@@ -1268,6 +1666,9 @@ function Window:UpdateButtons()
 	self.frame.cancelButton:SetEnabled(changed)
 	self.frame.header.rename:SetEnabled(hasMacro and not combat)
 	self.frame.header.rename:SetText(self.picking and L["Back to code"] or L["Rename"])
+	if self.frame.updateCharacters then
+		self.frame.updateCharacters()
+	end
 	if self.frame.history:IsShown() then
 		self.frame.history:UpdateButtons()
 	end
@@ -1442,11 +1843,21 @@ function Window:CloseRecipes()
 	end
 end
 
+-- The Characters panel is this file's own, so the panels that open over the window close it the same way they close
+-- each other, and it never stacks under one of them.
+function Window:CloseCharacters()
+	local frame = self.frame
+	if frame and frame.closeCharacters then
+		frame.closeCharacters()
+	end
+end
+
 function Window:OpenRecipes()
 	local frame = self.frame
 	if not frame or not frame.recipesPanel then
 		return
 	end
+	self:CloseCharacters()
 	if self.picking then
 		self:LeavePicker()
 	end
@@ -1477,6 +1888,7 @@ function Window:OpenImport()
 		self:LeavePicker()
 	end
 	self:CloseRecipes()
+	self:CloseCharacters()
 	ns.ImportPanel.Open(frame.importPanel)
 end
 
@@ -1519,6 +1931,7 @@ function Window:OpenShorten()
 		ns.ImportPanel.Close(frame.importPanel)
 	end
 	self:CloseRecipes()
+	self:CloseCharacters()
 	if self.picking then
 		self:LeavePicker()
 	end
@@ -1547,6 +1960,7 @@ function Window:OpenHistory()
 		return
 	end
 	self:CloseRecipes()
+	self:CloseCharacters()
 	if not frame.history:IsShown() then
 		self.historySelected = nil
 	end
@@ -1577,7 +1991,7 @@ function Window:RestoreSnapshot(key, entry)
 			return self:FindMacro(name)
 		end,
 		edit = function(index, name, icon, body)
-			self:WriteMacro(index, name, icon, body)
+			return self:WriteMacro(index, name, icon, body)
 		end,
 		create = function(name, icon, body, character)
 			return self:WriteCreate(name, icon, body, character)
@@ -1611,6 +2025,8 @@ end
 
 function Window:OnShow()
 	local frame = self.frame
+	MacroAssistForeverDB = MacroAssistForeverDB or {}
+	frame.currentCharacter = ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 	frame:RegisterEvent("UPDATE_MACROS")
 	frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 	frame:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1670,13 +2086,25 @@ function Window:OnHide()
 	if frame.shortenPanel and frame.shortenPanel:IsShown() then
 		ns.ShortenPanel.Close(frame.shortenPanel)
 	end
+	-- The copy dialog is a child of this frame; hide it explicitly so closing and reopening does not bring back a
+	-- selection, an armed Replace, or an old error.
+	if frame.closeCharacters then
+		frame.closeCharacters()
+	end
 end
 
 function Window:OnEvent(event, ...)
 	local frame = self.frame
 	if event == "UPDATE_MACROS" then
+		MacroAssistForeverDB = MacroAssistForeverDB or {}
+		ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
 		self:RebuildBars()
 		self:RefreshList()
+		-- A macro write while the copy dialog is open invalidates its preview; rebuild it from the fresh snapshot so
+		-- Confirm never overwrites a body the player was not shown.
+		if frame.refreshCharacterPreview then
+			frame.refreshCharacterPreview()
+		end
 	elseif event == "ACTIONBAR_SLOT_CHANGED" or event == "UPDATE_BINDINGS" then
 		self:RebuildBars()
 		self:RefreshList()

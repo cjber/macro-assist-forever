@@ -101,6 +101,14 @@
           "h": 24
         },
         {
+          "name": "characters",
+          "role": "button",
+          "x": 514,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
           "name": "cancel",
           "role": "button",
           "x": 688,
@@ -375,6 +383,14 @@
           "h": 24
         },
         {
+          "name": "characters",
+          "role": "button",
+          "x": 514,
+          "y": 492,
+          "w": 90,
+          "h": 24
+        },
+        {
           "name": "cancel",
           "role": "button",
           "x": 688,
@@ -398,6 +414,56 @@
           "y": 84,
           "w": 55.0,
           "h": 112.0
+        }
+      ]
+    },
+    {
+      "frame": {
+        "x": 94,
+        "y": 94,
+        "w": 440,
+        "h": 360
+      },
+      "widgets": [
+        {
+          "name": "characters-status",
+          "role": "label",
+          "x": 108,
+          "y": 156,
+          "w": 412,
+          "h": 28
+        },
+        {
+          "name": "characters-sources",
+          "role": "list",
+          "x": 108,
+          "y": 194,
+          "w": 390,
+          "h": 60
+        },
+        {
+          "name": "characters-diff",
+          "role": "list",
+          "x": 104,
+          "y": 264,
+          "w": 420,
+          "h": 142
+        },
+        {
+          "name": "characters-keep",
+          "role": "button",
+          "x": 108,
+          "y": 414,
+          "w": 180,
+          "h": 26
+        },
+        {
+          "name": "characters-replace",
+          "role": "button",
+          "x": 340,
+          "y": 414,
+          "w": 180,
+          "h": 26
         }
       ]
     }

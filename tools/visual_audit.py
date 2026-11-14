@@ -16,6 +16,7 @@ INTENTIONAL_GAPS = {
     frozenset(("delete", "history")): 6,
     frozenset(("history", "import")): 6,
     frozenset(("import", "recipes")): 6,
+    frozenset(("recipes", "characters")): 6,
     frozenset(("cancel", "save")): 6,
     frozenset(("import-cancel", "import-button")): 6,
     frozenset(("shorten-cancel", "shorten-apply")): 6,

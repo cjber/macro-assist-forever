@@ -23,20 +23,22 @@ function M.install(sim)
 		{ name = "General One", icon = "INV_Misc_QuestionMark", body = "/cast Arcane Shot" },
 		{ name = "General Two", icon = "INV_Misc_QuestionMark", body = "/cast Mend Pet" },
 	}
+	-- The client keeps each list in name order (EditMacro returns "the new index ... as they are sorted
+	-- alphabetically"), so the fixture is in the order the client would report.
 	local character = {
 		{
 			name = "Arcane",
 			icon = 132204,
 			body = "#showtooltip\n/cast [@mouseover,harm,nodead][] Arcane Shot",
 		},
-		{ name = "Pet", icon = "Ability_Hunter_Pet_Wolf", body = "/cast Mend Pet; Revive Pet" },
 		{ name = "FD", icon = 136145, body = "/cast Feign Death\n/stopattack" },
-		{ name = "Trap", icon = 135848, body = "/cast Freezing Trap" },
 		{
 			name = "Mark",
 			icon = 132212,
 			body = "/cast [@mouseover,harm,nodead][] Hunter's Mark\n/petattack [@mouseover,harm,nodead][]",
 		},
+		{ name = "Pet", icon = "Ability_Hunter_Pet_Wolf", body = "/cast Mend Pet; Revive Pet" },
+		{ name = "Trap", icon = 135848, body = "/cast Freezing Trap" },
 	}
 
 	local function list(isCharacter)
@@ -61,21 +63,36 @@ function M.install(sim)
 			return info.name, icon, info.body
 		end
 	end
+	-- The client keeps each macro list in name order: EditMacro's return is "the new index ... as they are sorted
+	-- alphabetically", and CreateMacro returns the index the client's own picker selects. Inserting by name here is
+	-- what catches an addon that keeps a stale index after a create.
 	G.CreateMacro = function(name, icon, body, isCharacter)
 		local target = list(isCharacter)
 		local maximum = isCharacter and maxCharacter or maxAccount
 		if #target >= maximum then
 			return nil
 		end
-		target[#target + 1] = { name = name, icon = icon, body = body or "" }
-		return base(isCharacter) + #target
+		local position = #target + 1
+		for index, info in ipairs(target) do
+			if (info.name or ""):lower() > name:lower() then
+				position = index
+				break
+			end
+		end
+		table.insert(target, position, { name = name, icon = icon, body = body or "" })
+		return base(isCharacter) + position
 	end
+	-- EditMacro returns "the new index of the macro ... unless the macro name is changed, as they are sorted
+	-- alphabetically". Model that move so a rename across a neighbour's name cannot hide a stale selection.
 	G.EditMacro = function(index, name, icon, body)
 		local isCharacter = index > maxAccount
-		local info = list(isCharacter)[index - base(isCharacter)]
+		local target = list(isCharacter)
+		local position = index - base(isCharacter)
+		local info = target[position]
 		if not info then
 			return nil
 		end
+		local oldName = info.name
 		if name then
 			info.name = name
 		end
@@ -84,6 +101,18 @@ function M.install(sim)
 		end
 		if body then
 			info.body = body
+		end
+		if name and name ~= oldName then
+			table.remove(target, position)
+			local moved = #target + 1
+			for other, entry in ipairs(target) do
+				if (entry.name or ""):lower() > name:lower() then
+					moved = other
+					break
+				end
+			end
+			table.insert(target, moved, info)
+			return base(isCharacter) + moved
 		end
 		return index
 	end

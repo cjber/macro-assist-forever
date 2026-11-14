@@ -76,6 +76,7 @@ SCENES = {
         "import.png",
         "shorten.png",
         "picker.png",
+        "characters.png",
     )
 }
 
