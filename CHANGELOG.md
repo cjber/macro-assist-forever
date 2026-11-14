@@ -5,6 +5,9 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+- **A long macro stays beside its line numbers.** A pasted line wider than the editor now wraps onto its own rows,
+  shows its whole text, and keeps every line number beside the line it names. Thanks to Kal66 for the report. (#171)
+
 ## [0.6.0] - 2026-11-14
 
 <!-- discord-image: docs/screenshots/characters.png -->

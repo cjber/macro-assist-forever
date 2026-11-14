@@ -18,6 +18,7 @@
 
 | Who | What | Notes |
 |---|---|---|
+| Kal66 | Reported long pasted macros running past the editor | CurseForge; #171 |
 
 ## Inspired by
 

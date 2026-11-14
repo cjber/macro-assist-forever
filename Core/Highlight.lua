@@ -37,12 +37,10 @@ local function Paint(colours, length, from, to, colour)
 end
 
 ---@param line MacroAssistLine
----@return string
-local function Line(line)
+---@return table<integer, string> colours
+---@return integer length
+local function Colours(line)
 	local length = #line.text
-	if length == 0 then
-		return ""
-	end
 	local colours = {}
 	for position = 1, length do
 		colours[position] = TEXT
@@ -97,11 +95,20 @@ local function Line(line)
 		end
 	end
 
+	return colours, length
+end
+
+---@param line MacroAssistLine
+---@param colours table<integer, string>
+---@param from integer
+---@param to integer
+---@return string
+local function Range(line, colours, from, to)
 	local out = {}
 	local run
-	local runFrom = 1
-	for position = 1, length + 1 do
-		local colour = position <= length and colours[position] or nil
+	local runFrom = from
+	for position = from, to + 1 do
+		local colour = position <= to and colours[position] or nil
 		if colour ~= run then
 			if run then
 				local raw = line.text:sub(runFrom, position - 1):gsub("|", "||")
@@ -116,4 +123,39 @@ local function Line(line)
 	return table.concat(out)
 end
 
-ns.Highlight = { Line = Line }
+---@param line MacroAssistLine
+---@return string
+local function Line(line)
+	local colours, length = Colours(line)
+	if length == 0 then
+		return ""
+	end
+	return Range(line, colours, 1, length)
+end
+
+-- One visual row's colour-coded text, for an editor that draws each laid-out row on its own instead of asking the
+-- client to wrap the whole line a second time. `from` and `to` are 1-based byte positions inside line.text, inclusive,
+-- so a row built from absolute offsets passes `row.from - line.from + 1` and `row.to - line.from`.
+---@param line MacroAssistLine
+---@param from integer
+---@param to integer
+---@return string
+local function Slice(line, from, to)
+	local length = #line.text
+	if length == 0 then
+		return ""
+	end
+	if from < 1 then
+		from = 1
+	end
+	if to > length then
+		to = length
+	end
+	if from > to then
+		return ""
+	end
+	local colours = Colours(line)
+	return Range(line, colours, from, to)
+end
+
+ns.Highlight = { Line = Line, Slice = Slice }

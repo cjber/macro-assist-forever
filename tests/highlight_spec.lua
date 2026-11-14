@@ -48,4 +48,18 @@ local directive = "#showtooltip"
 equal(plain(highlighted(directive)), directive, "a directive survives colouring")
 equal(ns.Highlight.Line(ns.Parser.Parse("").lines[1]), "", "an empty line has no overlay text")
 
+-- The editor draws one visual row at a time, so a slice of a line must carry the same colouring and text as that
+-- part of the whole line. Splitting at any byte keeps every character exactly once.
+local line = ns.Parser.Parse(body).lines[1]
+equal(plain(ns.Highlight.Slice(line, 1, 5)), "/cast", "a slice starts at the first byte")
+local split = 8
+local joined = plain(ns.Highlight.Slice(line, 1, split)) .. plain(ns.Highlight.Slice(line, split + 1, #body))
+equal(joined, body, "two slices cover the line without losing or repeating a byte")
+equal(ns.Highlight.Slice(line, 1, 0), "", "a slice before the line is empty")
+equal(ns.Highlight.Slice(line, #body + 1, #body + 5), "", "a slice past the line is empty")
+yes(
+	ns.Highlight.Slice(line, 7, #body):find("|cffffd100", 1, true) ~= nil,
+	"a slice starting at a condition keeps its gold"
+)
+
 print(("highlight: %d checks"):format(checks))

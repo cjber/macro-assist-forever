@@ -7,8 +7,9 @@ end
 -- The macro editor: a real multi-line EditBox draws the caret and takes typing, while every visible string is an
 -- overlay FontString built from ns.Highlight. The EditBox's own text is transparent, so colour codes never count
 -- against its 255 letters. The caret, current-line highlight, gutter numbers, squiggles and popup all use the
--- EditBox's own cursor rect for the caret and a hidden FontString wrapped at the EditBox's width and word wrap for
--- every other row, never an average glyph advance or a fixed column count.
+-- EditBox's own cursor rect for the caret and a hidden FontString measured at the EditBox's width for every other
+-- row, never an average glyph advance or a fixed column count. Each measured row is drawn by its own FontString so a
+-- line wider than the editor never depends on a second, differently shaped wrap.
 
 local L = ns.L
 
@@ -955,8 +956,9 @@ function Editor:RefreshAll()
 	end
 end
 
--- One coloured FontString per logical line still wraps itself at the edit's width; the measured rows only place
--- its first row and its gutter number, and every later row shares the same pitch because they are the same rows.
+-- One coloured FontString per measured visual row, each already wrapped by the layout. A FontString that wraps a
+-- whole logical line re-breaks a long token its own way, which is how a pasted line used to run past the editor edge
+-- while the gutter numbers followed the measured rows. Every row is drawn at its own row.y, so the two never drift.
 ---@param parsed MacroAssistParse
 function Editor:LayoutLines(parsed)
 	local lineTop = {}
@@ -964,21 +966,27 @@ function Editor:LayoutLines(parsed)
 		lineTop[row.line] = lineTop[row.line] or row.y
 	end
 	local used = 0
-	for index, line in ipairs(parsed.lines) do
-		local y = lineTop[index] or 0
+	for _, row in ipairs(self.rows) do
 		used = used + 1
 		local font = self.lineFonts[used]
 		if not font then
 			font = self.overlay:CreateFontString(nil, "ARTWORK", "MacroAssistMono")
 			font:SetJustifyH("LEFT")
 			font:SetSpacing(LINE_SPACING)
+			-- The layout already wrapped this row at the measured words, so the FontString must not wrap it again.
+			font:SetWordWrap(false)
 			self.lineFonts[used] = font
 		end
+		local line = parsed.lines[row.line]
 		font:SetWidth(self.wrapWidth)
-		font:SetText(ns.Highlight.Line(line))
-		font:SetPoint("TOPLEFT", self.overlay, "TOPLEFT", TEXT_INSET_LEFT, -(TEXT_INSET_TOP + y))
+		font:SetText(ns.Highlight.Slice(line, row.from - line.from + 1, row.to - line.from))
+		font:SetPoint("TOPLEFT", self.overlay, "TOPLEFT", TEXT_INSET_LEFT, -(TEXT_INSET_TOP + row.y))
 		font:Show()
-
+	end
+	for index = used + 1, #self.lineFonts do
+		self.lineFonts[index]:Hide()
+	end
+	for index = 1, #parsed.lines do
 		local number = self.numberFonts[index]
 		if not number then
 			number = self.gutter:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -988,11 +996,8 @@ function Editor:LayoutLines(parsed)
 		end
 		number:SetText(tostring(index))
 		number:SetTextColor(0.4, 0.4, 0.4)
-		number:SetPoint("TOPLEFT", self.gutter, "TOPLEFT", 4, -y)
+		number:SetPoint("TOPLEFT", self.gutter, "TOPLEFT", 4, -(lineTop[index] or 0))
 		number:Show()
-	end
-	for index = used + 1, #self.lineFonts do
-		self.lineFonts[index]:Hide()
 	end
 	for index = #parsed.lines + 1, #self.numberFonts do
 		self.numberFonts[index]:Hide()
