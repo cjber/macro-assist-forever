@@ -3,6 +3,8 @@
 local _, ns = ...
 
 ns.Credits = {
-	players = {},
+	players = {
+		{ name = "Kal66", what = "Reported long pasted macros running past the editor" },
+	},
 	inspired = {},
 }
