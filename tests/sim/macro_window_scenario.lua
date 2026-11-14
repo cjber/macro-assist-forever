@@ -108,6 +108,32 @@ local function textOf(window)
 	return window.editor.edit:GetText()
 end
 
+local function rosterRows(window)
+	local out = {}
+	window.roster.scrollBox:ForEachFrame(function(row)
+		if row:IsShown() and row.Name then
+			out[#out + 1] = row
+		end
+	end)
+	return out
+end
+
+local function rosterNames(window)
+	local names = {}
+	for _, row in ipairs(rosterRows(window)) do
+		names[#names + 1] = row.Name:GetText()
+	end
+	return table.concat(names, ",")
+end
+
+local function rosterRowNamed(window, name)
+	for _, row in ipairs(rosterRows(window)) do
+		if row.Name:GetText() == name then
+			return row
+		end
+	end
+end
+
 -- The client reports the EditBox's caret rect after a cursor or text change; the simulator stores the cursor but
 -- does not measure one, so the scenario reports the rect from the editor's own measured rows.
 local function reportCursor(editor, position)
@@ -234,6 +260,94 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 		drag(trap)
 	end)
 	equal(sim.pickedMacro, trap.macroIndex, "dragging a row picks up its macro")
+end)
+
+scenario("the roster lists the party and a dragged name replaces only the word under the pointer", function(sim)
+	world.install(sim)
+	sim:login()
+	local window = open(sim)
+	check(window.roster, "the window has no roster panel")
+	equal(window.roster.title:GetText(), "Group", "a solo roster does not say Group")
+	equal(rosterNames(window), "", "a solo roster lists someone")
+	equal(window.roster.empty:GetText(), "Not in a group.", "a solo roster does not explain itself")
+
+	sim:joinGroup({
+		{ name = "Alphonse", className = "Mage", classFile = "MAGE" },
+		{ name = "Bertie", className = "Priest", classFile = "PRIEST" },
+	})
+	equal(window.roster.title:GetText(), "Party", "the roster title does not name the party")
+	equal(
+		rosterNames(window),
+		"Syrberus-Forever,Alphonse-Forever,Bertie-Forever",
+		"the roster did not list the party in group order"
+	)
+
+	-- A drop on the placeholder replaces exactly that word, leaving the other command line and the rest of the
+	-- assignment word alone.
+	setText(sim, window, "/raid Tank 1: <name>\n/cast Arcane Shot", false)
+	check(not window.saveButton:IsEnabled(), "the editor started dirty before the drop")
+	local editor = window.editor
+	local body = textOf(window)
+	local target = body:find("<name>", 1, true) - 1
+	local rowIndex = editor.RowAtCursor(editor.rows, target)
+	local row = editor.rows[rowIndex]
+	local x = editor.RowOffset(row, target, editor.textMeasure) + 2
+	local left = editor.edit:GetLeft()
+	local top = editor.edit:GetTop()
+	local scale = editor.edit:GetEffectiveScale()
+	check(left and top and scale, "the editor has no measurable rectangle")
+	sim.mouseX = (left + x) * scale
+	sim.mouseY = (top - row.y - editor.lineHeight / 2) * scale
+
+	local source = rosterRowNamed(window, "Alphonse-Forever")
+	check(source, "the roster has no row for the party member")
+	local drag = source:GetScript("OnDragStart")
+	check(drag, "the roster row is not a drag source")
+	sim:input(function()
+		drag(source)
+	end)
+	local receive = source:GetScript("OnDragStop")
+	check(receive, "the editor does not accept a dropped name")
+	sim:input(function()
+		receive(source)
+	end)
+	equal(
+		textOf(window),
+		"/raid Tank 1: Alphonse-Forever\n/cast Arcane Shot",
+		"the drop did not replace only the word under the pointer"
+	)
+	equal(editor.edit:GetCursorPosition(), target + #"Alphonse-Forever", "the caret did not follow the dropped name")
+	check(window.saveButton:IsEnabled(), "the drop did not mark the macro edited")
+
+	sim:leaveGroup()
+	equal(window.roster.title:GetText(), "Group", "the roster title did not return to Group")
+	equal(#rosterRows(window), 0, "the roster kept names after the group ended")
+	equal(window.roster.empty:GetText(), "Not in a group.", "the empty roster does not explain itself")
+	sim:expectNoErrors(ADDON)
+end)
+
+scenario("unsupported link routing preserves native ownership with mouse and gamepad", function(sim)
+	world.install(sim)
+	sim:loadBlizzard("Blizzard_ChatFrameBase")
+	local chat = sim.G.ChatFrameUtil
+	check(chat and type(chat.InsertLink) == "function", "native insertion source was not loaded")
+	local original = chat.InsertLink
+	check(
+		debug.getinfo(original, "S").source:find("Blizzard_ChatFrameBase/Mainline/ChatFrameUtilOverrides.lua", 1, true),
+		"insertion must come from pinned Blizzard source"
+	)
+	check(sim.G.issecurevariable(chat, "InsertLink"), "native insertion starts tainted")
+	sim:login()
+	local window = open(sim)
+	for _, gamepad in ipairs({ false, true }) do
+		sim:setGamepad(gamepad)
+		window.editor.edit:SetFocus()
+		equal(chat.InsertLink, original, "the addon replaced native insertion")
+		equal(sim.taint.slots[chat] and sim.taint.slots[chat].InsertLink, nil, "native insertion carries addon taint")
+		sim:gamepadNavigate()
+	end
+	sim:expectNoErrors(ADDON)
+	sim:expectNoGamepadTaint(ADDON)
 end)
 
 scenario("Characters without other snapshots explains the empty list", function(sim)

@@ -18,7 +18,7 @@ No sign-in.
 
 ## Important flows
 
-- The TOC's load order: `Locales/`, the Forever Core shared files, then `Core/Core.lua`.
+- The TOC's load order: `Locales/`, the ForeverCore shared files, then `Core/Core.lua`.
 - Saved settings: every key in `ns.DEFAULTS` is filled when the addon loads, and an existing value is kept.
 - Shared Forever files: the error journal, debug log, report window and family links load without any other addon.
 

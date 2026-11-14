@@ -149,8 +149,12 @@ ns.L = {
 	-- The macro window.
 	["Macros"] = true,
 	["General"] = true,
+	["Party"] = true,
 	["%s's Macros"] = true,
 	["No macros yet. Press New to make one."] = true,
+	["Not in a group."] = true,
+	["No group members."] = true,
+	["Drag a name onto a word to replace it."] = true,
 	["Character macro · %d of %d"] = true,
 	["General macro · %d of %d"] = true,
 	["Character macro"] = true,

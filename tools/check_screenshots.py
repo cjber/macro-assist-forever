@@ -35,6 +35,7 @@ def scene():
                 "tools/screenshots.py",
                 "UI/MacroWindow.lua",
                 "UI/MacroWindow.xml",
+                "UI/Roster.lua",
                 "UI/IconSelector.lua",
                 "UI/Editor.lua",
                 "UI/History.lua",
@@ -48,6 +49,7 @@ def scene():
                 "Core/Complete.lua",
                 "Core/Bars.lua",
                 "Core/Import.lua",
+                "Core/Roster.lua",
                 "Core/Shorten.lua",
                 "Core/Lexer.lua",
                 "Core/Parser.lua",
@@ -69,6 +71,7 @@ SCENES = {
     name: scene
     for name in (
         "window.png",
+        "roster.png",
         "completion.png",
         "recipes.png",
         "recipes-popup.png",

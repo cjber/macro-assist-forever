@@ -43,6 +43,8 @@ local CHARACTERS_WIDTH = 90
 local FOOTER_GAP = 6
 local RENAME_WIDTH = 110
 local RENAME_HEIGHT = 22
+local ROSTER_WIDTH = 156
+local ROSTER_GAP = 8
 local SEARCH_LEFT = 60
 local SEARCH_TOP = -32
 local SEARCH_WIDTH = 146
@@ -190,6 +192,7 @@ local ACTION_SLOTS = 180
 ---@field closeCharacters fun()
 ---@field updateCharacters fun()
 ---@field editorSurface Frame
+---@field roster MacroAssistRosterPanel
 ---@field statusBar Frame
 ---@field explainPanel MacroAssistExplainPanel
 ---@field editor MacroAssistEditor
@@ -477,7 +480,13 @@ function Window.Create()
 	-- right column down to the status line.
 	local editorSurface = CreateFrame("Frame", nil, frame, "BackdropTemplate")
 	editorSurface:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -GAP)
-	editorSurface:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, BOTTOM_OFFSET + STATUS_HEIGHT)
+	editorSurface:SetPoint(
+		"BOTTOMRIGHT",
+		frame,
+		"BOTTOMRIGHT",
+		INSET_RIGHT - ROSTER_WIDTH - ROSTER_GAP,
+		BOTTOM_OFFSET + STATUS_HEIGHT
+	)
 	-- The tooltip's old loose backdrop files are blacklisted by the suite asset gate, so the same dark fill and
 	-- 1-unit grey edge come from the client's white primitive instead of the pre-NineSlice tooltip files.
 	editorSurface:SetBackdrop({
@@ -564,6 +573,9 @@ function Window.Create()
 
 	frame.explainPanel = BuildExplainPanel(editorSurface)
 	frame.editor = ns.Editor.Create(editorSurface, statusBar)
+	frame.roster = ns.RosterPanel.Create(frame, frame.editor)
+	frame.roster:SetPoint("TOPLEFT", editorSurface, "TOPRIGHT", ROSTER_GAP, 0)
+	frame.roster:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, BOTTOM_OFFSET + STATUS_HEIGHT)
 	frame.history = ns.HistoryPanel.Create(frame)
 	frame.importPanel = ns.ImportPanel.Create(frame, function(body)
 		Window:ImportMacro(body)
@@ -2037,6 +2049,7 @@ function Window:OnShow()
 	frame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 	frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
 	frame:RegisterEvent("UPDATE_BINDINGS")
+	frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 	ns.Context.Rebuild()
 	self:RebuildBars()
 	self.combat = InCombatLockdown()
@@ -2044,6 +2057,7 @@ function Window:OnShow()
 	self:UpdatePortrait()
 	frame.editor:RefreshAll()
 	frame.editor:SetCombat(self.combat)
+	frame.roster:Refresh()
 	self:RefreshList()
 	self:UpdateButtons()
 end
@@ -2069,6 +2083,7 @@ function Window:OnHide()
 	frame:UnregisterEvent("UNIT_PORTRAIT_UPDATE")
 	frame:UnregisterEvent("ACTIONBAR_SLOT_CHANGED")
 	frame:UnregisterEvent("UPDATE_BINDINGS")
+	frame:UnregisterEvent("GROUP_ROSTER_UPDATE")
 	frame.editor:ClearFocus()
 	frame.editor:HideCompletion()
 	if frame.picker then
@@ -2108,6 +2123,10 @@ function Window:OnEvent(event, ...)
 	elseif event == "ACTIONBAR_SLOT_CHANGED" or event == "UPDATE_BINDINGS" then
 		self:RebuildBars()
 		self:RefreshList()
+	elseif event == "GROUP_ROSTER_UPDATE" then
+		if frame.roster then
+			frame.roster:Refresh()
+		end
 	elseif event == "UNIT_PORTRAIT_UPDATE" then
 		local unit = ...
 		if unit == "player" then

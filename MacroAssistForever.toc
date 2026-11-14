@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Dependencies: ForeverCore
-## X-Forever-Core: v1.12.0
+## X-Forever-Core: v1.12.1
 ## Title: Macro Assist Forever
 ## Notes: A macro list and editor with completions, live checks and a bundled mono font.
 ## Author: cjber
@@ -38,8 +38,10 @@ Core\Complete.lua
 Core\Check.lua
 Core\Shorten.lua
 Core\Secret.lua
+Core\Roster.lua
 UI\Context.lua
 UI\Editor.lua
+UI\Roster.lua
 UI\IconSelector.lua
 UI\History.lua
 UI\Import.lua
