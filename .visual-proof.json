@@ -1,23 +1,23 @@
 {
-  "input_digest": "08930e08987777f16947d4ece4f8c91a211a69988919228953658d4755eec4da",
-  "runtime_sha256": "08930e08987777f16947d4ece4f8c91a211a69988919228953658d4755eec4da",
-  "candidate": "f934a0f34898df326bd763a4844fb0f486c6a98a9640a7732e500ef446046426",
+  "input_digest": "8fff4109eb2347fa041d9d1b16d706faae96964e6b40f3e9f493af492265d449",
+  "runtime_sha256": "8fff4109eb2347fa041d9d1b16d706faae96964e6b40f3e9f493af492265d449",
+  "candidate": "717651e49a5138f845609f8a0d47e7a23e9baf767ba89fd4f49fed1734e50599",
   "client_build": "1.60.1.70938 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "3ae093c42245be0361cda08f8b9f461286f1d8bb",
+  "source_commit": "e8d5c7c3950139e7649e91f55e5a61c517e4703e",
   "flows": [
     {
-      "name": "long macro in the editor",
+      "name": "client",
       "steps": [
-        "/home/cjber/.cache/agent-scratch/sweep/wow/maf171/long-macro.lua"
+        "/macroassist"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/4177230fa23d208245e6293231b74049/raw/cf57376bee0bb894ecb824f139b06271a8ce1bf9/1-long-macro-in-the-editor.png",
-      "sha256": "ab318c5cd3d7d584e5fc917c7ae530d97129beb33aff242c3ef1d98f4ccc57f2"
+      "url": "https://gist.githubusercontent.com/cjber/e5805e2db69082906783844e0431e09b/raw/2fe3db90f33ab5270bc54143f1c5a4f221e8a217/1-client.png",
+      "sha256": "6e83c3e8d20565861a015ee098af7bad9591c2636e85c3c51472ee382c7f2074"
     }
   ]
 }
