@@ -73,7 +73,10 @@ for line in toc:lines() do
 end
 toc:close()
 
-equal(metadata["Dependencies"], "ForeverCore", "the TOC requires ForeverCore")
+equal(metadata["OptionalDeps"], "ForeverCore", "the TOC optionally loads ForeverCore")
+for dependency in (metadata["Dependencies"] or ""):gmatch("[^,%s]+") do
+	assert(dependency:lower() ~= "forevercore", "ForeverCore must not be a required TOC dependency")
+end
 equal(loaded[1], "Locales/enUS.lua", "the locale loads first")
 equal(loaded[2], "Core/ForeverRequire.lua", "the shared warning follows it")
 equal(loaded[3], "Core/Require.lua", "the feature check follows that, before any addon code")

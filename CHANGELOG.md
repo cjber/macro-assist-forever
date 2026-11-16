@@ -9,6 +9,9 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 <!-- forever-core-sync -->
 
+- **Macro Assist Forever now loads without ForeverCore and says on screen what to do.** When ForeverCore is missing,
+  turned off or out of date, one line names the fix: install it from CurseForge, enable it in the AddOns list, or
+  update the addon that is out of date.
 - Ships with the same shared code as your other Forever addons, so they keep working together.
 
 ## [0.7.2] - 2026-11-16

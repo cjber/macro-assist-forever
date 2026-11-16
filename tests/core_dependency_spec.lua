@@ -25,8 +25,23 @@ assert(metadata["X-Forever-Core"], "the TOC names the ForeverCore release it bun
 
 local messages = {}
 local addons = {
-	{ name = ADDON, title = TITLE, tag = metadata["X-Forever-Core"], loaded = true, enabled = 2 },
-	{ name = "OtherForever", title = "Other Forever", tag = "v1.4.1", loaded = true, enabled = 2 },
+	{
+		name = ADDON,
+		title = TITLE,
+		tag = metadata["X-Forever-Core"],
+		loaded = true,
+		enabled = 2,
+		coreDependency = true,
+	},
+	{
+		name = "OtherForever",
+		title = "Other Forever",
+		tag = "v1.4.1",
+		loaded = true,
+		enabled = 2,
+		coreDependency = true,
+	},
+	{ name = "ForeverCore", title = "ForeverCore", loaded = true, enabled = 2 },
 }
 
 _G.C_AddOns = {
@@ -37,9 +52,20 @@ _G.C_AddOns = {
 		return addons[index] and addons[index].name
 	end,
 	GetAddOnMetadata = function(target, field)
-		local item = type(target) == "number" and addons[target] or (target == ADDON and addons[1])
+		local item = type(target) == "number" and addons[target] or nil
+		if type(target) == "string" then
+			for _, addon in ipairs(addons) do
+				if addon.name == target then
+					item = addon
+					break
+				end
+			end
+		end
 		if not item then
 			return nil
+		end
+		if field == "X-Curse-Project-ID" and item.name == "ForeverCore" then
+			return "1796337"
 		end
 		if field == "X-Forever-Icon" then
 			return metadata["X-Forever-Icon"]
@@ -59,9 +85,12 @@ _G.C_AddOns = {
 		return addons[index] and addons[index].enabled or 0
 	end,
 	-- The client answers one return per dependency, never a table.
-	GetAddOnDependencies = function()
-		return "ForeverCore" -- multi-value: one return per dependency
+	GetAddOnDependencies = function(index)
+		if addons[index] and addons[index].coreDependency then
+			return "ForeverCore" -- multi-value: one return per dependency
+		end
 	end,
+	GetAddOnOptionalDependencies = function() end,
 }
 _G.UnitName = function(unit)
 	assert(unit == "player", "asks about the player")
@@ -84,7 +113,7 @@ local function Run(core)
 	return ns
 end
 
--- No ForeverCore at all: the addon stops.
+-- No ForeverCore global, with its folder installed: the addon stops.
 local absent = Run(nil)
 check(absent.broken == true, "a missing ForeverCore marks the addon broken")
 check(#messages == 1, "a missing ForeverCore shows one line")
@@ -98,6 +127,34 @@ check(
 	messages[1].text:find("Other Forever", 1, true) ~= nil,
 	"the line names the other addon whose download brings this core"
 )
+
+-- Without an installed folder, the warning explains how to install the core.
+local coreAddon = table.remove(addons)
+local missing = Run(nil)
+check(missing.broken == true, "an uninstalled core marks the addon broken")
+check(#messages == 1, "an uninstalled core shows exactly one line")
+check(messages[1].red == 1, "the missing folder line is red")
+check(
+	messages[1].text
+		== "Macro Assist Forever needs ForeverCore. Install it from CurseForge, "
+			.. "or choose Reinstall on ForeverCore in the CurseForge app.",
+	"the missing folder line gives the exact installation instructions"
+)
+addons[#addons + 1] = coreAddon
+
+-- An installed but disabled core needs enabling rather than reinstalling.
+coreAddon.loaded = false
+coreAddon.enabled = 0
+local disabled = Run(nil)
+check(disabled.broken == true, "a disabled core marks the addon broken")
+check(#messages == 1, "a disabled core shows exactly one line")
+check(messages[1].red == 1, "the disabled core line is red")
+check(
+	messages[1].text == "Macro Assist Forever: ForeverCore is turned off. Enable it in the AddOns list to fix this.",
+	"the disabled core line gives the exact enable instructions"
+)
+coreAddon.loaded = true
+coreAddon.enabled = 2
 
 -- A core with the member this addon calls: the addon loads and nothing is shown.
 local complete = Run({ API = 1, Register = function() end })
