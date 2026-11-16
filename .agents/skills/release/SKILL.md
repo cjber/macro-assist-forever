@@ -91,7 +91,7 @@ authorization. A preparation-only request ends before tags or uploads.
    - A failed smoke is a release blocker: fix the errors it names before continuing.
 10. Inspect `.github/workflows/release.yml`, `.pkgmeta` and `MacroAssistForever.toc`.
    Confirm `X-Curse-Project-ID` (1795141), `X-Wago-ID` (O67bypN3), interface 16001,
-   `## Dependencies: ForeverCore`, the `X-Forever-Core` pin, `SavedVariables` and the
+   `## OptionalDeps: ForeverCore` (never `## Dependencies`), the `X-Forever-Core` pin, `SavedVariables` and the
    ForeverCore external and move-folders are right. Check secret names with
    `gh secret list`: `CF_API_KEY` and `WAGO_API_TOKEN` must both be present; never print
    their values. A cloud session cannot push tags, so start the Release workflow on main

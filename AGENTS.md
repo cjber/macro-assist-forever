@@ -4,9 +4,10 @@ Macro Assist Forever gives WoW: Forever (`Interface 16001`) a macro window of it
 list of every macro, and an editor with a mono font, line numbers, completions, live condition values and diagnostics
 as you type. Blizzard's macro panel still opens; our window covers it at alpha 0. It never runs macros for the player.
 
-It requires ForeverCore (`## Dependencies: ForeverCore`, and the release `tools/forever-core.txt` pins ships in the
-`.pkgmeta` `externals`), the standalone addon every Forever addon needs: the report window, the error journal, the
-debug log and the family page are core's alone. The one core runtime file carried here is the shared warning below.
+It uses `## OptionalDeps: ForeverCore` so it can load and explain a missing core. ForeverCore is the standalone
+addon every Forever addon needs: the report window, the error journal, the debug log and the family page are core's
+alone. The release pinned in `tools/forever-core.txt` ships in the `.pkgmeta` `externals`. The one core runtime file
+carried here is the shared warning below.
 
 ## Commands
 
@@ -84,7 +85,8 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
 - Every player-visible phrase lives in `Locales/enUS.lua` and is read through `ns.L`, never as a bare string.
 - Every saved option gets a default in an `ns.DEFAULTS` table in `Core/Core.lua`, copied into `MacroAssistForeverDB`
   on load, so an old save file and a new setting agree.
-- The addon requires ForeverCore and works with nothing else installed. No core runtime file is vendored: a shared
+- The addon needs ForeverCore to work and declares it in `## OptionalDeps` so the shared warning can explain a
+  missing core. It works with nothing else installed. No core runtime file is vendored: a shared
   file that needs a change is changed in forever-core and reaches players with its release. `Core/ForeverRequire.lua`
   is the one shared file carried here, copied byte for byte.
 
