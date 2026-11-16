@@ -108,32 +108,6 @@ local function textOf(window)
 	return window.editor.edit:GetText()
 end
 
-local function rosterRows(window)
-	local out = {}
-	window.roster.scrollBox:ForEachFrame(function(row)
-		if row:IsShown() and row.Name then
-			out[#out + 1] = row
-		end
-	end)
-	return out
-end
-
-local function rosterNames(window)
-	local names = {}
-	for _, row in ipairs(rosterRows(window)) do
-		names[#names + 1] = row.Name:GetText()
-	end
-	return table.concat(names, ",")
-end
-
-local function rosterRowNamed(window, name)
-	for _, row in ipairs(rosterRows(window)) do
-		if row.Name:GetText() == name then
-			return row
-		end
-	end
-end
-
 -- The client reports the EditBox's caret rect after a cursor or text change; the simulator stores the cursor but
 -- does not measure one, so the scenario reports the rect from the editor's own measured rows.
 local function reportCursor(editor, position)
@@ -262,67 +236,68 @@ scenario("the list, both tabs and the editor show the selected macro", function(
 	equal(sim.pickedMacro, trap.macroIndex, "dragging a row picks up its macro")
 end)
 
-scenario("the roster lists the party and a dragged name replaces only the word under the pointer", function(sim)
+scenario("a group member completes inside a raid message", function(sim)
 	world.install(sim)
 	sim:login()
 	local window = open(sim)
-	check(window.roster, "the window has no roster panel")
-	equal(window.roster.title:GetText(), "Group", "a solo roster does not say Group")
-	equal(rosterNames(window), "", "a solo roster lists someone")
-	equal(window.roster.empty:GetText(), "Not in a group.", "a solo roster does not explain itself")
+	characterTab(sim, window)
+	local editor = window.editor
+
+	-- Solo there is no group to offer, and the completion list stays empty for the message word.
+	setText(sim, window, "/raid Tank 1: Alph", false)
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	for _, item in ipairs(editor.completion.items) do
+		check(item.kind ~= "member", "a solo player was offered a group member")
+	end
 
 	sim:joinGroup({
 		{ name = "Alphonse", className = "Mage", classFile = "MAGE" },
 		{ name = "Bertie", className = "Priest", classFile = "PRIEST" },
 	})
-	equal(window.roster.title:GetText(), "Party", "the roster title does not name the party")
-	equal(
-		rosterNames(window),
-		"Syrberus-Forever,Alphonse-Forever,Bertie-Forever",
-		"the roster did not list the party in group order"
-	)
-
-	-- A drop on the placeholder replaces exactly that word, leaving the other command line and the rest of the
-	-- assignment word alone.
-	setText(sim, window, "/raid Tank 1: <name>\n/cast Arcane Shot", false)
-	check(not window.saveButton:IsEnabled(), "the editor started dirty before the drop")
-	local editor = window.editor
-	local body = textOf(window)
-	local target = body:find("<name>", 1, true) - 1
-	local rowIndex = editor.RowAtCursor(editor.rows, target)
-	local row = editor.rows[rowIndex]
-	local x = editor.RowOffset(row, target, editor.textMeasure) + 2
-	local left = editor.edit:GetLeft()
-	local top = editor.edit:GetTop()
-	local scale = editor.edit:GetEffectiveScale()
-	check(left and top and scale, "the editor has no measurable rectangle")
-	sim.mouseX = (left + x) * scale
-	sim.mouseY = (top - row.y - editor.lineHeight / 2) * scale
-
-	local source = rosterRowNamed(window, "Alphonse-Forever")
-	check(source, "the roster has no row for the party member")
-	local drag = source:GetScript("OnDragStart")
-	check(drag, "the roster row is not a drag source")
+	-- The completion reads the group when it runs, so joining does not need an event to refresh a roster. A space in
+	-- the message opens no popup; a started word offers the names it starts, the player's own included.
+	setText(sim, window, "/raid Tank 1: ", false)
 	sim:input(function()
-		drag(source)
+		editor:RefreshCompletions()
 	end)
-	local receive = source:GetScript("OnDragStop")
-	check(receive, "the editor does not accept a dropped name")
+	equal(#editor.completion.items, 0, "a space in a raid message opened the completion list")
+
+	setText(sim, window, "/raid Tank 1: Sy", false)
 	sim:input(function()
-		receive(source)
+		editor:RefreshCompletions()
 	end)
-	equal(
-		textOf(window),
-		"/raid Tank 1: Alphonse-Forever\n/cast Arcane Shot",
-		"the drop did not replace only the word under the pointer"
-	)
-	equal(editor.edit:GetCursorPosition(), target + #"Alphonse-Forever", "the caret did not follow the dropped name")
-	check(window.saveButton:IsEnabled(), "the drop did not mark the macro edited")
+	local sawPlayer = false
+	for _, item in ipairs(editor.completion.items) do
+		if item.label == "Syrberus-Forever" then
+			sawPlayer = true
+		end
+	end
+	check(sawPlayer, "the player was not offered their own name")
+
+	setText(sim, window, "/raid Tank 1: Alph", false)
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	check(editor.popup:IsShown(), "the raid message did not open the completion list")
+	local member
+	for _, item in ipairs(editor.completion.items) do
+		if item.label == "Alphonse-Forever" then
+			member = item
+			break
+		end
+	end
+	check(member, "the party member was not offered inside the raid message")
+	equal(member.kind, "member", "a group name has the member kind")
+	equal(member.detail, "Mage", "a group name shows the member's class")
+
+	local tab = editor.edit:GetScript("OnTabPressed")
+	check(tab(editor.edit), "Tab did not insert the member name")
+	equal(textOf(window), "/raid Tank 1: Alphonse-Forever", "the member name did not replace the typed word")
+	check(not editor.popup:IsShown(), "the popup stayed open after inserting the member name")
 
 	sim:leaveGroup()
-	equal(window.roster.title:GetText(), "Group", "the roster title did not return to Group")
-	equal(#rosterRows(window), 0, "the roster kept names after the group ended")
-	equal(window.roster.empty:GetText(), "Not in a group.", "the empty roster does not explain itself")
 	sim:expectNoErrors(ADDON)
 end)
 

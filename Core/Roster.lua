@@ -4,7 +4,7 @@ if ns.broken then
 	return
 end
 
--- The current group, for the roster beside the editor. The unit order is the client's own: the player first in a
+-- The current group, for name completion in the editor. The unit order is the client's own: the player first in a
 -- party, then party1 to party4, and raid1 to raid40 in a raid. Every name and class is read through ns.Readable,
 -- because another player's identity can be secret while the client still hands it to an addon.
 

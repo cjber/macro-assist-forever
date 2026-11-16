@@ -47,6 +47,12 @@ equal(say.kind, "chat", "/say is a chat command")
 equal(say.conditions, false, "/say ignores conditions")
 equal(say.category, "CHAT", "chat commands have the CHAT category")
 
+-- Commands whose first argument is a player name carry the field completion reads, including /tell's chat entry.
+equal(ns.CommandAliases.invite.player, true, "/invite takes a player name")
+equal(ns.CommandAliases.w.player, true, "/tell takes a player name")
+equal(ns.CommandAliases.say.player, nil, "/say's message is not a player name field")
+equal(ns.CommandAliases.cast.player, nil, "/cast takes spells, not a player name")
+
 local kiss = ns.CommandAliases.kiss
 yes(kiss ~= nil, "/kiss is in the table")
 equal(kiss.kind, "emote", "/kiss is an emote")

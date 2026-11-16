@@ -26,7 +26,7 @@ class Canvas:
 class EditorPreviewTest(unittest.TestCase):
     def test_long_assignment_wraps_inside_editor_and_caret_follows(self):
         canvas = Canvas()
-        body = screenshots.ROSTER_BODY + " with a very long assignment for the next player"
+        body = screenshots.MEMBERS_BODY + " with a very long assignment for the next player"
         text_x, text_y, text_width, caret_position = screenshots.draw_editor(
             canvas, body, 1, len(body.split("\n")[1]), {"lines": {}, "diagnostics": []}
         )

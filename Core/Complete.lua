@@ -47,7 +47,7 @@ end
 ---@class MacroAssistCompletionItem
 ---@field label string
 ---@field insert string
----@field kind string secure, command, chat, emote, condition, unit, spell, directive, recipe or value
+---@field kind string secure, command, chat, emote, condition, unit, member, spell, directive, recipe or value
 ---@field detail string
 ---@field live string? the condition's live value, when one was asked for
 
@@ -108,6 +108,38 @@ local function Finish(items)
 		}
 	end
 	return result
+end
+
+-- The group members completion may offer, as `{ name, classFile, className }` entries read fresh by the window.
+---@param ctx table
+---@return MacroAssistRosterMember[]
+local function MemberEntries(ctx)
+	local entries = {}
+	if type(ctx.members) ~= "table" then
+		return entries
+	end
+	for _, member in ipairs(ctx.members) do
+		if type(member) == "table" and type(member.name) == "string" and member.name ~= "" then
+			entries[#entries + 1] = member
+		end
+	end
+	return entries
+end
+
+---@param items MacroAssistCompletionItem[]
+---@param seen table<string, boolean>
+---@param from integer
+---@param to integer
+---@param typed string
+---@param members MacroAssistRosterMember[]
+---@param prefixOnly boolean? only names that start with the typed text, for words inside a chat message
+local function AddMembers(items, seen, from, to, typed, members, prefixOnly)
+	local wanted = typed:lower()
+	for _, member in ipairs(members) do
+		if not prefixOnly or member.name:lower():sub(1, #wanted) == wanted then
+			Add(items, seen, from, to, typed, member.name, member.name, "member", member.className or "")
+		end
+	end
 end
 
 -- The best rank one recipe gives the typed text, or nil when none of them match. A recipe is found by its intent
@@ -198,6 +230,61 @@ local function WordEnd(text, position)
 		index = index + 1
 	end
 	return index - 1
+end
+
+-- A unit slot's token end. A player name can carry the realm with a hyphen, which the plain word scan stops at.
+---@param text string
+---@param position integer
+---@return integer
+local function NameEnd(text, position)
+	local index = position
+	while index <= #text do
+		local byte = text:byte(index)
+		local word = byte
+			and (
+				byte == 95
+				or byte == 45
+				or (byte >= 48 and byte <= 57)
+				or (byte >= 65 and byte <= 90)
+				or (byte >= 97 and byte <= 122)
+			)
+		if not word then
+			break
+		end
+		index = index + 1
+	end
+	return index - 1
+end
+
+-- The word being typed in a command's arguments: from after the whitespace before the caret to the next
+-- whitespace. `first` says the caret is still in the command's first argument.
+---@param text string
+---@param argsFrom integer
+---@param cursor integer
+---@return integer from
+---@return integer to
+---@return boolean first
+local function ArgumentWord(text, argsFrom, cursor)
+	local firstFrom = argsFrom
+	while firstFrom < cursor and (IsSpaceByte(text:byte(firstFrom)) or text:byte(firstFrom) == 10) do
+		firstFrom = firstFrom + 1
+	end
+	local from = firstFrom
+	for position = firstFrom, cursor - 1 do
+		local byte = text:byte(position)
+		if IsSpaceByte(byte) or byte == 10 then
+			from = position + 1
+		end
+	end
+	local to = cursor - 1
+	while to < #text do
+		local byte = text:byte(to + 1)
+		if not byte or IsSpaceByte(byte) or byte == 10 then
+			break
+		end
+		to = to + 1
+	end
+	return from, to, from == firstFrom
 end
 
 ---@param text string
@@ -331,6 +418,7 @@ local function Complete(text, cursor, ctx)
 	local to = cursor - 1
 	local items = {}
 	local seen = {}
+	local members = MemberEntries(ctx)
 
 	-- A #show or #showtooltip directive.
 	local lead, hashAt, directive = prefix:match("^(%s*)()#([%a]*)$")
@@ -411,24 +499,26 @@ local function Complete(text, cursor, ctx)
 		end
 		local rest = text:sub(contentFrom, cursor - 1)
 
-		local unitToken = rest:match("^@([%w_]*)$")
+		local unitToken = rest:match("^@([%w_%-]*)$")
 		if unitToken then
 			from = contentFrom + 1
-			to = WordEnd(text, cursor)
+			to = NameEnd(text, cursor)
 			typed = unitToken
 			for _, unit in ipairs(ns.Units) do
 				Add(items, seen, from, to, typed, unit, unit, "unit", L["Unit"])
 			end
+			AddMembers(items, seen, from, to, typed, members)
 			return { from = from, to = to, items = Finish(items) }
 		end
-		unitToken = rest:match("^[Tt][Aa][Rr][Gg][Ee][Tt]=([%w_]*)$")
+		unitToken = rest:match("^[Tt][Aa][Rr][Gg][Ee][Tt]=([%w_%-]*)$")
 		if unitToken then
 			from = contentFrom + 7
-			to = WordEnd(text, cursor)
+			to = NameEnd(text, cursor)
 			typed = unitToken
 			for _, unit in ipairs(ns.Units) do
 				Add(items, seen, from, to, typed, unit, unit, "unit", L["Unit"])
 			end
+			AddMembers(items, seen, from, to, typed, members)
 			return { from = from, to = to, items = Finish(items) }
 		end
 
@@ -501,8 +591,35 @@ local function Complete(text, cursor, ctx)
 		return { from = from, to = to, items = Finish(items) }
 	end
 
-	-- A spell argument of /cast, /castsequence, /castrandom or /userandom.
+	-- A group member's name as a command argument: the first argument of a player command such as /invite or /tell,
+	-- and any word inside a chat command's message such as /raid.
 	local command = line.command and ns.CommandAliases[line.command.nameLower]
+	if command and clause and (command.player or command.kind == "chat") then
+		local argsFrom
+		if clause.args then
+			argsFrom = clause.args.from
+		elseif clause.groups[#clause.groups] then
+			argsFrom = clause.groups[#clause.groups].to + 1
+		elseif line.command then
+			argsFrom = line.command.to + 1
+		else
+			argsFrom = clause.from
+		end
+		if cursor >= argsFrom then
+			local wordFrom, wordTo, first = ArgumentWord(text, argsFrom, cursor)
+			typed = text:sub(wordFrom, cursor - 1)
+			-- A word in a chat message offers the names it starts, once it is started, so ordinary prose opens no popup.
+			local nameSlot = command.player and first
+			if nameSlot or (command.kind == "chat" and typed ~= "") then
+				AddMembers(items, seen, wordFrom, wordTo, typed, members, not nameSlot)
+				if #items > 0 then
+					return { from = wordFrom, to = wordTo, items = Finish(items) }
+				end
+			end
+		end
+	end
+
+	-- A spell argument of /cast, /castsequence, /castrandom or /userandom.
 	if not command or not (command.list or command.name == "cast") then
 		return { from = from, to = to, items = {} }
 	end

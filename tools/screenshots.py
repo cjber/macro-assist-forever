@@ -29,7 +29,6 @@ HISTORY = (ROOT / "UI" / "History.lua").read_text(encoding="utf-8")
 IMPORT = (ROOT / "UI" / "Import.lua").read_text(encoding="utf-8")
 RECIPES = (ROOT / "UI" / "Recipes.lua").read_text(encoding="utf-8")
 SHORTEN = (ROOT / "UI" / "Shorten.lua").read_text(encoding="utf-8")
-ROSTER = (ROOT / "UI" / "Roster.lua").read_text(encoding="utf-8")
 XML = (ROOT / "UI" / "MacroWindow.xml").read_text(encoding="utf-8")
 FONT_FILE = ROOT / "media" / "fonts" / "JetBrainsMono-Regular.ttf"
 SQUIGGLE = Image.open(ROOT / "media" / "squiggle.tga").convert("RGBA")
@@ -86,14 +85,6 @@ CHARACTERS_WIDTH = number("CHARACTERS_WIDTH")
 FOOTER_GAP = number("FOOTER_GAP")
 RENAME_WIDTH = number("RENAME_WIDTH")
 RENAME_HEIGHT = number("RENAME_HEIGHT")
-ROSTER_WIDTH = number("ROSTER_WIDTH")
-ROSTER_GAP = number("ROSTER_GAP")
-ROSTER_TITLE_HEIGHT = number("TITLE_HEIGHT", ROSTER)
-ROSTER_TITLE_GAP = number("TITLE_GAP", ROSTER)
-ROSTER_INSET_PADDING = number("INSET_PADDING", ROSTER)
-ROSTER_SCROLL_GAP = number("SCROLL_GAP", ROSTER)
-ROSTER_SCROLL_WIDTH = number("SCROLL_WIDTH", ROSTER)
-ROSTER_ROW_HEIGHT = number("ROW_HEIGHT", ROSTER)
 SEARCH_LEFT = number("SEARCH_LEFT")
 SEARCH_TOP = number("SEARCH_TOP")
 SEARCH_WIDTH = number("SEARCH_WIDTH")
@@ -324,21 +315,14 @@ TAB_SELECTED = 1
 BAR_TEXT = "Character macro, slot 61 (Shift-1)"
 ON_BAR = {0}
 
-# The roster scene's party, in group order with the player first. Colours are the client's class colours.
-ROSTER_MEMBERS = [
-    ("Barry", "WARRIOR"),
-    ("Alphonse", "MAGE"),
-    ("Bertie", "PRIEST"),
-    ("Cass", "DRUID"),
-    ("Dorian", "HUNTER"),
+# The member completion scene's party, without the player. The two Al names share a prefix so the popup shows more
+# than one suggestion; the class name is the detail the completion item carries.
+MEMBERS = [
+    ("Alphonse-Forever", "Mage", "MAGE"),
+    ("Althea-Forever", "Druid", "DRUID"),
+    ("Bertie-Forever", "Priest", "PRIEST"),
+    ("Cass-Forever", "Hunter", "HUNTER"),
 ]
-CLASS_COLORS = {
-    "WARRIOR": wowmock.rgb("c79c6e"),
-    "MAGE": wowmock.rgb("69ccf0"),
-    "PRIEST": wowmock.rgb("ffffff"),
-    "DRUID": wowmock.rgb("ff7d0a"),
-    "HUNTER": wowmock.rgb("abd473"),
-}
 
 # The picker scene's sample data. The Arcane macro's saved icon is Automatic, as a #showtooltip macro starts, so the
 # header, the list row and the selected grid cell all show the question mark.
@@ -420,9 +404,11 @@ COMPLETION_BODY = "\n".join(
 )
 COMPLETION_LINE = 5
 COMPLETION_CARET = COMPLETION_BODY.rindex("/cast [") + len("/cast [") + 1  # byte offset after `[`
-# The roster scene: an assignment macro whose placeholder is the word a dropped name replaces.
-ROSTER_BODY = "/raid Tank 1: <name>\n/cast [@mouseover,harm,nodead][] Arcane Shot"
-ROSTER_LINE = 0
+# The member completion scene: a raid assignment whose word is being completed from the group. The image keeps the
+# roster.png name because the 0.7.0 changelog already names that file.
+MEMBERS_BODY = "/raid Tank 1: Al\n/cast [@mouseover,harm,nodead][] Arcane Shot"
+MEMBERS_LINE = 0
+MEMBERS_CARET = MEMBERS_BODY.index("Al") + len("Al") + 1
 # The recipe scene: plain words on a line offer the Hunter recipes whose words match, with their spell names resolved.
 RECIPE_BODY = "pet"
 RECIPE_CARET = 4
@@ -503,6 +489,10 @@ def sample():
         f"[{spell_id}] = {'true' if known else 'false'}" for spell_id, known in sorted(RECIPE_KNOWN.items())
     )
     recipe_levels = ",\n".join(f"[{spell_id}] = {level}" for spell_id, level in sorted(RECIPE_LEVELS.items()))
+    members = ",\n".join(
+        f"{{ name = {lua_string(name)}, className = {lua_string(className)}, classFile = {lua_string(class_file)} }}"
+        for name, className, class_file in MEMBERS
+    )
     script = f"""
 local ns = {{}}
 for _, file in ipairs({{
@@ -540,9 +530,9 @@ print("COMPLETION_SUMMARY\\t" .. clean(ns.ExplainSummary(completion)))
 for index, line in ipairs(ns.Parser.Parse(completion).lines) do
     print("LINE\\t" .. index .. "\\t" .. clean(ns.Highlight.Line(line)))
 end
-local roster = {lua_string(ROSTER_BODY)}
-for index, line in ipairs(ns.Parser.Parse(roster).lines) do
-    print("ROSTER_LINE\\t" .. index .. "\\t" .. clean(ns.Highlight.Line(line)))
+local members = {lua_string(MEMBERS_BODY)}
+for index, line in ipairs(ns.Parser.Parse(members).lines) do
+    print("MEMBER_LINE\\t" .. index .. "\\t" .. clean(ns.Highlight.Line(line)))
 end
 local live = {{
 {live}
@@ -550,6 +540,9 @@ local live = {{
 local ctx = {{
     spells = {{
 {spells}
+    }},
+    members = {{
+{members}
     }},
     evaluate = function(condition)
         local name = condition.name or ""
@@ -560,6 +553,11 @@ local ctx = {{
         return value
     end,
 }}
+local memberResult = ns.Complete({lua_string(MEMBERS_BODY)}, {MEMBERS_CARET}, ctx)
+print("MEMBERS_COMPLETE\\t" .. memberResult.from .. "\\t" .. memberResult.to)
+for index, item in ipairs(memberResult.items) do
+    print("MEMBER_ITEM\\t" .. index .. "\\t" .. item.kind .. "\\t" .. clean(item.label) .. "\\t" .. clean(item.detail))
+end
 for index, diagnostic in ipairs(ns.Check(completion, ctx)) do
     print("DIAG\\t" .. index .. "\\t" .. diagnostic.from .. "\\t" .. diagnostic.to .. "\\t" .. diagnostic.severity
         .. "\\t" .. clean(diagnostic.message) .. "\\t" .. clean(diagnostic.fix and diagnostic.fix.insert or ""))
@@ -631,10 +629,11 @@ end
         "macro_lines": {},
         "completion_summary": "",
         "lines": {},
-        "roster_lines": {},
+        "member_lines": {},
         "diagnostics": [],
         "items": [],
         "complete": None,
+        "members": {"from": 1, "to": 0, "items": []},
         "length": 0,
         "recipe": {"from": 1, "to": 0, "items": []},
         "recipes_popup": {"heading": "", "hint": "", "rows": [], "bodies": {}},
@@ -651,8 +650,8 @@ end
             data["completion_summary"] = parts[1]
         elif parts[0] == "LINE":
             data["lines"][int(parts[1])] = parts[2]
-        elif parts[0] == "ROSTER_LINE":
-            data["roster_lines"][int(parts[1])] = parts[2]
+        elif parts[0] == "MEMBER_LINE":
+            data["member_lines"][int(parts[1])] = parts[2]
         elif parts[0] == "DIAG":
             data["diagnostics"].append(
                 {
@@ -665,6 +664,17 @@ end
             )
         elif parts[0] == "COMPLETE":
             data["complete"] = (int(parts[1]), int(parts[2]))
+        elif parts[0] == "MEMBERS_COMPLETE":
+            data["members"]["from"] = int(parts[1])
+            data["members"]["to"] = int(parts[2])
+        elif parts[0] == "MEMBER_ITEM":
+            data["members"]["items"].append(
+                {
+                    "kind": parts[2],
+                    "label": parts[3],
+                    "detail": parts[4] if len(parts) > 4 else "",
+                }
+            )
         elif parts[0] == "ITEM":
             data["items"].append(
                 {
@@ -825,49 +835,9 @@ def editor_geometry():
     editor_x = X + LIST_LEFT + LIST_WIDTH + COLUMN_GAP
     top = -HEADER_TOP + HEADER_HEIGHT + GAP
     editor_y = Y + top
-    editor_w = WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP - ROSTER_WIDTH - ROSTER_GAP
+    editor_w = WINDOW_WIDTH + INSET_RIGHT - LIST_LEFT - LIST_WIDTH - COLUMN_GAP
     editor_h = WINDOW_HEIGHT - BOTTOM_OFFSET - STATUS_HEIGHT - top
     return editor_x, editor_y, editor_w, editor_h
-
-
-def roster_geometry():
-    """The compact roster panel beside the editor, inside the window's right inset."""
-    editor_x, editor_y, editor_w, editor_h = editor_geometry()
-    return editor_x + editor_w + ROSTER_GAP, editor_y, ROSTER_WIDTH, editor_h
-
-
-def draw_roster(canvas, members, title="Party"):
-    """The compact roster: a title over a native inset and one class-coloured name row per member."""
-    roster_x, roster_y, roster_w, roster_h = roster_geometry()
-    canvas.text(roster_x + 2, roster_y, title, FONTS["GameFontNormalSmall"])
-    inset_y = roster_y + ROSTER_TITLE_HEIGHT + ROSTER_TITLE_GAP
-    inset_h = roster_h - (ROSTER_TITLE_HEIGHT + ROSTER_TITLE_GAP)
-    inset(canvas, roster_x, inset_y, roster_w, inset_h)
-    row_x = roster_x + ROSTER_INSET_PADDING
-    row_y = inset_y + ROSTER_INSET_PADDING
-    row_w = roster_w - ROSTER_INSET_PADDING * 2 - ROSTER_SCROLL_WIDTH - ROSTER_SCROLL_GAP
-    row_h = ROSTER_ROW_HEIGHT
-    bottom = inset_y + inset_h - ROSTER_INSET_PADDING
-    for name, class_file in members:
-        if row_y + row_h > bottom:
-            break
-        canvas.text(
-            row_x + 8,
-            row_y + 3,
-            name,
-            FONTS["GameFontHighlightSmall"],
-            CLASS_COLORS.get(class_file, WHITE),
-            width=row_w - 8,
-            box_height=row_h,
-        )
-        row_y += row_h
-    wowmock.minimal_scrollbar(
-        canvas,
-        row_x + row_w + ROSTER_SCROLL_GAP,
-        inset_y + ROSTER_INSET_PADDING,
-        inset_h - ROSTER_INSET_PADDING * 2,
-        visible=0.7,
-    )
 
 
 def status_geometry():
@@ -1242,7 +1212,7 @@ def draw_picker(canvas, icon=PICKER_ICON):
     )
 
 
-def window(ui, *, body, current_line, caret_column, data, completion=None, picker=False, picker_icon=None, roster=None):
+def window(ui, *, body, current_line, caret_column, data, completion=None, picker=False, picker_icon=None):
     rail_width, _ = side_tab_extent(ui)
     canvas = ui.canvas(WINDOW_WIDTH + 2 * X + rail_width, WINDOW_HEIGHT + 2 * Y)
     background(canvas, X, Y, WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -1355,7 +1325,6 @@ def window(ui, *, body, current_line, caret_column, data, completion=None, picke
             explain_panel(canvas, panel_x, panel_y, panel_w, cases)
         status_x, status_y, status_w, _ = status_geometry()
         status_bar(canvas, status_x, status_y, status_w, data["length"], "Arcane Shot on Defias Pillager", data)
-    draw_roster(canvas, ROSTER_MEMBERS if roster is None else roster)
     # The window's own buttons, with the edited macro treated as dirty so Save and Cancel are live.
     button_y = Y + WINDOW_HEIGHT - 8 - BUTTON_HEIGHT
     button(canvas, X + LIST_LEFT, button_y, BUTTON_WIDTH, "New", h=BUTTON_HEIGHT)
@@ -1460,14 +1429,6 @@ def window_layout(ui):
             "h": RENAME_HEIGHT,
         },
         {"name": "editor", "role": "edit", "x": editor_x, "y": editor_y, "w": editor_w, "h": editor_h},
-        {
-            "name": "roster",
-            "role": "list",
-            "x": roster_geometry()[0],
-            "y": roster_geometry()[1],
-            "w": roster_geometry()[2],
-            "h": roster_geometry()[3],
-        },
         {"name": "status", "role": "status", "x": status_x, "y": status_y, "w": status_w, "h": status_h},
         {
             "name": "new",
@@ -2228,8 +2189,8 @@ def shorten_layout(ui):
     }
 
 
-def roster_layout(ui):
-    """The same window, with the party roster and an assignment macro in the editor."""
+def members_layout(ui):
+    """The same window, with the member completion scene in the editor."""
     return window_layout(ui)
 
 
@@ -2237,7 +2198,7 @@ def layout(ui, popup):
     return {
         "scenes": [
             window_layout(ui),
-            roster_layout(ui),
+            members_layout(ui),
             history_layout(),
             import_layout(),
             recipes_layout(ui, popup),
@@ -2279,21 +2240,29 @@ def main():
     wowmock.scene(ui, [(canvas, 0, 0)]).save(output / "window.png")
     print(output / "window.png")
 
-    roster_data = {
+    members_data = {
         **window_data,
-        "lines": data["roster_lines"],
+        "lines": data["member_lines"],
         "explain": [],
         "diagnostics": [],
-        "length": len(ROSTER_BODY),
+        "length": len(MEMBERS_BODY),
     }
-    roster_canvas = window(
-        ui,
-        body=ROSTER_BODY,
-        current_line=ROSTER_LINE,
-        caret_column=len(ROSTER_BODY.split("\n")[ROSTER_LINE]),
-        data=roster_data,
+    members_completion = (
+        MEMBERS_BODY.split("\n"),
+        MEMBERS_LINE,
+        data["members"]["items"][:POPUP_ROWS],
+        0,
+        1,
     )
-    wowmock.scene(ui, [(roster_canvas, 0, 0)]).save(output / "roster.png")
+    members_canvas = window(
+        ui,
+        body=MEMBERS_BODY,
+        current_line=MEMBERS_LINE,
+        caret_column=len(MEMBERS_BODY.split("\n")[MEMBERS_LINE]),
+        data=members_data,
+        completion=members_completion,
+    )
+    wowmock.scene(ui, [(members_canvas, 0, 0)]).save(output / "roster.png")
     print(output / "roster.png")
 
     history_canvas = window(

@@ -35,7 +35,6 @@ def scene():
                 "tools/screenshots.py",
                 "UI/MacroWindow.lua",
                 "UI/MacroWindow.xml",
-                "UI/Roster.lua",
                 "UI/IconSelector.lua",
                 "UI/Editor.lua",
                 "UI/History.lua",
