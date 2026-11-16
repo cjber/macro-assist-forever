@@ -5,6 +5,12 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-16
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
 ## [0.7.0] - 2026-11-16
 
 <!-- discord-image: docs/screenshots/roster.png -->
