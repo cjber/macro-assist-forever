@@ -110,7 +110,7 @@ local function Finish(items)
 	return result
 end
 
--- The group members completion may offer, as `{ name, classFile, className }` entries read fresh by the window.
+-- The group members completion may offer, as `{ name, className }` entries read fresh by the window.
 ---@param ctx table
 ---@return MacroAssistRosterMember[]
 local function MemberEntries(ctx)

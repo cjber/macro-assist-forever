@@ -21,9 +21,9 @@ load("Core/Parser.lua")
 load("Core/Complete.lua")
 
 local members = {
-	{ name = "Alphonse-Forever", className = "Mage", classFile = "MAGE" },
-	{ name = "Althea-Forever", className = "Druid", classFile = "DRUID" },
-	{ name = "Bertie-Forever", className = "Priest", classFile = "PRIEST" },
+	{ name = "Alphonse-Forever", className = "Mage" },
+	{ name = "Althea-Forever", className = "Druid" },
+	{ name = "Bertie-Forever", className = "Priest" },
 }
 
 local ctx = {

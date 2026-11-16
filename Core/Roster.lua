@@ -15,13 +15,12 @@ ns.Roster = Roster
 ---@field unit string
 ---@field name string
 ---@field className string?
----@field classFile string?
 
 ---@class MacroAssistRosterApi
 ---@field inRaid fun(): boolean
 ---@field groupCount fun(): integer
 ---@field name fun(unit: string): string?, string?
----@field class fun(unit: string): string?, string?
+---@field class fun(unit: string): string?
 
 ---@param raid boolean
 ---@param count integer
@@ -65,17 +64,14 @@ function Roster.Read(api)
 			name = name .. "-" .. realm
 		end
 		if type(name) == "string" and name ~= "" then
-			local className, classFile
+			local className
 			if api.class then
-				className, classFile = api.class(unit)
-				className = ns.Readable(className)
-				classFile = ns.Readable(classFile)
+				className = ns.Readable((api.class(unit)))
 			end
 			members[#members + 1] = {
 				unit = unit,
 				name = name,
 				className = className,
-				classFile = classFile,
 			}
 		end
 	end

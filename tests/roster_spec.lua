@@ -63,7 +63,7 @@ equal(isRaid, false, "a party is not a raid")
 equal(#members, 3, "the roster reads every party member")
 equal(members[1].name, "Barry", "the player is first in the party roster")
 equal(members[2].name, "Alphonse", "the first party member follows")
-equal(members[2].classFile, "MAGE", "the roster keeps the class file for its colour")
+equal(members[2].className, "Mage", "the roster keeps the class name for the completion detail")
 equal(members[3].unit, "party2", "the roster keeps the unit for its member")
 
 grouped, isRaid, members = ns.Roster.Read(api(true, 2, { raid1 = "Barry", raid2 = "Cass" }))
