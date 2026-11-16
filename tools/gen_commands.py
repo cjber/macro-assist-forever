@@ -43,6 +43,10 @@ EXTRA_SECURE = (
     ("CastSequenceManager.lua", "CASTSEQUENCE"),
 )
 CAST_LISTS = frozenset({"CASTRANDOM", "CASTSEQUENCE"})
+# A command whose first argument is a player's name, and the chat type that whispers one. Completion reads the field
+# rather than carrying its own list, so a regenerated table keeps the two in step.
+PLAYER_COMMANDS = frozenset({"ASSIST", "FOCUS", "FOLLOW", "INSPECT", "INVITE", "TARGET"})
+PLAYER_CHAT_TYPES = frozenset({"SMART_WHISPER"})
 KINDS = frozenset({"secure", "command", "chat", "emote"})
 REGISTRATION = re.compile(r"CheckAdd(Secure)?SlashCommand\(\s*SLASH_COMMAND\.(\w+)\s*,\s*SLASH_COMMAND_CATEGORY\.(\w+)")
 SLASH_ALIAS = re.compile(r"^SLASH_([A-Z0-9_]+?)(\d+)$")
@@ -344,6 +348,8 @@ def build_entries(inputs: Inputs) -> list[dict]:
         }
         if registration.key in CAST_LISTS or entry["name"] in {"castsequence", "castrandom"}:
             entry["list"] = True
+        if registration.key in PLAYER_COMMANDS:
+            entry["player"] = True
         if registration.description:
             entry["description"] = one_line(registration.description)
         candidates.append(entry)
@@ -355,15 +361,16 @@ def build_entries(inputs: Inputs) -> list[dict]:
             # A chat type with no /text alias cannot be typed; only the keys that are commands belong here.
             continue
         aliases = [name] + sorted(alias for alias in pool if alias != name)
-        candidates.append(
-            {
-                "name": name,
-                "aliases": aliases,
-                "kind": "chat",
-                "category": "CHAT",
-                "conditions": False,
-            }
-        )
+        entry = {
+            "name": name,
+            "aliases": aliases,
+            "kind": "chat",
+            "category": "CHAT",
+            "conditions": False,
+        }
+        if key in PLAYER_CHAT_TYPES:
+            entry["player"] = True
+        candidates.append(entry)
 
     for emote in sorted(inputs.emotes):
         pool = {value: index for index, value in inputs.emotes[emote]}
@@ -423,6 +430,7 @@ def render(entries: list[dict]) -> str:
         "---@field category string the client's slash-command category, or CHAT/EMOTE",
         "---@field conditions boolean whether the command reads macro conditions",
         "---@field list boolean? true when the argument is a comma-separated spell list",
+        "---@field player boolean? true when the first argument is a player name",
         "---@field description string? a description quoted from the client source",
         "",
         "---@type MacroAssistCommand[]",
@@ -437,6 +445,8 @@ def render(entries: list[dict]) -> str:
         lines.append(f"\t\tconditions = {'true' if entry['conditions'] else 'false'},")
         if entry.get("list"):
             lines.append("\t\tlist = true,")
+        if entry.get("player"):
+            lines.append("\t\tplayer = true,")
         if entry.get("description"):
             lines.append(f"\t\tdescription = {lua_string(entry['description'])},")
         lines.append("\t},")
@@ -524,7 +534,7 @@ def validate_shape(text: str) -> list[str]:
             problems.append(f"entry {entries + 1}, body line {number}: not a field: {line}")
             continue
         key, value = field.group(1), field.group(2)
-        if key not in {"name", "aliases", "kind", "category", "conditions", "list", "description"}:
+        if key not in {"name", "aliases", "kind", "category", "conditions", "list", "player", "description"}:
             problems.append(f"entry {entries + 1}: unknown field {key}")
         else:
             current[key] = value

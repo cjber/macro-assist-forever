@@ -20,12 +20,19 @@ load("Core/Lexer.lua")
 load("Core/Parser.lua")
 load("Core/Complete.lua")
 
+local members = {
+	{ name = "Alphonse-Forever", className = "Mage" },
+	{ name = "Althea-Forever", className = "Druid" },
+	{ name = "Bertie-Forever", className = "Priest" },
+}
+
 local ctx = {
 	spells = {
 		{ name = "Flash Heal", ranks = { 1, 3, 7 }, learned = true },
 		{ name = "Mind Flay", ranks = { 1, 2 }, learned = true },
 		{ name = "Shadow Word: Pain", ranks = { 1 }, learned = false },
 	},
+	members = members,
 	evaluate = function(condition)
 		if condition.name == "harm" then
 			return false
@@ -89,6 +96,7 @@ end
 -- found by its intent words, its localized title and the resolved name of each spell it casts.
 local recipeCtx = {
 	spells = ctx.spells,
+	members = members,
 	evaluate = ctx.evaluate,
 	recipes = {
 		{
@@ -205,6 +213,83 @@ equal(result.from, 15, "the unit range starts after target=")
 yes(find(result.items, "focus") ~= nil, "focus is offered after target=")
 yes(find(result.items, "focustarget") ~= nil, "a target= chain is offered")
 
+-- Group members share the unit slots, inserted exactly as the client names them, realm included.
+result = ns.Complete("/cast [@Al", 11, ctx)
+equal(result.from, 9, "the member range starts after @")
+local alphonse = find(result.items, "Alphonse-Forever")
+yes(alphonse ~= nil, "a party member is offered after @")
+equal(alphonse.kind, "member", "a member has the member kind")
+equal(alphonse.detail, "Mage", "a member's detail is their class")
+result = ns.Complete("/cast [target=Ber", 18, ctx)
+equal(result.from, 15, "the member range starts after target=")
+yes(find(result.items, "Bertie-Forever") ~= nil, "a party member is offered after target=")
+local memberText = "/cast [@Alphonse-F]"
+result = ns.Complete(memberText, #memberText, ctx)
+equal(
+	apply(memberText, "Alphonse-Forever", result.from, result.to),
+	"/cast [@Alphonse-Forever]",
+	"a hyphenated realm is replaced with the whole name"
+)
+
+-- The first argument of every command that takes a player name offers the group.
+for _, command in ipairs({
+	"/tell",
+	"/whisper",
+	"/w",
+	"/invite",
+	"/inv",
+	"/target",
+	"/tar",
+	"/assist",
+	"/focus",
+	"/follow",
+	"/inspect",
+}) do
+	local typedText = command .. " Al"
+	result = ns.Complete(typedText, #typedText + 1, ctx)
+	local offered = find(result.items, "Alphonse-Forever")
+	yes(offered ~= nil, command .. " offers a member name")
+	if offered then
+		equal(
+			apply(typedText, offered.insert, result.from, result.to),
+			command .. " Alphonse-Forever",
+			command .. " inserts the member name"
+		)
+	end
+end
+
+-- Any word inside a chat command's message offers the group.
+local chatText = "/raid Tank 1: Alph"
+result = ns.Complete(chatText, #chatText + 1, ctx)
+equal(result.from, 15, "the chat word starts after the last space")
+yes(find(result.items, "Alphonse-Forever") ~= nil, "a member is offered inside a raid message")
+equal(
+	apply(chatText, "Alphonse-Forever", result.from, result.to),
+	"/raid Tank 1: Alphonse-Forever",
+	"the member replaces the word being typed"
+)
+for _, command in ipairs({ "/rw", "/party", "/say", "/yell" }) do
+	local typedText = command .. " Tank 1: Alph"
+	result = ns.Complete(typedText, #typedText + 1, ctx)
+	yes(find(result.items, "Alphonse-Forever") ~= nil, command .. " offers a member inside its message")
+end
+
+-- A solo player has no members to offer, and a name never becomes a condition or a spell.
+local solo = { spells = ctx.spells, evaluate = ctx.evaluate, recipes = ctx.recipes, members = {} }
+local soloText = "/raid Tank 1: Alph"
+result = ns.Complete(soloText, #soloText + 1, solo)
+equal(#result.items, 0, "a solo player has no names inside a chat message")
+result = ns.Complete("/invite Al", 11, solo)
+equal(#result.items, 0, "a solo player has no names for a player command")
+result = ns.Complete("/cast [Al", 10, ctx)
+for _, item in ipairs(result.items) do
+	yes(item.kind ~= "member", "a member is not offered as a condition")
+end
+result = ns.Complete("/cast Alph", 11, ctx)
+for _, item in ipairs(result.items) do
+	yes(item.kind ~= "member", "a member is not offered as a spell")
+end
+
 -- Conditions on a directive are still conditions.
 result = ns.Complete("#showtooltip [ha", 17, ctx)
 yes(find(result.items, "harm") ~= nil, "a directive's condition is offered")
@@ -263,5 +348,24 @@ equal(result.from, 1, "empty text inserts at 1")
 equal(result.to, 0, "empty text replaces nothing")
 result = ns.Complete("/cast Fla", 10, nil)
 equal(#result.items, 0, "without spells there is nothing to offer")
+
+-- A chat message offers a name only once a word is started, and only the names that word starts.
+do
+	local grouped =
+		{ members = { { name = "Alphonse-Forever", className = "Priest" }, { name = "Cass", className = "Rogue" } } }
+	local message = "/raid pull "
+	local offered = ns.Complete(message, #message + 1, grouped)
+	equal(#offered.items, 0, "a space in a chat message opened the name popup")
+	message = "/raid pull as"
+	offered = ns.Complete(message, #message + 1, grouped)
+	equal(#offered.items, 0, "a chat word matched a name in its middle")
+	message = "/raid Tank 1: ca"
+	offered = ns.Complete(message, #message + 1, grouped)
+	equal(
+		offered.items[1] and offered.items[1].label,
+		"Cass",
+		"a started chat word does not complete the name it starts"
+	)
+end
 
 print(("complete_spec: %d checks passed"):format(checks))

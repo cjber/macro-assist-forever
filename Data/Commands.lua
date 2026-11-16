@@ -15,6 +15,7 @@ end
 ---@field category string the client's slash-command category, or CHAT/EMOTE
 ---@field conditions boolean whether the command reads macro conditions
 ---@field list boolean? true when the argument is a comma-separated spell list
+---@field player boolean? true when the first argument is a player name
 ---@field description string? a description quoted from the client source
 
 ---@type MacroAssistCommand[]
@@ -116,6 +117,7 @@ ns.Commands = {
 		kind = "secure",
 		category = "TARGETING",
 		conditions = true,
+		player = true,
 	},
 	{
 		name = "attacktarget",
@@ -924,6 +926,7 @@ ns.Commands = {
 		kind = "secure",
 		category = "FOCUS_TARGETING",
 		conditions = true,
+		player = true,
 	},
 	{
 		name = "follow",
@@ -931,6 +934,7 @@ ns.Commands = {
 		kind = "command",
 		category = "PLAYER_INTERACTION",
 		conditions = false,
+		player = true,
 	},
 	{
 		name = "followme",
@@ -1309,6 +1313,7 @@ ns.Commands = {
 		kind = "command",
 		category = "EQUIPMENT",
 		conditions = false,
+		player = true,
 	},
 	{
 		name = "instance_chat",
@@ -1337,6 +1342,7 @@ ns.Commands = {
 		kind = "command",
 		category = "GROUP_COMMAND",
 		conditions = false,
+		player = true,
 	},
 	{
 		name = "invitespectatorbattlegroundblitzmatch",
@@ -2674,6 +2680,7 @@ ns.Commands = {
 		kind = "secure",
 		category = "TARGETING",
 		conditions = true,
+		player = true,
 	},
 	{
 		name = "targetenemy",
@@ -2976,6 +2983,7 @@ ns.Commands = {
 		kind = "chat",
 		category = "CHAT",
 		conditions = false,
+		player = true,
 	},
 	{
 		name = "wait",

@@ -15,7 +15,7 @@
 
 - **Every macro in one searchable list.** General and character tabs hang off the window's right edge, and each macro shows its icon, name and a summary of its main action with a count of other cases. The selected row has a soft gold fill and left bar, and the search box filters by name or summary. The header names the action bar slots the selected macro sits in and the key that presses each, and a macro on no bar is marked.
 - **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
-- **A party or raid roster beside the editor.** While you are grouped, the compact panel lists every member. Drag a name onto any word in the macro to replace exactly that word, so an assignment keeps the rest of its text.
+- **Group member names in the editor.** While you are grouped, the completion list offers every other member's name after `@` and `target=`, as the first argument of `/invite`, `/target`, `/tell` and the other player commands, and in any word inside a `/raid`, `/party` or other chat message, so an assignment completes without leaving the editor.
 - **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing to explain.
 - **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through them, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
 - **Recipes for your class, checked against your spellbook.** Typing `pet` or `heal mouseover` offers checked recipes in the completion list, with spell names in your client's language, and Tab inserts the whole macro. Recipes opens the same catalogue in a popup with the general and class macros beside a full preview; an unlearned spell greys its recipe with the client's level, and Import creates it through the checked path.
@@ -34,9 +34,9 @@
 
 The searchable macro list on the left, with the selected macro open in the editor on the right and the "What it does" panel below the code.
 
-<p align="center"><img src="docs/screenshots/roster.png" alt="A party roster beside an assignment macro in the editor"></p>
+<p align="center"><img src="docs/screenshots/roster.png" alt="Group member names offered in a raid assignment line"></p>
 
-While grouped, the roster sits beside the code; dragging a member's name onto a word replaces just that word.
+Inside a raid or party message, the completion list offers every group member's name, with their class.
 
 <p align="center"><img src="docs/screenshots/completion.png" alt="Conditions offered with live values beside a problem in the macro"></p>
 
@@ -78,7 +78,7 @@ Put the `MacroAssistForever` folder in `World of Warcraft/_forever_/Interface/Ad
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. The General tab holds account macros and the character tab holds this character's macros.
 
-Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Import checks pasted text and opens the same picker. Characters copies a macro from another character into the open tab. Recipes browses the general and class macros, and Import creates the one selected. Plain words such as `pet` or `heal mouseover` offer checked recipes in the completion list, which Tab turns into a whole macro. Rename opens the picker; Back to code returns to the editor. Cancel restores the saved text, Save writes immediately, and History restores an earlier version. Closing the window saves your text out of combat.
+Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Import checks pasted text and opens the same picker. Characters copies a macro from another character into the open tab. Recipes browses the general and class macros, and Import creates the one selected. Plain words such as `pet` or `heal mouseover` offer checked recipes in the completion list, which Tab turns into a whole macro. While grouped, the same list offers the other members' names inside a `/raid`, `/party` or other chat message, after `@` and `target=`, and as the first argument of `/invite`, `/target`, `/tell` and the other player commands. Rename opens the picker; Back to code returns to the editor. Cancel restores the saved text, Save writes immediately, and History restores an earlier version. Closing the window saves your text out of combat.
 
 ## Works alongside
 
