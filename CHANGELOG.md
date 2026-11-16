@@ -5,6 +5,15 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-16
+
+<!-- discord-image: docs/screenshots/roster.png -->
+
+- **The roster panel is gone, the editor has its full width back, and group members' names now complete in the
+  editor.** The names appear after `@` and `target=`, as the first argument of `/invite`, `/target`, `/tell` and the
+  other player commands, and in any word inside a `/raid`, `/party` or other chat message, so an assignment completes
+  without leaving the editor. Thanks to Pinnnnnnnnnn for the idea. (#182)
+
 ## [0.7.0] - 2026-11-16
 
 <!-- discord-image: docs/screenshots/roster.png -->

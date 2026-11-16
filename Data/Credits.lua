@@ -5,7 +5,7 @@ local _, ns = ...
 ns.Credits = {
 	players = {
 		{ name = "Kal66", what = "Reported long pasted macros running past the editor" },
-		{ name = "Pinnnnnnnnnn", what = "Asked for a raid roster beside the editor" },
+		{ name = "Pinnnnnnnnnn", what = "Asked for raid member names in the editor" },
 	},
 	inspired = {},
 }

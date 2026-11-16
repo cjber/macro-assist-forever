@@ -1,10 +1,10 @@
 {
-  "input_digest": "69d9b4b64e7c78f4272e339422080fee4b26b388edb304a85a1a5a81e1a99091",
-  "runtime_sha256": "69d9b4b64e7c78f4272e339422080fee4b26b388edb304a85a1a5a81e1a99091",
-  "candidate": "47e3f2091b8dc59495960f23e2be51f12159a5bf43d6e3b2e8db1a2247b35eb8",
+  "input_digest": "dcd455aece60fb3e9f93dbcb015c63462afd611e4190b4bcf25906100da20844",
+  "runtime_sha256": "dcd455aece60fb3e9f93dbcb015c63462afd611e4190b4bcf25906100da20844",
+  "candidate": "9b568e3b7377495dd9af260f46d3cb8e72f23751cd4d0d0bb0f3833dcbb1e098",
   "client_build": "1.60.1.70938 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "a84847a61a015cdc8c6d756aa8fd10898e170e5f",
+  "source_commit": "6c0f25d6e49c9e5ff28d3f34f420e674476db3d9",
   "flows": [
     {
       "name": "macro window",
@@ -12,12 +12,23 @@
         "/macroassist"
       ],
       "result": "pass"
+    },
+    {
+      "name": "unit completion",
+      "steps": [
+        "unit-completion.lua sha256:816af3ae5d30c547aa225a5d1f9d244e2b4f9ede62d3a0f68293fedd7346481a"
+      ],
+      "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/a16053fe27b09f9048fd43be0a1c90e5/raw/fa038decfbbfb114cb23010c400a6ed1583efc26/1-macro-window.png",
-      "sha256": "2748bccbb2ed7163767cd70d247c92f5d2f624f0201d0f3294d7513f79d98ad2"
+      "url": "https://gist.githubusercontent.com/cjber/1b6a0f21ae362c76c47c0815a5bccdce/raw/18a6738b3bcb9d623039d204343420a8727b767a/1-macro-window.png",
+      "sha256": "a8c69c1044c272d9799f221440caa376453b67f22b8dcf098ebfb9c2ef635d66"
+    },
+    {
+      "url": "https://gist.githubusercontent.com/cjber/1b6a0f21ae362c76c47c0815a5bccdce/raw/18a6738b3bcb9d623039d204343420a8727b767a/2-unit-completion.png",
+      "sha256": "7317513514bd24b2a451220d8f9e465315c5219fa2fabc01f517c68237c5b7fb"
     }
   ]
 }

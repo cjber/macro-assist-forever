@@ -19,7 +19,7 @@
 | Who | What | Notes |
 |---|---|---|
 | Kal66 | Reported long pasted macros running past the editor | CurseForge; #171 |
-| Pinnnnnnnnnn | Asked for a raid roster beside the editor | CurseForge; #153 |
+| Pinnnnnnnnnn | Asked for raid member names in the editor | CurseForge; #153, #182 |
 
 ## Inspired by
 

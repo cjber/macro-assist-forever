@@ -298,6 +298,27 @@ function ns.Context.Rebuild()
 	ctx.recipes = AvailableRecipes()
 end
 
+-- The players in the current party or raid, read fresh for completion. The player is included: a raid leader assigns
+-- themself as often as anyone else.
+---@return MacroAssistRosterMember[]
+function ns.Context.Members()
+	local _, _, members = ns.Roster.Read({
+		inRaid = function()
+			return IsInRaid()
+		end,
+		groupCount = function()
+			return GetNumGroupMembers()
+		end,
+		name = function(unit)
+			return UnitFullName(unit)
+		end,
+		class = function(unit)
+			return UnitClass(unit)
+		end,
+	})
+	return members
+end
+
 -- Every recipe this character can browse, general first and then the player's class, each with its rendered macro and
 -- its spellbook state. The recipe browser calls this when it opens and again when the spellbook changes.
 ---@return MacroAssistRecipeState[]

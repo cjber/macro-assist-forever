@@ -41,7 +41,6 @@ Core\Secret.lua
 Core\Roster.lua
 UI\Context.lua
 UI\Editor.lua
-UI\Roster.lua
 UI\IconSelector.lua
 UI\History.lua
 UI\Import.lua
