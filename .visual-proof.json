@@ -1,10 +1,10 @@
 {
-  "input_digest": "dcd455aece60fb3e9f93dbcb015c63462afd611e4190b4bcf25906100da20844",
-  "runtime_sha256": "dcd455aece60fb3e9f93dbcb015c63462afd611e4190b4bcf25906100da20844",
-  "candidate": "9b568e3b7377495dd9af260f46d3cb8e72f23751cd4d0d0bb0f3833dcbb1e098",
+  "input_digest": "6bf6ee55a5af9928e9e8b2cefa2cfd47643801351f4bdfb842fe466cfece7e28",
+  "runtime_sha256": "6bf6ee55a5af9928e9e8b2cefa2cfd47643801351f4bdfb842fe466cfece7e28",
+  "candidate": "3620cb2ef4f45b718bb66b40f65524453b868a293edaca219c51b9ca71f27e42",
   "client_build": "1.60.1.70938 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "6c0f25d6e49c9e5ff28d3f34f420e674476db3d9",
+  "source_commit": "8f756e29cf837acaad444a0b349b5ad73aa83aff",
   "flows": [
     {
       "name": "macro window",
@@ -23,12 +23,12 @@
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/1b6a0f21ae362c76c47c0815a5bccdce/raw/18a6738b3bcb9d623039d204343420a8727b767a/1-macro-window.png",
-      "sha256": "a8c69c1044c272d9799f221440caa376453b67f22b8dcf098ebfb9c2ef635d66"
+      "url": "https://gist.githubusercontent.com/cjber/e128ff1b7310eecd026410f178d0d439/raw/79f53ee905673661bc6a0d145f2e2db3b00a91d6/1-macro-window.png",
+      "sha256": "8c8477cc3b87f892f988053d962479bc5b7785e01ace8607ae6730715b158996"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/1b6a0f21ae362c76c47c0815a5bccdce/raw/18a6738b3bcb9d623039d204343420a8727b767a/2-unit-completion.png",
-      "sha256": "7317513514bd24b2a451220d8f9e465315c5219fa2fabc01f517c68237c5b7fb"
+      "url": "https://gist.githubusercontent.com/cjber/e128ff1b7310eecd026410f178d0d439/raw/79f53ee905673661bc6a0d145f2e2db3b00a91d6/2-unit-completion.png",
+      "sha256": "9a3a716552f778bb51401bde04eda7bae759223fe12fc34752cc16ba6d201df9"
     }
   ]
 }
