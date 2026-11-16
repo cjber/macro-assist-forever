@@ -8,13 +8,13 @@ Free, with nothing locked behind it. If it saves you time, you can [sponsor me o
 
 The searchable macro list on the left, with the selected macro open in the editor on the right and the "What it does" panel below the code.
 
+![A party roster beside an assignment macro in the editor](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/roster.png)
+
+While grouped, the roster sits beside the code; dragging a member's name onto a word replaces just that word.
+
 ![Conditions offered with live values beside a problem in the macro](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/completion.png)
 
 Conditions are offered with their live value, and a wavy underline marks a problem on the line above.
-
-![The History window listing saved versions and a deleted macro](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/history.png)
-
-History keeps the previous versions of each macro, with a Deleted section for macros that can be restored.
 
 ![The Characters copy panel listing another character's macros and the differing lines](https://raw.githubusercontent.com/cjber/macro-assist-forever/main/docs/screenshots/characters.png)
 
@@ -33,8 +33,8 @@ These images are generated previews of the Macro Assist UI.
 ## Features
 
 - **Every macro in one searchable list.** General and character tabs hang off the window's right edge, as in the game's spellbook, and each macro shows its icon, name and a short summary of its main action with a count of the other cases. The count sits beside the search box, which filters by name or summary as you type. Characters copies a macro from another character, with the differing lines shown before Keep both or Replace.
-- **A real editor with a plain-English panel.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a current-line highlight, and colour for commands, conditions, units and spells. The bottom of the panel shows one row per click and modifier branch, read from the macro's own parse.
-- **Completions with live values.** Type `/` for a command, `[` for a condition, `@` for a unit or a spell name; Up and Down move the suggestions, Tab inserts one, and each shows its value in the game right now. The spellbook supplies your spell names and the ranks you know.
+- **A real editor with a plain-English panel and a party roster.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a current-line highlight, and colour for commands, conditions, units and spells. The bottom of the panel shows one row per click and modifier branch. While grouped, the roster beside the code lists every member; drag a name onto a word to replace exactly that word.
+- **Completions.** Type `/` for a command, `[` for a condition, `@` for a unit or a spell name; Up and Down move the suggestions, Tab inserts one, and each shows its value in the game right now.
 - **Recipes for your class.** Recipes opens the general and class macros beside a full preview. A recipe with a spell you have not learned is greyed, with the level the client reports, and Import creates it through the same checked path as an imported macro.
 - **Problems with a fix.** A wavy underline marks text the game cannot run: hover it for the explanation, then press Tab or click it to apply the suggested fix. The status bar shows the first problem, what the first matching line would do with your current target, and the character count out of 255.
 - **Rename, New, Save, Cancel and Delete, with an icon picker in the window.** Rename or the header icon opens it: the macro's own icons first, then your spellbook and every icon, with search and filters by class, spell school or item slot. New opens it with the name ready to type, and Delete asks for a second click.
@@ -74,7 +74,7 @@ For help, ideas and each day's release notes, join [cjber's Workshop on Discord]
 
 <!-- forever-credits:start -->
 
-Thanks to Kal66 and everyone who reported a bug or asked for a feature.
+Thanks to Kal66, Pinnnnnnnnnn and everyone who reported a bug or asked for a feature.
 
 <!-- forever-credits:end -->
 

@@ -1,13 +1,13 @@
 {
-  "input_digest": "8fff4109eb2347fa041d9d1b16d706faae96964e6b40f3e9f493af492265d449",
-  "runtime_sha256": "8fff4109eb2347fa041d9d1b16d706faae96964e6b40f3e9f493af492265d449",
-  "candidate": "717651e49a5138f845609f8a0d47e7a23e9baf767ba89fd4f49fed1734e50599",
+  "input_digest": "69d9b4b64e7c78f4272e339422080fee4b26b388edb304a85a1a5a81e1a99091",
+  "runtime_sha256": "69d9b4b64e7c78f4272e339422080fee4b26b388edb304a85a1a5a81e1a99091",
+  "candidate": "47e3f2091b8dc59495960f23e2be51f12159a5bf43d6e3b2e8db1a2247b35eb8",
   "client_build": "1.60.1.70938 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "e8d5c7c3950139e7649e91f55e5a61c517e4703e",
+  "source_commit": "05ff50bba93879f60a60e1deb276a38d467aef1e",
   "flows": [
     {
-      "name": "client",
+      "name": "macro window",
       "steps": [
         "/macroassist"
       ],
@@ -16,8 +16,8 @@
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/e5805e2db69082906783844e0431e09b/raw/2fe3db90f33ab5270bc54143f1c5a4f221e8a217/1-client.png",
-      "sha256": "6e83c3e8d20565861a015ee098af7bad9591c2636e85c3c51472ee382c7f2074"
+      "url": "https://gist.githubusercontent.com/cjber/8896ee56cf0423852f619fd1c78b5d8d/raw/dcc2cd1f0836f9597685ac5bf1484973f1405666/1-macro-window.png",
+      "sha256": "5fb344c2d6662aab3ea03eb68375d910f8f01a1a6d165b70f81df17865c837ef"
     }
   ]
 }

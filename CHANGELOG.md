@@ -5,10 +5,9 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
-## [0.6.2] - 2026-11-15
-
-<!-- forever-core-sync -->
-
+- **A party or raid roster sits beside the editor.** While you are grouped, a compact panel lists every member. Drag a
+  name onto any word in the macro to replace that word and leave the rest of the text alone. Thanks to Pinnnnnnnnnn
+  for the idea. (#153)
 - Ships with the same shared code as your other Forever addons, so they keep working together.
 
 ## [0.6.1] - 2026-11-14

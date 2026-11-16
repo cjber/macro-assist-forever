@@ -30,6 +30,7 @@ python3 tools/check_store_page.py
 python3 tools/typecheck_coverage.py
 python3 tools/check_client_load.py
 python3 tools/check_menu_scroll.py
+python3 tools/lint_client_calls.py
 # A fresh output path prevents a crashed server from reusing an earlier clean report.
 report_dir=$(mktemp -d)
 trap 'rm -rf "$report_dir"' EXIT

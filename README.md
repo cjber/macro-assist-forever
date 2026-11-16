@@ -15,6 +15,7 @@
 
 - **Every macro in one searchable list.** General and character tabs hang off the window's right edge, and each macro shows its icon, name and a summary of its main action with a count of other cases. The selected row has a soft gold fill and left bar, and the search box filters by name or summary. The header names the action bar slots the selected macro sits in and the key that presses each, and a macro on no bar is marked.
 - **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
+- **A party or raid roster beside the editor.** While you are grouped, the compact panel lists every member. Drag a name onto any word in the macro to replace exactly that word, so an assignment keeps the rest of its text.
 - **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing to explain.
 - **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through them, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
 - **Recipes for your class, checked against your spellbook.** Typing `pet` or `heal mouseover` offers checked recipes in the completion list, with spell names in your client's language, and Tab inserts the whole macro. Recipes opens the same catalogue in a popup with the general and class macros beside a full preview; an unlearned spell greys its recipe with the client's level, and Import creates it through the checked path.
@@ -32,6 +33,10 @@
 <p align="center"><img src="docs/screenshots/window.png" alt="The macro list beside the mono editor"></p>
 
 The searchable macro list on the left, with the selected macro open in the editor on the right and the "What it does" panel below the code.
+
+<p align="center"><img src="docs/screenshots/roster.png" alt="A party roster beside an assignment macro in the editor"></p>
+
+While grouped, the roster sits beside the code; dragging a member's name onto a word replaces just that word.
 
 <p align="center"><img src="docs/screenshots/completion.png" alt="Conditions offered with live values beside a problem in the macro"></p>
 
@@ -93,7 +98,7 @@ Thanks to the JetBrains Mono project for the bundled mono font, used under the S
 
 <!-- forever-credits:start -->
 
-Thanks to Kal66 and everyone who reported a bug or asked for a feature.
+Thanks to Kal66, Pinnnnnnnnnn and everyone who reported a bug or asked for a feature.
 
 <!-- forever-credits:end -->
 

@@ -9,7 +9,7 @@ end
 -- show and hide. Nothing in here runs Blizzard's Lua on its frame: HookScript and the engine's own reads and alpha
 -- call are the only contact, as WFA-38 allows.
 
--- Forever Core's report window reads these when the player opens it: the macro counts, the history kept, and whether
+-- ForeverCore's report window reads these when the player opens it: the macro counts, the history kept, and whether
 -- our window has been built, which is where a macro bug usually starts. English throughout, like the report's field
 -- labels, so one report reads the same in every locale.
 ---@return string[]
@@ -29,7 +29,7 @@ function ns.ReportLines()
 end
 
 -- The shared services, registered once: the report window's title and this addon's own report lines. The journal and
--- the log are Forever Core's, kept in this addon's own saved table.
+-- the log are ForeverCore's, kept in this addon's own saved table.
 ns.core = ForeverCore.Register(addonName, {
 	title = ns.ReportTitle,
 	lines = function()
@@ -173,7 +173,7 @@ addon:SetScript("OnEvent", function(_, event, name)
 		-- Blizzard_MacroUI_Bootstrap.lua defines ShowMacroFrame at startup, before the load-on-demand UI itself.
 		hooksecurefunc("ShowMacroFrame", AfterShowMacroFrame)
 		Attach() -- Blizzard_MacroUI may already be loaded by another addon
-		-- The journal and the log are Forever Core's, kept under `errors` and `log` in this table, the same keys the
+		-- The journal and the log are ForeverCore's, kept under `errors` and `log` in this table, the same keys the
 		-- vendored files used, so a /reload keeps earlier sessions' errors.
 		ns.core.Attach(MacroAssistForeverDB)
 	elseif event == "ADDON_LOADED" and name == "Blizzard_MacroUI" then

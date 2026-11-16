@@ -192,4 +192,23 @@
 			</Layer>
 		</Layers>
 	</Frame>
+
+	<!-- One player in the roster beside the editor: a compact native row whose name is a drag source. Dropping it on a
+	     word in the editor replaces exactly that word. -->
+	<Button name="MacroAssistRosterRowTemplate" virtual="true" motionScriptsWhileDisabled="true">
+		<Size y="20"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="Highlight" atlas="auctionhouse-ui-row-highlight" alpha="0.22" alphaMode="ADD" setAllPoints="true" hidden="true"/>
+			</Layer>
+			<Layer level="ARTWORK">
+				<FontString parentKey="Name" inherits="GameFontHighlightSmall" justifyH="LEFT" wordwrap="false">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="8" y="0"/>
+						<Anchor point="RIGHT" x="-6" y="0"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+	</Button>
 </Ui>
