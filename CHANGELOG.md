@@ -5,6 +5,10 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-16
+
+<!-- discord-image: docs/screenshots/roster.png -->
+
 - **A party or raid roster sits beside the editor.** While you are grouped, a compact panel lists every member. Drag a
   name onto any word in the macro to replace that word and leave the rest of the text alone. Thanks to Pinnnnnnnnnn
   for the idea. (#153)
