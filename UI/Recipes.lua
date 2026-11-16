@@ -33,7 +33,7 @@ local BUTTON_WIDTH = 90
 local BUTTON_HEIGHT = 24
 local BOTTOM = 8
 local BOX_BOTTOM = 40
--- A wrapped row is drawn two mono cells in from the left, so a preview reads a real newline as the only thing that
+-- A wrapped row is drawn two measured spaces in from the left, so a preview reads a real newline as the only thing that
 -- starts at the left edge. The editor's own rows wrap at the same measured words; only the indent is the preview's.
 local HANGING_INDENT = "  "
 
