@@ -9,7 +9,6 @@
 ## X-License: GPL-3.0-or-later
 ## X-Website: https://github.com/cjber/macro-assist-forever
 ## X-Curse-Project-ID: 1795141
-## X-Wago-ID: O67bypN3
 ## SavedVariables: MacroAssistForeverDB
 ## IconTexture: Interface\AddOns\MacroAssistForever\media\Icon
 ## X-Forever-Icon: Interface\Icons\INV_Misc_Note_01
