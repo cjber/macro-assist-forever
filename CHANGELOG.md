@@ -5,7 +5,7 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
-## [0.7.4] - 2026-11-16
+## [0.7.4] - 2026-11-17
 
 <!-- forever-core-sync -->
 
