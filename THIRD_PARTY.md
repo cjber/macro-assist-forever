@@ -19,6 +19,7 @@
 | Who | What | Notes |
 |---|---|---|
 | zizhengwu | Readable spell names on non-Latin clients | CurseForge thread 8731477; #193 |
+| Kal66 | Insert item and spell names in macros | CurseForge thread 8714679; #174 |
 | Kal66 | Reported long pasted macros running past the editor | CurseForge; #171 |
 | Pinnnnnnnnnn | Asked for raid member names in the editor | CurseForge; #153, #182 |
 

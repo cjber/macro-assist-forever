@@ -43,6 +43,10 @@ _G.ForeverCore = {
 	end,
 }
 
+local coreNs = {}
+assert(loadfile(dofile("tests/forever_core.lua").directory() .. "/Core/APIKit.lua"))("ForeverCore", coreNs)
+_G.ForeverCore.APIKit = coreNs.APIKit
+
 local ns = {}
 local addonName = "MacroAssistForever"
 local metadata = {}

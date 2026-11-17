@@ -19,3 +19,11 @@ C_InputInterfaceStyle = nil
 ---@field characters? table<string, table>
 ---@type MacroAssistSaved
 MacroAssistForeverDB = nil
+
+-- Localized slash commands supplied by the client's GlobalStrings table.
+---@type string?
+SLASH_USE1 = nil
+---@type string?
+SLASH_EQUIP1 = nil
+---@type string?
+SLASH_CAST1 = nil

@@ -9,8 +9,12 @@ ns.Icon = C_AddOns.GetAddOnMetadata(addonName, "X-Forever-Icon")
 -- files here. The warning itself is Core/ForeverRequire.lua, shared by every Forever addon. It names the addon to
 -- update, never ForeverCore.
 --
--- Register is the one ForeverCore member this addon calls directly: Core/Core.lua uses it for the report window, the
--- journal and the log. No member this addon calls arrived after API 1, so its presence is the whole check.
-local ready = ForeverCore ~= nil and type(ForeverCore.Register) == "function"
+-- Register supplies shared services; APIKit's minor 2 members supply the public engine's argument errors and
+-- discovery. Stop before loading the API if any member is absent, so the shared warning explains an older core.
+local ready = ForeverCore ~= nil
+	and type(ForeverCore.Register) == "function"
+	and type(ForeverCore.APIKit) == "table"
+	and type(ForeverCore.APIKit.Invalid) == "function"
+	and type(ForeverCore.APIKit.Publish) == "function"
 
 ns.ForeverRequire(ready)

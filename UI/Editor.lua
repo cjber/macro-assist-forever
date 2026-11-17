@@ -728,7 +728,14 @@ function Editor.Create(parent, statusParent)
 			row = x and self:PointerRow(y) or nil,
 		}
 	end)
+	self.edit:SetScript("OnReceiveDrag", function()
+		self:ReceiveDrop()
+	end)
 	self.edit:SetScript("OnMouseUp", function(_, button)
+		if button == "LeftButton" and self:ReceiveDrop() then
+			self.click = nil
+			return
+		end
 		if button ~= "LeftButton" then
 			self.click = nil
 			return
@@ -800,8 +807,88 @@ function Editor.Create(parent, statusParent)
 		self.click = nil
 	end)
 
+	-- Only the global post-hook is allowed: never hook ChatFrameUtil's table or a Blizzard mixin.
+	hooksecurefunc("HandleModifiedItemClick", function(link)
+		if IsModifiedClick("CHATLINK") and self.edit:HasFocus() and type(link) == "string" then
+			self:InsertItem(link)
+		end
+	end)
+	-- Blizzard emits this event before its own InsertLink call. Read spell data through engine APIs only, and
+	-- leave Blizzard's spellbook item and chat routing untouched.
+	EventRegistry:RegisterCallback("SpellBookItemMixin.OnModifiedClick", function(owner, item)
+		if not IsModifiedClick("CHATLINK") or not owner.edit:HasFocus() then
+			return
+		end
+		local info = C_SpellBook.GetSpellBookItemInfo(item.slotIndex, item.spellBank)
+		if not info or info.isPassive or info.itemType ~= Enum.SpellBookItemType.Spell then
+			return
+		end
+		local name = info.name
+		if type(name) == "string" and type(info.subName) == "string" and info.subName ~= "" then
+			name = name .. "(" .. info.subName .. ")"
+		end
+		owner:InsertName(name, "spell")
+	end, self)
 	self:RefreshAll()
 	return self
+end
+
+-- Let the engine replace the selection and count UTF-8 letters. Restore the draft editor's previous limit so an
+-- existing overlength macro can still be loaded and diagnosed whole, as it can before this insertion feature.
+---@param name string?
+---@param kind string
+---@param usable boolean?
+---@return boolean
+function Editor:InsertName(name, kind, usable)
+	local edit = self.edit
+	if not edit:HasFocus() or type(name) ~= "string" or name == "" or ns.Length(edit:GetText()) > ns.MacroLimit then
+		return false
+	end
+	local command
+	if kind == "item" then
+		if usable then
+			command = SLASH_USE1
+		else
+			command = SLASH_EQUIP1
+		end
+	else
+		command = SLASH_CAST1
+	end
+	local text = ns.InsertText(edit:GetText(), edit:GetCursorPosition(), name, kind, usable, command)
+	local limit = edit:GetMaxLetters()
+	edit:SetMaxLetters(ns.MacroLimit)
+	edit:Insert(text)
+	edit:SetMaxLetters(limit)
+	return true
+end
+
+---@param link string
+---@return boolean
+function Editor:InsertItem(link)
+	if not link:find("|Hitem:", 1, true) then
+		return false
+	end
+	local name = C_Item.GetItemInfo(link) or ns.ItemLinkName(link)
+	return self:InsertName(name, "item", C_Item.GetItemSpell(link) ~= nil)
+end
+
+---@return boolean
+function Editor:ReceiveDrop()
+	if not self.edit:HasFocus() then
+		return false
+	end
+	local kind, _, link, spellID = GetCursorInfo()
+	local inserted = false
+	if kind == "item" and type(link) == "string" then
+		inserted = self:InsertItem(link)
+	elseif kind == "spell" and type(spellID) == "number" then
+		local info = C_Spell.GetSpellInfo(spellID)
+		inserted = self:InsertName(info and info.name, "spell")
+	end
+	if inserted then
+		ClearCursor()
+	end
+	return inserted
 end
 
 ---@param text string

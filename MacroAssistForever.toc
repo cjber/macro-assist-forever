@@ -27,6 +27,7 @@ Core\Lexer.lua
 Core\Parser.lua
 Core\Icons.lua
 Core\Length.lua
+Core\Insert.lua
 Core\Bars.lua
 Core\Now.lua
 Core\Highlight.lua
@@ -36,6 +37,7 @@ Core\CharacterMacros.lua
 Core\Import.lua
 Core\Complete.lua
 Core\Check.lua
+Core\API.lua
 Core\Shorten.lua
 Core\Secret.lua
 Core\Roster.lua

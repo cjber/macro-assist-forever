@@ -333,6 +333,175 @@ scenario("unsupported link routing preserves native ownership with mouse and gam
 	sim:expectNoGamepadTaint(ADDON)
 end)
 
+-- forever_sim's EditBox.Insert appends and ignores the caret and letter cap, tracked in
+-- https://github.com/cjber/forever-core/issues/755. This fixture fills the gap on our own EditBox only.
+-- Bag routing and ChatFrameUtil.InsertLink remain pinned Blizzard Lua.
+scenario("bag and spellbook Shift-click insert only into the focused editor with mouse and gamepad", function(sim)
+	world.install(sim)
+	sim:loadBlizzard("Blizzard_ChatFrameBase")
+	sim:loadBlizzard("Blizzard_PlayerSpells/SpellBook/Blizzard_SpellBookItem.lua")
+	local G = sim.G
+	local link = "|cffffffff|Hitem:118::::::::|h[Minor Healing Potion]|h|r"
+	local nativeItemClick = G.HandleModifiedItemClick
+	G.IsModifiedClick = function(kind)
+		return kind == "CHATLINK"
+	end
+	G.C_Container.GetContainerItemLink = function()
+		return link
+	end
+	G.C_Item.GetItemInfo = function()
+		return nil
+	end -- uncached, so use hyperlink display text
+	G.C_Item.GetItemSpell = function()
+		return "Minor Healing"
+	end
+	G.CursorHasItem = function()
+		return false
+	end
+	sim:login()
+	local window = open(sim)
+	local edit = window.editor.edit
+	edit.Insert = function(self, text)
+		local before = self:GetText():sub(1, self:GetCursorPosition())
+		local after = self:GetText():sub(self:GetCursorPosition() + 1)
+		local limit = self:GetMaxLetters()
+		if limit > 0 then
+			text = text:sub(1, math.max(0, limit - #before - #after))
+		end
+		self:SetText(before .. text .. after)
+		self:SetCursorPosition(#before + #text)
+		self:GetScript("OnTextChanged")(self, true)
+	end
+	local bag = G.CreateFrame("Frame", nil, G.UIParent)
+	bag:SetID(0)
+	local item = G.CreateFrame("ItemButton", nil, bag, "ContainerFrameItemButtonTemplate")
+	item:SetID(1)
+	check(
+		debug.getinfo(item.OnModifiedClick, "S").source:find("Mainline/ContainerFrame.lua", 1, true),
+		"bag click must run pinned Mainline source"
+	)
+	check(
+		debug.getinfo(nativeItemClick, "S").source:find("Mainline/ItemButtonTemplate.lua", 1, true),
+		"item routing must run pinned Mainline source"
+	)
+	local spell = G.CreateFrame("Frame", nil, G.UIParent)
+	G.Mixin(spell, G.SpellBookItemMixin)
+	spell.elementData = {}
+	spell.slotIndex = 1
+	spell.spellBank = G.Enum.SpellBookSpellBank.Player
+	spell.spellBookItemInfo = G.C_SpellBook.GetSpellBookItemInfo(1, spell.spellBank)
+	G.C_SpellBook.GetSpellBookItemTradeSkillLink = function()
+		return nil
+	end
+	G.C_SpellBook.GetSpellBookItemLink = function()
+		return "|Hspell:3044|h[Arcane Shot]|h"
+	end
+
+	local readSpell = sim.impl["C_SpellBook.GetSpellBookItemInfo"]
+	local passive = false
+	sim.impl["C_SpellBook.GetSpellBookItemInfo"] = function(...)
+		local info = readSpell(...)
+		if info then
+			info.isPassive = passive
+		end
+		return info
+	end
+
+	local chatEdit = G.CreateFrame("EditBox", nil, G.UIParent)
+	for _, gamepad in ipairs({ false, true }) do
+		sim:setGamepad(gamepad)
+		window.editor:SetText("/cast  suffix")
+		edit:SetCursorPosition(6)
+		edit:SetFocus()
+		sim:input(function()
+			item:OnModifiedClick("LeftButton")
+		end)
+		equal(edit:GetText(), "/cast Minor Healing Potion suffix", "bag item inserted at caret")
+		window.editor:SetText("")
+		edit:SetFocus()
+		sim:input(function()
+			item:OnModifiedClick("LeftButton")
+		end)
+		equal(edit:GetText(), "/use Minor Healing Potion\n", "line-start item uses command")
+		local before = edit:GetText()
+		chatEdit:SetFocus()
+		G.ACTIVE_CHAT_EDIT_BOX = chatEdit
+		sim:input(function()
+			item:OnModifiedClick("LeftButton")
+		end)
+		equal(edit:GetText(), before, "active chat cannot change the editor")
+		equal(chatEdit:GetText(), link, "native chat receives the item link")
+		chatEdit:SetText("")
+		chatEdit:ClearFocus()
+		G.ACTIVE_CHAT_EDIT_BOX = nil
+		sim:input(function()
+			item:OnModifiedClick("LeftButton")
+		end)
+		equal(edit:GetText(), before, "unfocused editor cannot change")
+		window.editor:SetText("/cast  suffix")
+		edit:SetCursorPosition(6)
+		edit:SetFocus()
+		sim:input(function()
+			spell:OnModifiedIconClick("LeftButton")
+		end)
+		equal(edit:GetText(), "/cast Arcane Shot(Rank 4) suffix", "spellbook Shift-click inserts at caret")
+		window.editor:SetText("")
+		edit:SetFocus()
+		sim:input(function()
+			spell:OnModifiedIconClick("LeftButton")
+		end)
+		equal(edit:GetText(), "/cast Arcane Shot(Rank 4)\n", "spell line start uses cast command")
+		before = edit:GetText()
+		edit:ClearFocus()
+		sim:input(function()
+			spell:OnModifiedIconClick("LeftButton")
+		end)
+		equal(edit:GetText(), before, "unfocused spell insertion does nothing")
+
+		window.editor:SetText("")
+		edit:SetFocus()
+		passive = true
+		sim:input(function()
+			spell:OnModifiedIconClick("LeftButton")
+		end)
+		equal(edit:GetText(), "", "passive spells are not inserted")
+		passive = false
+
+		local payload = { "spell", 1, G.Enum.SpellBookSpellBank.Player, 3044 }
+		G.GetCursorInfo = function()
+			return unpack(payload)
+		end
+		G.ClearCursor = function()
+			payload = {}
+		end
+		sim:input(function()
+			edit:GetScript("OnReceiveDrag")(edit)
+		end)
+		equal(edit:GetText(), "/cast Arcane Shot\n", "dropping a spell inserts its name")
+		equal(#payload, 0, "successful drop clears the cursor")
+		window.editor:SetText("")
+		payload = { "item", 118, link }
+		sim:input(function()
+			edit:GetScript("OnMouseUp")(edit, "LeftButton")
+		end)
+		equal(edit:GetText(), "/use Minor Healing Potion\n", "mouse-up with an item cursor inserts once")
+		equal(#payload, 0, "mouse-up consumes the item cursor")
+		before = edit:GetText()
+		edit:ClearFocus()
+		payload = { "item", 118, link }
+		sim:input(function()
+			edit:GetScript("OnReceiveDrag")(edit)
+		end)
+		equal(edit:GetText(), before, "unfocused drop leaves editor unchanged")
+		equal(#payload, 3, "unfocused drop leaves cursor unchanged")
+		payload = {}
+
+		sim:gamepadNavigate()
+	end
+	sim:expectNoErrors(ADDON)
+	sim:expectNoGamepadTaint(ADDON)
+end)
+
 scenario("Characters without other snapshots explains the empty list", function(sim)
 	world.install(sim)
 	sim:login()
