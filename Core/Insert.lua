@@ -20,6 +20,17 @@ function ns.InsertText(text, cursor, name, kind, usable, command)
 	return name
 end
 
+-- A spellbook name as the parser reads it back: `Name(Rank N)` for a rank subtitle, the bare name for any other.
+---@param name string?
+---@param subName any
+---@return string?
+function ns.SpellInsertName(name, subName)
+	if type(name) == "string" and type(subName) == "string" and ns.Parser.RankDigits(subName) then
+		return name .. "(" .. subName .. ")"
+	end
+	return name
+end
+
 -- The hyperlink grammar's display text, not a name inferred from the item's numeric payload.
 ---@param link string
 ---@return string?

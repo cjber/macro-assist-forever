@@ -823,11 +823,7 @@ function Editor.Create(parent, statusParent)
 		if not info or info.isPassive or info.itemType ~= Enum.SpellBookItemType.Spell then
 			return
 		end
-		local name = info.name
-		if type(name) == "string" and type(info.subName) == "string" and info.subName ~= "" then
-			name = name .. "(" .. info.subName .. ")"
-		end
-		owner:InsertName(name, "spell")
+		owner:InsertName(ns.SpellInsertName(info.name, info.subName), "spell")
 	end, self)
 	self:RefreshAll()
 	return self
@@ -871,7 +867,10 @@ function Editor:InsertItem(link)
 		return false
 	end
 	local name = C_Item.GetItemInfo(link) or ns.ItemLinkName(link)
-	return self:InsertName(name, "item", C_Item.GetItemSpell(link) ~= nil)
+	-- `/equip` only for gear without a use spell. Anything else, a quest item included, takes `/use` as Blizzard's
+	-- editor gives it.
+	local usable = C_Item.GetItemSpell(link) ~= nil or not C_Item.IsEquippableItem(link)
+	return self:InsertName(name, "item", usable)
 end
 
 ---@return boolean

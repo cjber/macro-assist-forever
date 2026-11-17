@@ -7,6 +7,8 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 <!-- forever-core-sync -->
 
+- **Shift-clicking a spell inserts a name the macro check accepts.** A spellbook subtitle such as Racial is left out, and only a rank such as `(Rank 2)` is kept. (#220)
+- **Shift-clicking an item that cannot be equipped inserts `/use`, not `/equip`.** (#221)
 - Ships with the same shared code as your other Forever addons, so they keep working together.
 
 ## [0.8.0] - 2026-11-17
