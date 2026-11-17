@@ -1,15 +1,15 @@
 {
-  "input_digest": "409be151ee958774d85506472d38883a37e0d8c7975d257facdbc17686846347",
-  "runtime_sha256": "409be151ee958774d85506472d38883a37e0d8c7975d257facdbc17686846347",
-  "candidate": "e4980ca8c98e6dfcf4074f7264c8dc0e3257fcf0840def703778826ef166410b",
+  "input_digest": "c9d3262b0629ae2a3a2a109a82714f4a9ce9b1981b52b18557d4fbdb9dceea6d",
+  "runtime_sha256": "c9d3262b0629ae2a3a2a109a82714f4a9ce9b1981b52b18557d4fbdb9dceea6d",
+  "candidate": "b6bc85e612cd3e7445cf92dc7bcadd54126de5e63ea8979b84d0317177fcd53b",
   "client_build": "1.60.1.70938 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "c92762df57c8ecbefd13216ef70c15884e81aff8",
+  "source_commit": "7f061f0ae7c38a85cf95ade4477cfd2c0c65158f",
   "flows": [
     {
       "name": "macro window",
       "steps": [
-        "/macroassist"
+        "macro-window.lua sha256:3b6add9c47551f90a3729fee5b43dabf9321e2573011f5329fb7b23b0f1437cc"
       ],
       "result": "pass"
     },
@@ -23,12 +23,12 @@
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/e1c4463e137906f72a6f88fbbf0c4e68/raw/bb8ea7d19f2fe2d7d56235ba859760a79cb9d034/1-macro-window.png",
-      "sha256": "3d3627993bb94fbc6f818601ecf0dff595002b34f93b7183c844fad30336774d"
+      "url": "https://gist.githubusercontent.com/cjber/9f616ac0b52dab4cd00836ca3bab3d41/raw/ef314dc091a5305be0a9d42520cde7ae7dce8a23/1-macro-window.png",
+      "sha256": "f8886eddb1af8d1d810af863465163bc308a82417312327746a2e95a61fff4c4"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/e1c4463e137906f72a6f88fbbf0c4e68/raw/bb8ea7d19f2fe2d7d56235ba859760a79cb9d034/2-unit-completion.png",
-      "sha256": "e258650315a306b97582648a02075c6259dc1727e0feb5c1fd070efc09709777"
+      "url": "https://gist.githubusercontent.com/cjber/9f616ac0b52dab4cd00836ca3bab3d41/raw/ef314dc091a5305be0a9d42520cde7ae7dce8a23/2-unit-completion.png",
+      "sha256": "cb480eceebadda982e6532882c43ce7521705fdbc90114dffcaa79d566e34da5"
     }
   ]
 }
