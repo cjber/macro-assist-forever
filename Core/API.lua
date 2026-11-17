@@ -56,14 +56,19 @@ local function List(values, valid)
 	if type(values) ~= "table" then
 		return false
 	end
-	local count = 0
+	-- Distinct positive integer keys form 1..n exactly when their count equals the largest. The # operator
+	-- can't decide this: on a table with holes it may return any border.
+	local count, last = 0, 0
 	for key, value in pairs(values) do
 		if not Rank(key) or not valid(value) then
 			return false
 		end
 		count = count + 1
+		if key > last then
+			last = key
+		end
 	end
-	return count == #values
+	return count == last
 end
 
 ---@param value any

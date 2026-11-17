@@ -159,6 +159,7 @@ invalid("Check(nil)", api.Check(nil))
 invalid("Check with a string context", api.Check(MACRO, "spells"))
 invalid("Check with string spells", api.Check(MACRO, { spells = "Smite" }))
 invalid("Check with numeric items", api.Check(MACRO, { items = 5 }))
+invalid("Check with holes in spells", api.Check(MACRO, { spells = { nil, "Smite", "Heal", nil, nil, "Renew", nil } }))
 
 -- Explain
 equal(type(api.Explain(MACRO)), "string", "Explain answers a string")

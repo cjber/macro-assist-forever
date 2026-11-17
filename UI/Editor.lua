@@ -856,6 +856,8 @@ function Editor:InsertName(name, kind, usable)
 	end
 	local text = ns.InsertText(edit:GetText(), edit:GetCursorPosition(), name, kind, usable, command)
 	local limit = edit:GetMaxLetters()
+	-- The caret ends after the inserted text, so a pending click must not snap it back to the clicked row.
+	self.click = nil
 	edit:SetMaxLetters(ns.MacroLimit)
 	edit:Insert(text)
 	edit:SetMaxLetters(limit)
