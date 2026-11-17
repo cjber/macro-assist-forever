@@ -43,10 +43,10 @@ These images are generated previews of the Macro Assist UI.
 
 ## Known limitations
 
-- A macro holds at most 255 characters, so Import refuses anything longer and the editor counts against that limit.
-- The game does not let addons create, change or delete macros in combat, so Save, Restore and Delete wait until combat ends.
-- Addons cannot read wago.io or another character's macros, so Import takes pasted text only.
-- In some combat and instance situations the game hides other units' names from addons, so a live value that depends on one can show nothing.
+- A macro holds at most 255 characters in the game. The editor shows how many of the 255 you have used, Import refuses anything longer, and Shorten can rewrite an over-long macro when it can do so without changing what it does.
+- The game does not let addons create, change or delete macros in combat, so New, Import, Rename, Save, Restore and Delete are switched off until combat ends. Edits are saved when you close the window out of combat.
+- Addons cannot reach web sites such as wago.io, so Import takes pasted text only. Characters copies macros only from characters you have already logged in on with this addon.
+- In some fights and instances the game hides other players' names from addons. Then the live value beside a condition such as `@mouseover` can show nothing, and a group member's name can be missing from the completion list.
 
 ## Usage
 
