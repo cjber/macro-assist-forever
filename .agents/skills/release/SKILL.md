@@ -27,8 +27,8 @@ authorization. A preparation-only request ends before tags or uploads.
    release, and run `python3 -m tools.forever_tools.core_pin --latest`. `Data/Conditions.lua`
    and `Data/Recipes.lua` are hand-maintained: compare them with the behaviour being released.
 3. Prepare release changes on a branch from fresh main. Choose a new version from
-   the changes since the last tag. Retain `[Unreleased]` and move shipped notes
-   into `## [X.Y.Z] - YYYY-MM-DD` using the UTC release date. Keep the TOC version
+   the changes since the last tag. Run `python3 tools/changelog.py release X.Y.Z`: it writes `## [X.Y.Z] - YYYY-MM-DD`
+   (UTC date) from the `changes/*.md` fragments and deletes them. Keep the TOC version
    as `@project-version@`. Run `python3 tools/changelog.py --check X.Y.Z` and
    `python3 tools/changelog.py --check`; inspect the extracted version notes.
    Public API changes go under an optional `### For addon authors` subsection after the
