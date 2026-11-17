@@ -26,6 +26,14 @@ local function equal(actual, expected, label)
 	check(actual == expected, ("%s: expected %s, got %s"):format(label, tostring(expected), tostring(actual)))
 end
 
+-- Types a new macro name the way a player does: the client reports typed text as user input on the keystroke, while
+-- a SetText call only notifies OnTextChanged on the next frame.
+local function typeName(window, text)
+	local edit = window.header.nameEdit
+	edit:SetText("")
+	edit:Insert(text)
+end
+
 -- This is the function Blizzard's /macro and /m handlers call (Blizzard_ChatFrameBase/Shared/SlashCommands.lua), and
 -- the game menu's Macros button and the chat menu too. The simulator does not register the client's chat command
 -- table and boots no game menu, so calling ShowMacroFrame is the same path from our side.
@@ -1180,7 +1188,7 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	sim:advance(0.2)
 	check(window.picker:IsShown(), "New did not open the icon picker")
 	check(window.header.rename:GetText() == "Back to code", "Rename does not read Back to code while picking")
-	window.header.nameEdit:SetText("Fresh")
+	typeName(window, "Fresh")
 	sim:click(window.saveButton)
 	sim:advance(0.2)
 	check(select(2, sim.G.GetNumMacros()) == before + 1, "New did not create a character macro")
@@ -1194,7 +1202,7 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	sim:click(window.header.rename)
 	sim:advance(0.2)
 	check(window.picker:IsShown(), "Rename did not open the picker")
-	window.header.nameEdit:SetText("Renamed")
+	typeName(window, "Renamed")
 	sim:click(window.saveButton)
 	sim:advance(0.2)
 	check(window.header.name:GetText() == "Renamed", "Rename did not rename the macro")
@@ -1233,7 +1241,7 @@ scenario("renaming across another macro keeps Save on the renamed macro", functi
 	-- Zulu sorts last; Aaa sorts first, so the client moves the macro and returns the new index.
 	sim:click(window.header.rename)
 	sim:advance(0.1)
-	window.header.nameEdit:SetText("Aaa")
+	typeName(window, "Aaa")
 	sim:click(window.saveButton)
 	sim:advance(0.1)
 	equal(window.header.name:GetText(), "Aaa", "the header left the renamed macro")
@@ -1286,7 +1294,7 @@ scenario("clicking a row while a rename is pending keeps the clicked macro", fun
 	setText(sim, window, "/cast Zulu Two", true)
 	sim:click(window.header.rename)
 	sim:advance(0.1)
-	window.header.nameEdit:SetText("Aaa")
+	typeName(window, "Aaa")
 	sim:click(rowNamed(window, "Trap"))
 	sim:advance(0.1)
 	equal(window.header.name:GetText(), "Trap", "clicking a row selected the macro that moved into its index")
@@ -1352,7 +1360,7 @@ scenario("Import checks pasted text, creates the macro and opens the picker", fu
 	)
 	equal(window.header.nameEdit:GetText(), "New macro", "the picker did not start on a free name")
 
-	window.header.nameEdit:SetText("Imported")
+	typeName(window, "Imported")
 	sim:click(window.saveButton)
 	sim:advance(0.2)
 	equal(window.header.name:GetText(), "Imported", "the imported macro did not take the chosen name")
@@ -1530,7 +1538,7 @@ scenario("history rows say what changed against the newer text", function(sim)
 	-- The rename is described against the live name.
 	sim:click(window.header.rename)
 	sim:advance(0.2)
-	window.header.nameEdit:SetText("Arcane Shot")
+	typeName(window, "Arcane Shot")
 	sim:click(window.saveButton)
 	sim:advance(0.2)
 	sim:click(window.historyButton)
