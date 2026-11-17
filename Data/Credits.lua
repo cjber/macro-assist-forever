@@ -5,6 +5,7 @@ local _, ns = ...
 ns.Credits = {
 	players = {
 		{ name = "zizhengwu", what = "Readable spell names on non-Latin clients" },
+		{ name = "Kal66", what = "Insert item and spell names in macros" },
 		{ name = "Kal66", what = "Reported long pasted macros running past the editor" },
 		{ name = "Pinnnnnnnnnn", what = "Asked for raid member names in the editor" },
 	},

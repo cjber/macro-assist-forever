@@ -28,14 +28,15 @@ python3 tools/check_menu_scroll.py
 bash tools/typecheck.sh
 python3 tools/deadcode.py --check
 python3 tools/changelog.py --check
+python3 tools/check_api_docs.py            # docs/api.md names every MacroAssistForever.API member and its minor
 python3 tools/forever_tools/credits.py --check # Data/Credits.lua and both thanks blocks are current (WFA-31)
 python3 tools/gen_icon_names.py --check
 uv run --project tools --frozen --group dev ruff check tools &&
 uv run --project tools --frozen --group dev ruff format --check tools
 ```
 
-CI runs the same gate in the jobs `deadcode`, `check`, `python`, `typecheck`, `project-rules` (changelog), `workflows`,
-`secrets` and `package`, each on every pull request. The Lua tools (LuaJIT, luac5.1, luacheck, LuaLS, StyLua and
+CI runs the same gate in the jobs `deadcode`, `check`, `python`, `typecheck`, `project-rules` (changelog, credits and API docs),
+`workflows`, `secrets` and `package`, each on every pull request. The Lua tools (LuaJIT, luac5.1, luacheck, LuaLS, StyLua and
 gitleaks) come from forever-core's `.github/actions/toolchain`, which reads the pins in `tools/toolchain.json`; the
 Python tools (ruff, ty, zizmor and actionlint) run with `uv run --project tools --frozen --group dev` from
 `tools/pyproject.toml` and `tools/uv.lock`. The `check`, `typecheck` and `package` jobs check out
@@ -85,6 +86,9 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
   wrapping, history diffs and recipe previews, so layout supports proportional fonts. Every other string uses the
   game's font objects.
 - Every player-visible phrase lives in `Locales/enUS.lua` and is read through `ns.L`, never as a bare string.
+- `Core/API.lua` publishes `MacroAssistForever.API` under forever-core's `docs/api-conventions.md`. Every member stays
+  pure (no client call), returns fresh tables and answers a wrong argument with `APIKit.Invalid()`. A member change
+  updates `docs/api.md`, `types/API.lua` and `tests/api_spec.lua` with it; an addition raises `minor`.
 - Every saved option gets a default in an `ns.DEFAULTS` table in `Core/Core.lua`, copied into `MacroAssistForeverDB`
   on load, so an old save file and a new setting agree.
 - The addon needs ForeverCore to work and declares it in `## OptionalDeps` so the shared warning can explain a

@@ -1,7 +1,7 @@
 -- Run from the repository root: luajit tests/core_dependency_spec.lua
 -- Core/Require.lua computes whether the loaded ForeverCore has the member this addon calls, and hands the warning to
 -- Core/ForeverRequire.lua. The shared warning's own cases are ForeverCore's tests/forever_require_spec.lua; this
--- checks the two sides meet: a core missing Register stops here with one line, and a complete one loads on.
+-- checks the two sides meet: a core missing required members stops with one line, and a complete one loads on.
 local checks = 0
 local function check(condition, label)
 	checks = checks + 1
@@ -157,7 +157,23 @@ coreAddon.loaded = true
 coreAddon.enabled = 2
 
 -- A core with the member this addon calls: the addon loads and nothing is shown.
-local complete = Run({ API = 1, Register = function() end })
+local kit = {
+	Invalid = function()
+		return nil, "invalid"
+	end,
+	Publish = function() end,
+}
+for _, partial in ipairs({
+	{ Register = function() end },
+	{ Register = function() end, APIKit = {} },
+	{ Register = function() end, APIKit = { Invalid = kit.Invalid } },
+	{ Register = function() end, APIKit = { Publish = kit.Publish } },
+}) do
+	local incomplete = Run(partial)
+	check(incomplete.broken == true, "a core missing an APIKit member stops the addon")
+	check(#messages == 1, "a core missing an APIKit member shows one warning")
+end
+local complete = Run({ API = 1, Register = function() end, APIKit = kit })
 check(complete.broken == nil, "a complete core leaves the addon unbroken")
 check(#messages == 0, "a complete core shows nothing")
 check(type(complete.ForeverRequire) == "function", "the shared warning is loaded")

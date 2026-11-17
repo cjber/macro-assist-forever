@@ -3,7 +3,7 @@ max_line_length = 120
 exclude_files = { "forever-core/**", "tools/.cache/**", "tools/forever_tools/**", ".release/**", ".types/**", "types/**", ".claude/**", ".agents/**", ".bugpatrol/runs/**", ".speedpatrol/runs/**", ".sloppatrol/runs/**" }
 ignore = { "212/_.*" } -- unused args prefixed with _
 
-globals = { "MacroAssistForeverDB", "SlashCmdList" }
+globals = { "MacroAssistForever", "MacroAssistForeverDB", "SlashCmdList" }
 
 read_globals = {
 	"C_AddOns", "CreateFrame", "ChatFontNormal", "GetLocale",
@@ -13,11 +13,11 @@ read_globals = {
 	"canaccessvalue", "Constants", "CreateAndInitFromMixin", "CreateDataProvider", "CreateFont",
 	"CreateMacro", "CreateScrollBoxListLinearView", "C_Container", "C_Item", "C_Spell", "C_SpellBook",
 	"DeleteMacro", "EditMacro",
-	"Enum", "FONT_COLOR_CODE_CLOSE", "GameFontHighlightSmall", "GameTooltip", "GetCursorPosition", "GetFlyoutInfo",
+	"Enum", "EventRegistry", "FONT_COLOR_CODE_CLOSE", "GameFontHighlightSmall", "GameTooltip", "GetCursorPosition", "GetFlyoutInfo",
 	"GetFlyoutSlotInfo", "GetInventoryItemLink", "GetInventoryItemTexture", "GREEN_FONT_COLOR_CODE",
 	"GetActionInfo", "GetActionText", "GetBindingKey", "GetBindingText",
 	"GetMacroIndexByName", "GetMacroInfo", "GetServerTime",
-	"GetNumMacros", "HideUIPanel", "hooksecurefunc",
+	"GetNumMacros", "HideUIPanel", "hooksecurefunc", "IsModifiedClick", "GetCursorInfo", "ClearCursor",
 	"IconDataProviderExtraType", "IconDataProviderMixin",
 	"INVSLOT_FIRST_EQUIPPED", "INVSLOT_LAST_EQUIPPED", "MacroFrame",
 	"NUM_BAG_SLOTS", "NORMAL_FONT_COLOR", "BreakUpLargeNumbers",
@@ -28,6 +28,7 @@ read_globals = {
 	-- The slash command, the addon compartment and the gamepad input style.
 	"C_InputInterfaceStyle", "ShowMacroFrame",
 	"SLASH_MACROASSISTFOREVER1", "SLASH_MACROASSISTFOREVER2",
+	"SLASH_USE1", "SLASH_EQUIP1", "SLASH_CAST1",
 	-- ForeverCore, the addon this one requires.
 	"ForeverCore",
 }
