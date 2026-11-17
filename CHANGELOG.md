@@ -5,12 +5,11 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
-- **Spell and item names display correctly on Chinese and Korean clients.** The editor uses the client chat font on these locales. Thanks to zizhengwu for the report. (#193)
-
 ## [0.7.4] - 2026-11-17
 
 <!-- forever-core-sync -->
 
+- **Spell and item names display correctly on Chinese and Korean clients.** The editor uses the client chat font on these locales. Thanks to zizhengwu for the report. (#193)
 - Ships with the same shared code as your other Forever addons, so they keep working together.
 
 ## [0.7.3] - 2026-11-16
