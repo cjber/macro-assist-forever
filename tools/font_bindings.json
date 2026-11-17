@@ -1,0 +1,838 @@
+{
+  "policy": "Only reviewed phrase-to-widget contracts with confirmed FontObjects are checked. Source digests pin producers and local font-governing dependencies. Review source, callers, template inheritance and later font setters before refreshing a digest. Buttons bind all declared font states. Bindings check translated wording, excluding dynamic placeholder values. Tooltips, menus, chat, custom font files, dynamic text and unlisted producers have no coverage claim. Empty bindings record reviewed exclusions or dependencies, not glyph coverage.",
+  "producers": [
+    {
+      "source": "UI/MacroWindow.xml",
+      "sha256": "7e5f93b42f32c7913b935c08e47197ed61e17a4a0d73b5759c35b33e4015eb02",
+      "review": "Read every virtual row template and MacroWindow.lua, History.lua, Recipes.lua and IconSelector.lua initializers. Name/recipe Title/history Summary inherit GameFontHighlight; macro Summary/recipe Note inherit GameFontHighlightSmall; icon row Title/Note inherit GameFontNormal/GameFontHighlightSmall; icon Label inherits NumberFontNormal. No later font setters except diff Text, replaced with MacroAssistMono and excluded. Template declarations contain no locale phrases.",
+      "bindings": []
+    },
+    {
+      "source": "UI/MacroWindow.lua",
+      "sha256": "415dda985870bd76b3e717187925913aa8dd99a93a28247ee5a679dc8d8fea4e",
+      "review": "Pinned client b401e0332adfbf0460d319b06d8ea29279a941f1: Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml ButtonFrameTemplate inherits ButtonFrameBaseTemplate then PortraitFrameBaseTemplate, whose TitleContainer.TitleText inherits GameFontNormal. Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml SharedButtonSmallTemplate declares GameFontNormal/GameFontHighlight/GameFontDisable for normal/highlight/disabled states. Read BuildHeader, BuildExplainPanel, Build, character copy callbacks, InitializeRow, BarText, RefreshHeader, UpdateButtons and Notice caller. Explicit header name/nameEdit use GameFontNormalLarge; meta, count, empty, explanation rows and copy status use GameFontHighlightSmall; explanation title uses GameFontNormalSmall. MacroAssistRowTemplate Summary inherits GameFontHighlightSmall in MacroWindow.xml. SearchBoxTemplate inherits InputBoxInstructionsTemplate in Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml: Instructions is GameFontDisableSmall. Only colour changes follow these assignments. Tooltips, tab tooltips, dynamic names/summaries/source buttons, explanation output and placeholder values are excluded. Copy diff and measurements use MacroAssistMono, a font-file contract excluded here. Notice goes to Editor.lua problem, explicitly GameFontHighlightSmall.",
+      "bindings": [
+        {
+          "font": "GameFontNormal",
+          "widget": "frame / characterPanel TitleContainer.TitleText",
+          "phrase": "Macros"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "frame / characterPanel TitleContainer.TitleText",
+          "phrase": "Copy from another character"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Rename"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Back to code"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "New"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Delete"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Confirm"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "History"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Recipes"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Characters"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Save"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Keep both"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Replace"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Rename"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Back to code"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "New"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Delete"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Confirm"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "History"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Recipes"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Characters"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Save"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Keep both"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Replace"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Rename"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Back to code"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "New"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Delete"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Confirm"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "History"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Recipes"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Characters"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Save"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Keep both"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "footer buttons, header.rename and copy keep/replace",
+          "phrase": "Replace"
+        },
+        {
+          "font": "GameFontNormalSmall",
+          "widget": "explainPanel.title",
+          "phrase": "What it does"
+        },
+        {
+          "font": "GameFontDisableSmall",
+          "widget": "searchBox.Instructions",
+          "phrase": "Search macros"
+        },
+        {
+          "font": "GameFontNormalLarge",
+          "widget": "header.name / nameEdit fallback",
+          "phrase": "No macro selected"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "frame.empty / count",
+          "phrase": "No macros yet. Press New to make one."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "frame.empty / count",
+          "phrase": "%d/%d"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "characterPanel.status",
+          "phrase": "Choose Keep both or Replace."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "characterPanel.status",
+          "phrase": "Choose a macro to copy."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "characterPanel.status",
+          "phrase": "No other character macros available"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "characterPanel.status",
+          "phrase": "Save the macro before copying."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "characterPanel.status",
+          "phrase": "Macro limit reached"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "characterPanel.status",
+          "phrase": "The macro was not replaced."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "characterPanel.status",
+          "phrase": "Click again to replace"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "row.Summary",
+          "phrase": "%s · Not on a bar"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "row.Summary",
+          "phrase": "Not on a bar"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "header.meta via BarText",
+          "phrase": "General macro"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "header.meta via BarText",
+          "phrase": "Character macro"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "header.meta via BarText",
+          "phrase": "%s, not on a bar"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "header.meta via BarText",
+          "phrase": "%s, slot %d (%s)"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "header.meta via BarText",
+          "phrase": "%s, slot %d"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "editor.problem via Notice",
+          "phrase": "Macro is %d characters; the limit is %d. Nothing was saved."
+        }
+      ]
+    },
+    {
+      "source": "UI/Import.lua",
+      "sha256": "bfd836f8fa91a906e25ecaed5ed15f7a6887580fdb767672cf6f5ab88174b0d9",
+      "review": "Pinned client b401e0332adfbf0460d319b06d8ea29279a941f1: Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml ButtonFrameTemplate inherits ButtonFrameBaseTemplate then PortraitFrameBaseTemplate, whose TitleContainer.TitleText inherits GameFontNormal. Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml SharedButtonSmallTemplate declares GameFontNormal/GameFontHighlight/GameFontDisable for normal/highlight/disabled states. Read Panel.Create, Refresh, Open, Close and MacroWindow.lua caller. hint/status/length explicitly use GameFontHighlightSmall with no font overrides; edit uses GameFontHighlight for dynamic pasted text, excluded. Diagnostic text inserted into placeholders is excluded.",
+      "bindings": [
+        {
+          "font": "GameFontNormal",
+          "widget": "frame.TitleContainer.TitleText",
+          "phrase": "Import macro"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "importButton / cancelButton",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "importButton / cancelButton",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "importButton / cancelButton",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "importButton / cancelButton",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "importButton / cancelButton",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "importButton / cancelButton",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "Paste a macro from wago.io or another character."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "%d/%d"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "A macro can't be created, changed or deleted in combat."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "Paste a macro to import."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "This is a MySlot export, not a macro."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "Not a macro: no line starts with / or #."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "Macro is %d characters; the limit is %d."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "Ready to import."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "%d problem · %s"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status / length",
+          "phrase": "%d problems · %s"
+        }
+      ]
+    },
+    {
+      "source": "UI/History.lua",
+      "sha256": "247c5f8454b93b7018de9de734c03e3b0f886453c64ab32b7f0d17719babb105",
+      "review": "Pinned client b401e0332adfbf0460d319b06d8ea29279a941f1: Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml ButtonFrameTemplate inherits ButtonFrameBaseTemplate then PortraitFrameBaseTemplate, whose TitleContainer.TitleText inherits GameFontNormal. Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml SharedButtonSmallTemplate declares GameFontNormal/GameFontHighlight/GameFontDisable for normal/highlight/disabled states. Read Panel.Create, Refresh, InitializeRow, UpdateButtons, Restore and MacroWindow.lua callers. empty/combatText explicitly use GameFontHighlightSmall. MacroAssistHistoryRowTemplate Summary inherits GameFontHighlight in MacroWindow.xml, including headers; only colours and anchors change. Dynamic timestamps, macro names, summary/helper output and placeholder values are excluded.",
+      "bindings": [
+        {
+          "font": "GameFontNormal",
+          "widget": "frame.TitleContainer.TitleText",
+          "phrase": "History"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "restoreButton",
+          "phrase": "Restore"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "restoreButton",
+          "phrase": "Restore"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "restoreButton",
+          "phrase": "Restore"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "empty / combatText",
+          "phrase": "No history yet."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "empty / combatText",
+          "phrase": "Saving is disabled in combat."
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "row.Summary",
+          "phrase": "This macro"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "row.Summary",
+          "phrase": "Deleted"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "row.Summary",
+          "phrase": "No commands in this macro yet."
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "row.Summary",
+          "phrase": "%s: %s"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "row.Summary",
+          "phrase": "No change"
+        }
+      ]
+    },
+    {
+      "source": "UI/Recipes.lua",
+      "sha256": "f226a72b6b9e817910527b7305a60d33f3569c0ffa69876530408144134fcf5a",
+      "review": "Pinned client b401e0332adfbf0460d319b06d8ea29279a941f1: Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml ButtonFrameTemplate inherits ButtonFrameBaseTemplate then PortraitFrameBaseTemplate, whose TitleContainer.TitleText inherits GameFontNormal. Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml SharedButtonSmallTemplate declares GameFontNormal/GameFontHighlight/GameFontDisable for normal/highlight/disabled states. Read Heading, InitializeRow, UpdateButtons, UpdatePreview, Create, Refresh and Context.RecipeStates caller/producer. heading explicitly uses GameFontNormal; hint/empty/status use GameFontHighlightSmall. MacroAssistRecipeRowTemplate Title/Note inherit GameFontHighlight/GameFontHighlightSmall in MacroWindow.xml; no subsequent font setters. Static recipe titles are pinned in Data/Recipes.lua. Dynamic class/spell names and placeholders are excluded. Preview text and measures use MacroAssistMono and are excluded, including the same status phrases when drawn there.",
+      "bindings": [
+        {
+          "font": "GameFontNormal",
+          "widget": "frame.TitleContainer.TitleText / heading",
+          "phrase": "Recipes"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "frame.TitleContainer.TitleText / heading",
+          "phrase": "%s recipes"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "importButton",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "importButton",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "importButton",
+          "phrase": "Import"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "Choose a recipe to preview its macro."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "No recipes yet."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "Learn at level %d"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "Not learned"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "No recipe selected."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "This recipe needs a spell this client does not know."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "Learn at level %d."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "Not learned."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "A macro can't be created, changed or deleted in combat."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / empty / status / row.Note",
+          "phrase": "No macro slots are free."
+        }
+      ]
+    },
+    {
+      "source": "Data/Recipes.lua",
+      "sha256": "701bb87581df9255310f2b291a689eb732da08f8b7237b019c65527caaf9f8b2",
+      "review": "Read all static recipe title fields, UI/Context.lua RecipeStates and UI/Recipes.lua InitializeRow. Title reaches row.Title, inherited GameFontHighlight from MacroAssistRecipeRowTemplate in UI/MacroWindow.xml; only colour changes follow. Macro bodies, rendered spell names and completion labels use dynamic/custom-font consumers and are excluded.",
+      "bindings": [
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Stop the attack and the cast"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Attack your target"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Follow your target"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Send the pet"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Heal the pet"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Revive the pet"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Mark and send the pet"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Trap your mouseover"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Heal your mouseover"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Shield your mouseover"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Polymorph your mouseover"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Interrupt your mouseover"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Fear your mouseover"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Sap your mouseover"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "recipe row.Title via InitializeRow",
+          "phrase": "Blind your mouseover"
+        }
+      ]
+    },
+    {
+      "source": "UI/Shorten.lua",
+      "sha256": "da1d5514e97afce9b7eabfcfd45c5af8f988a2d350e81e3002833af336d25b2a",
+      "review": "Pinned client b401e0332adfbf0460d319b06d8ea29279a941f1: Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml ButtonFrameTemplate inherits ButtonFrameBaseTemplate then PortraitFrameBaseTemplate, whose TitleContainer.TitleText inherits GameFontNormal. Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml SharedButtonSmallTemplate declares GameFontNormal/GameFontHighlight/GameFontDisable for normal/highlight/disabled states. Read Panel.Diff, Create, Open and MacroWindow.lua/Editor.lua callers. hint/status explicitly use GameFontHighlightSmall without later font overrides. Diff uses MacroAssistMono, so macro text and No change. are excluded from FontObject phrase coverage.",
+      "bindings": [
+        {
+          "font": "GameFontNormal",
+          "widget": "frame.TitleContainer.TitleText",
+          "phrase": "Shorten macro"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "applyButton / cancelButton",
+          "phrase": "Apply"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "applyButton / cancelButton",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "applyButton / cancelButton",
+          "phrase": "Apply"
+        },
+        {
+          "font": "GameFontHighlight",
+          "widget": "applyButton / cancelButton",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "applyButton / cancelButton",
+          "phrase": "Apply"
+        },
+        {
+          "font": "GameFontDisable",
+          "widget": "applyButton / cancelButton",
+          "phrase": "Cancel"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status",
+          "phrase": "This rewrite only removes what the macro does not need."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "hint / status",
+          "phrase": "%d/%d, now %d/%d"
+        }
+      ]
+    },
+    {
+      "source": "UI/Editor.lua",
+      "sha256": "24c90fb83bc94958d50d4e6b863bd5366296257db54a3981680ffb987ee4a67b",
+      "review": "Read EnsureFont, EditorFontPath, Create, UpdateStatus, NowText, Notice, UpdatePopup, DrawLines and MacroWindow.lua/Shorten.lua/Recipes.lua consumers. problem/nowLabel/now/length and popup detail/tagText explicitly use GameFontHighlightSmall, shortenLabel uses GameFontNormalSmall; no later font overrides. MacroAssistMono uses bundled JetBrains Mono, or the file returned by ChatFontNormal:GetFont() for zhCN/zhTW/koKR, with editor size/spacing. This file-based font, macro text, completions labels, previews/diffs and hidden measures are excluded from FontObject phrase bindings. Dynamic diagnostic/completion/live-condition output, tooltips, numeric line numbers and placeholder values are excluded.",
+      "bindings": [
+        {
+          "font": "GameFontNormalSmall",
+          "widget": "shortenLabel",
+          "phrase": "Shorten"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "Now"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "on %s"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "%d/%d"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "Saving is disabled in combat."
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "%d problem"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "%d problems"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "Tab to fix"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "No problems"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "Nothing fires now"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "nowLabel / now / length / problem",
+          "phrase": "No commands in this macro yet."
+        }
+      ]
+    },
+    {
+      "source": "UI/IconSelector.lua",
+      "sha256": "dbf24d2441065d901448ee3333c862dd0caf9df8938fe71ee55173f9d8e4f61d",
+      "review": "Read Create, InitializeRow, BuildRows, UpdateStatus, FilterText, KindLabel, SetupMenu and MacroWindow.lua callers. keep/statusText explicitly use GameFontHighlightSmall. MacroAssistIconTemplate Label inherits NumberFontNormal; MacroAssistIconRowTemplate Title/Note inherit GameFontNormal/GameFontHighlightSmall in MacroWindow.xml; no later overrides. SearchBoxTemplate inherits InputBoxInstructionsTemplate in pinned Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml (client b401e0332adfbf0460d319b06d8ea29279a941f1): Instructions inherits GameFontDisableSmall. Dropdown/menu text, tooltip text, dynamic icon/spell/item names, section notes containing helper results and placeholder values are excluded.",
+      "bindings": [
+        {
+          "font": "GameFontDisableSmall",
+          "widget": "searchBox.Instructions",
+          "phrase": "Search icons, spells and items"
+        },
+        {
+          "font": "NumberFontNormal",
+          "widget": "icon button.Label",
+          "phrase": "Auto"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "row.Title via AddHeader",
+          "phrase": "Your spells"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "row.Title via AddHeader",
+          "phrase": "From this macro"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "row.Title via AddHeader",
+          "phrase": "Spellbook"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "row.Title via AddHeader",
+          "phrase": "All icons"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "row.Note for match count",
+          "phrase": "%d match"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "row.Note for match count",
+          "phrase": "%d matches"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "statusKeep / statusText",
+          "phrase": "Click to pick, Save to keep"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "statusKeep / statusText",
+          "phrase": "Automatic"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "statusKeep / statusText",
+          "phrase": "shows the icon of the spell #showtooltip picks: %s"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "statusKeep / statusText",
+          "phrase": "shows the macro's own icon"
+        },
+        {
+          "font": "GameFontHighlightSmall",
+          "widget": "statusKeep / statusText",
+          "phrase": "Unknown icon"
+        },
+        {
+          "font": "GameFontNormal",
+          "widget": "row.Title via SourceTitle / AddHeader",
+          "phrase": "Equipped and bags"
+        }
+      ]
+    },
+    {
+      "source": "UI/Context.lua",
+      "sha256": "c3b77984f50d42443f0914bc1ae44db2aef237a231daadc4a7e65a7d0d23ad73",
+      "review": "Read AvailableRecipes and RecipeStates and their Recipes.lua/Editor.lua consumers. Passes through static Data/Recipes.lua titles and dynamic client spell/class names; contains no independently bound phrases. Pins the recipe-title path reviewed above. Dynamic game data is excluded.",
+      "bindings": []
+    }
+  ]
+}
