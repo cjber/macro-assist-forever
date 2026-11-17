@@ -110,8 +110,16 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      # A release publishes its changelog entry, so every tagged version needs one.
-      - run: python3 tools/changelog.py --check
+      # Changelog fragments are checked on every push, and direct changelog edits are checked on pull requests.
+      - name: Check changelog
+        env:
+          CHANGELOG_BASE: ${{ github.base_ref }}
+        run: |
+          if [ -n "$CHANGELOG_BASE" ]; then
+            python3 tools/changelog.py --check --base "origin/$CHANGELOG_BASE"
+          else
+            python3 tools/changelog.py --check
+          fi
       # Data/Credits.lua and the README and store thanks blocks are generated from THIRD_PARTY.md (WFA-31).
       - run: python3 tools/forever_tools/credits.py --check
       # Every member Core/API.lua publishes, and its minor, is documented in docs/api.md.

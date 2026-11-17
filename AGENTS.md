@@ -35,6 +35,10 @@ uv run --project tools --frozen --group dev ruff check tools &&
 uv run --project tools --frozen --group dev ruff format --check tools
 ```
 
+A change's player-facing notes go in `changes/<issue>.md` as bold-lead bullets, with an optional `### For addon
+authors` section after them. The release commit gathers them with `python3 tools/changelog.py release X.Y.Z`; no
+other pull request edits `CHANGELOG.md`, and CI's `--check --base` fails one that does.
+
 CI runs the same gate in the jobs `deadcode`, `check`, `python`, `typecheck`, `project-rules` (changelog, credits and API docs),
 `workflows`, `secrets` and `package`, each on every pull request. The Lua tools (LuaJIT, luac5.1, luacheck, LuaLS, StyLua and
 gitleaks) come from forever-core's `.github/actions/toolchain`, which reads the pins in `tools/toolchain.json`; the
