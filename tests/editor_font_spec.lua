@@ -6,10 +6,10 @@ assert(loadfile("UI/Editor.lua"))("MacroAssistForever", ns)
 assert(type(ns.EditorFontPath) == "function", "editor must expose its locale font choice")
 local bundled = "Interface/AddOns/MacroAssistForever/media/fonts/JetBrainsMono-Regular.ttf"
 local chat = "Fonts/locale-chat.ttf"
-for _, locale in ipairs({ "zhCN", "zhTW", "koKR", "ruRU" }) do
+for _, locale in ipairs({ "zhCN", "zhTW", "koKR" }) do
 	assert(ns.EditorFontPath(locale, chat) == chat, locale .. " must use the client's chat font")
 end
-for _, locale in ipairs({ "enUS", "deDE" }) do
+for _, locale in ipairs({ "enUS", "deDE", "ruRU" }) do
 	assert(ns.EditorFontPath(locale, chat) == bundled, locale .. " must keep JetBrains Mono")
 end
 -- A proportional font must drive both wrap points and caret offsets through measured widths.

@@ -79,8 +79,8 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
 - Blizzard's `MacroFrame` still opens and closes through every player path. Our own window, built from its frame
   templates, covers it at alpha 0, and every part inside it is ours. Touch Blizzard's frame only with `HookScript` and
   engine calls, and reach the macro store only through the global macro APIs.
-- The one font exception: macro text uses bundled JetBrains Mono (OFL-1.1; listed in `THIRD_PARTY.md`) on Latin
-  clients. On zhCN, zhTW, koKR and ruRU it uses the font file returned by `ChatFontNormal:GetFont()` for locale glyph
+- The one font exception: macro text uses bundled JetBrains Mono (OFL-1.1; listed in `THIRD_PARTY.md`) by
+  default. On zhCN, zhTW and koKR it uses the font file returned by `ChatFontNormal:GetFont()` for locale glyph
   coverage, keeping the editor's size and spacing. Hidden FontStrings measure text for caret positions, squiggles,
   wrapping, history diffs and recipe previews, so layout supports proportional fonts. Every other string uses the
   game's font objects.

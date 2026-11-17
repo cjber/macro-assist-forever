@@ -4,7 +4,7 @@
 
 | Input | Source and pin | Licence | Ships in zip |
 |---|---|---|---|
-| JetBrains Mono Regular | [JetBrains Mono v2.304](https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304), `fonts/ttf/JetBrainsMono-Regular.ttf` (sha256 `a0bf60ef0f83c5ed4d7a75d45838548b1f6873372dfac88f71804491898d138f`), with its `OFL.txt` beside it in `media/fonts/`. Used for macro text on Latin clients; zhCN, zhTW, koKR and ruRU use the client chat font. | SIL Open Font License 1.1 | Yes |
+| JetBrains Mono Regular | [JetBrains Mono v2.304](https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304), `fonts/ttf/JetBrainsMono-Regular.ttf` (sha256 `a0bf60ef0f83c5ed4d7a75d45838548b1f6873372dfac88f71804491898d138f`), with its `OFL.txt` beside it in `media/fonts/`. Used for macro text by default; zhCN, zhTW and koKR use the client chat font. | SIL Open Font License 1.1 | Yes |
 | Macro conditionals reference | [warcraft.wiki.gg/wiki/Macro_conditionals](https://warcraft.wiki.gg/wiki/Macro_conditionals), read for the condition names and forms in `Data/Conditions.lua`; no text is copied. | CC BY-SA 4.0 | No |
 | Squiggle underline | Made for this addon by `tools/make_squiggle.py`, a 16 by 4 pixel tile tinted red or yellow for a problem. | GPL-3.0-or-later, this addon's own | Yes |
 | ForeverCore | `cjber/forever-core`, a required addon the stores install alongside this one (`## Dependencies: ForeverCore`). Its development tooling is copied here and pinned by `tools/check_core_shared.py` and `.github/workflows/core-shared-drift.yml`. | GPL-3.0-or-later | No, a required addon |

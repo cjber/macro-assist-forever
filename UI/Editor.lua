@@ -50,8 +50,8 @@ local COLOUR_MUTED = "|cff9d9d9d"
 -- the same layout and font, so it takes the same pitch.
 local LINE_HEIGHT = FONT_SIZE + LINE_SPACING
 
--- These client locales need CJK, Hangul or Cyrillic coverage from the client's own chat font.
-local CHAT_FONT_LOCALES = { zhCN = true, zhTW = true, koKR = true, ruRU = true }
+-- These client locales need CJK or Hangul glyphs that JetBrains Mono lacks.
+local CHAT_FONT_LOCALES = { zhCN = true, zhTW = true, koKR = true }
 
 ---@param locale string
 ---@param chatFontPath string
