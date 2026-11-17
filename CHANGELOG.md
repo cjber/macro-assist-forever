@@ -5,18 +5,18 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-17
+
+<!-- forever-core-sync -->
+<!-- discord-image: docs/screenshots/window.png -->
+
 - **Shift-click an item or spell to insert its name in the focused macro editor.** Drop a picked-up spell or item onto the focused editor too. At the start of a line, items and spells include their macro command. Thanks to Kal66 for the idea. (#174)
+- **Spell and item names display correctly on Chinese and Korean clients.** The editor uses the client chat font on these locales. Thanks to zizhengwu for the report. (#193)
+- Ships with the same shared code as your other Forever addons, so they keep working together.
 
 ### For addon authors
 
 - Publish `MacroAssistForever.API` version 1, minor 0: Parse, Check, Explain, Length, MacroLimit and Complete, with fresh results and invalid-argument answers. (#21)
-
-## [0.7.4] - 2026-11-17
-
-<!-- forever-core-sync -->
-
-- **Spell and item names display correctly on Chinese and Korean clients.** The editor uses the client chat font on these locales. Thanks to zizhengwu for the report. (#193)
-- Ships with the same shared code as your other Forever addons, so they keep working together.
 
 ## [0.7.3] - 2026-11-16
 
