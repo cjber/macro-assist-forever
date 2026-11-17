@@ -41,6 +41,13 @@ These images are generated previews of the Macro Assist UI.
 - **History with Restore.** Every save, rename and delete keeps the previous name, icon and text, the newest 20 for each macro, listed with their time and what changed. Restore puts one back, and deleted macros stay restorable in a Deleted section.
 - **Safe to open in combat.** Every write is turned off in combat, Restore included, with a line saying why. Edits are saved when the window closes out of combat.
 
+## Known limitations
+
+- A macro holds at most 255 characters, so Import refuses anything longer and the editor counts against that limit.
+- The game does not let addons create, change or delete macros in combat, so Save, Restore and Delete wait until combat ends.
+- Addons cannot read wago.io or another character's macros, so Import takes pasted text only.
+- In some combat and instance situations the game hides other units' names from addons, so a live value that depends on one can show nothing.
+
 ## Usage
 
 Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Each one closes the window again when it is already open. General holds account macros and the character tab holds this character's macros.

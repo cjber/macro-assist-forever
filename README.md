@@ -11,6 +11,13 @@
 <br><br><a href="https://github.com/sponsors/cjber"><img src="docs/github-sponsors-button.png" alt="Sponsor me on GitHub"></a> <a href="https://ko-fi.com/cjber"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
 </p>
 
+## Known limitations
+
+- A macro holds at most 255 characters, so Import refuses anything longer and the editor counts against that limit.
+- The game does not let addons create, change or delete macros in combat, so Save, Restore and Delete wait until combat ends.
+- Addons cannot read wago.io or another character's macros, so Import takes pasted text only.
+- In some combat and instance situations the game hides other units' names from addons, so a live value that depends on one can show nothing.
+
 ## Features
 
 - **Every macro in one searchable list.** General and character tabs hang off the window's right edge, and each macro shows its icon, name and a summary of its main action with a count of other cases. The selected row has a soft gold fill and left bar, and the search box filters by name or summary. The header names the action bar slots the selected macro sits in and the key that presses each, and a macro on no bar is marked.
