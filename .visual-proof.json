@@ -1,10 +1,10 @@
 {
-  "input_digest": "b362493a84f680fa527b5f731798397676f38ef6c63aca4d38daddaa3bfc745d",
-  "runtime_sha256": "b362493a84f680fa527b5f731798397676f38ef6c63aca4d38daddaa3bfc745d",
-  "candidate": "eb5aa76210cd7844f00751a0a64548d4f33117c485fec3a25bcd255b947303e9",
+  "input_digest": "95bbc38dd33c31ea9504d86e4553e25410b83b0f81985eccf01d39499de461af",
+  "runtime_sha256": "95bbc38dd33c31ea9504d86e4553e25410b83b0f81985eccf01d39499de461af",
+  "candidate": "9a6f00d7470076d6897f86c95aa22d24c58c0992813c3be910210db189ba32ce",
   "client_build": "1.60.1.70938 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "a639560fbd3b1ade603d50bf5e06124f15a9cb60",
+  "source_commit": "e5cd2864b32c5d9e3d2807a92960f360f3620816",
   "flows": [
     {
       "name": "macro window",
@@ -14,43 +14,43 @@
       "result": "pass"
     },
     {
-      "name": "jetbrains mono before",
+      "name": "spell shift-click",
       "steps": [
-        "sha256:5ef6757c89deae0aa1711f208b91cd0b5c08a81f56f8211e6c140e1785f4b19c mono.lua"
+        "sha256:8de80b17119c3cd330b5337e85912054ab6f853079b046ccb12659d5ab35df3b maf_spell.lua"
       ],
       "result": "pass"
     },
     {
-      "name": "zhCN chat font after",
+      "name": "item shift-click",
       "steps": [
-        "sha256:59ded735b73189b2e5cf0625e1a578f2e00360e6c929967aa064449a4fe9959b locale.lua"
+        "sha256:ac7ecafb180e4dc6423d2b0baeb86592d473c7389e40f96c7b44cea5f4055c07 maf_item.lua"
       ],
       "result": "pass"
     },
     {
-      "name": "koKR chat font after",
+      "name": "cleanup MAFTest",
       "steps": [
-        "sha256:a6593ef1d8f6e8dac819f3e85a4dee643cee6817f95d27e01a25e79f2cff9161 kokr.lua"
+        "sha256:1ef42ebd1fe2d6f419d69064831c092eb73711d5b0fe2c9f4d99890d1f1fb37e maf_cleanup.lua"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/9351a8b5147948ad1c03058a7baecf69/raw/72dc229813e8344f9c23a76206805215ba3878c6/1-macro-window.png",
-      "sha256": "1874f2f59389baf7b09373fa8157d9cc86b18c0745e965a12d60e420c828f76e"
+      "url": "https://gist.githubusercontent.com/cjber/32b4e01143233e4fc20cd64b05d81241/raw/61867c53e54624c0bd4cc43a3644fcc6e745281d/1-macro-window.png",
+      "sha256": "de3e4892879c0fbfcddf67d56b82e300d41caa89ec2652c30aef226605905730"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/9351a8b5147948ad1c03058a7baecf69/raw/72dc229813e8344f9c23a76206805215ba3878c6/2-jetbrains-mono-before.png",
-      "sha256": "56094341e109bac24bccbc42f0d6fd322305c1d942d23593f325f4c848902ab1"
+      "url": "https://gist.githubusercontent.com/cjber/32b4e01143233e4fc20cd64b05d81241/raw/61867c53e54624c0bd4cc43a3644fcc6e745281d/2-spell-shift-click.png",
+      "sha256": "43361a472c36c386d7623042245037eb2c47cfaf3f67351d1c230d3cbfc2ce52"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/9351a8b5147948ad1c03058a7baecf69/raw/72dc229813e8344f9c23a76206805215ba3878c6/3-zhcn-chat-font-after.png",
-      "sha256": "46eda601af632e2cbcfb4ef795b640aa680e9bd8a1ad226b76a7a0e169f0cfda"
+      "url": "https://gist.githubusercontent.com/cjber/32b4e01143233e4fc20cd64b05d81241/raw/61867c53e54624c0bd4cc43a3644fcc6e745281d/3-item-shift-click.png",
+      "sha256": "463725670b85debecafb03865c60ac3527aa979659275bf6cfcf795189b33a4c"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/9351a8b5147948ad1c03058a7baecf69/raw/72dc229813e8344f9c23a76206805215ba3878c6/4-kokr-chat-font-after.png",
-      "sha256": "ea869da78362a2ae85dd5f27b844932d4239642180569c0747d69b59f89db6f4"
+      "url": "https://gist.githubusercontent.com/cjber/32b4e01143233e4fc20cd64b05d81241/raw/61867c53e54624c0bd4cc43a3644fcc6e745281d/4-cleanup-maftest.png",
+      "sha256": "e197d08fe2e1d84702ca19c2b497feabe3c08715141ac837c710c1d9c1b78f3d"
     }
   ]
 }
