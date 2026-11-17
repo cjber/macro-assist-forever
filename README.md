@@ -14,7 +14,7 @@
 ## Features
 
 - **Every macro in one searchable list.** General and character tabs hang off the window's right edge, and each macro shows its icon, name and a summary of its main action with a count of other cases. The selected row has a soft gold fill and left bar, and the search box filters by name or summary. The header names the action bar slots the selected macro sits in and the key that presses each, and a macro on no bar is marked.
-- **A real editor.** The macro text uses JetBrains Mono on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
+- **A real editor.** The macro text uses JetBrains Mono, or the client chat font on Chinese and Korean clients, on a dark code panel, with a line-number gutter, a highlight on the current line, and colour for commands, conditions, units and spells.
 - **Group member names in the editor.** While you are grouped, the completion list offers every other member's name after `@` and `target=`, as the first argument of `/invite`, `/target`, `/tell` and the other player commands, and in any word inside a `/raid`, `/party` or other chat message, so an assignment completes without leaving the editor.
 - **A plain-English "What it does" panel.** The bottom of the code panel shows one row per click and modifier branch, read from the macro's own parse, and hides when there is nothing to explain.
 - **Completions as you type.** Type `/` for a command, `[` for a condition, `@` for a unit or start a spell name. Up and Down move through them, Tab inserts one, and each suggestion shows its live value as a yes or no tag.
@@ -98,7 +98,7 @@ Thanks to the JetBrains Mono project for the bundled mono font, used under the S
 
 <!-- forever-credits:start -->
 
-Thanks to Kal66, Pinnnnnnnnnn and everyone who reported a bug or asked for a feature.
+Thanks to zizhengwu, Kal66, Pinnnnnnnnnn and everyone who reported a bug or asked for a feature.
 
 <!-- forever-credits:end -->
 

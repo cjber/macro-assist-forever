@@ -50,12 +50,26 @@ local COLOUR_MUTED = "|cff9d9d9d"
 -- the same layout and font, so it takes the same pitch.
 local LINE_HEIGHT = FONT_SIZE + LINE_SPACING
 
+-- These client locales need CJK or Hangul glyphs that JetBrains Mono lacks.
+local CHAT_FONT_LOCALES = { zhCN = true, zhTW = true, koKR = true }
+
+---@param locale string
+---@param chatFontPath string
+---@return string
+function ns.EditorFontPath(locale, chatFontPath)
+	if CHAT_FONT_LOCALES[locale] then
+		return chatFontPath
+	end
+	return "Interface/AddOns/MacroAssistForever/media/fonts/JetBrainsMono-Regular.ttf"
+end
+
 local function EnsureFont()
 	if _G[FONT_NAME] then
 		return
 	end
 	local font = CreateFont("MacroAssistMono")
-	font:SetFont("Interface/AddOns/MacroAssistForever/media/fonts/JetBrainsMono-Regular.ttf", FONT_SIZE, "")
+	local chatFontPath = ChatFontNormal:GetFont()
+	font:SetFont(ns.EditorFontPath(GetLocale(), chatFontPath), FONT_SIZE, "")
 	font:SetJustifyH("LEFT")
 	font:SetSpacing(LINE_SPACING)
 end

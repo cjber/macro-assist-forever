@@ -1,7 +1,7 @@
 # Macro Assist Forever
 
 Macro Assist Forever gives WoW: Forever (`Interface 16001`) a macro window of its own: General and character tabs, a
-list of every macro, and an editor with a mono font, line numbers, completions, live condition values and diagnostics
+list of every macro, and an editor with a locale-aware font, line numbers, completions, live condition values and diagnostics
 as you type. Blizzard's macro panel still opens; our window covers it at alpha 0. It never runs macros for the player.
 
 It uses `## OptionalDeps: ForeverCore` so it can load and explain a missing core. ForeverCore is the standalone
@@ -79,9 +79,11 @@ are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cach
 - Blizzard's `MacroFrame` still opens and closes through every player path. Our own window, built from its frame
   templates, covers it at alpha 0, and every part inside it is ours. Touch Blizzard's frame only with `HookScript` and
   engine calls, and reach the macro store only through the global macro APIs.
-- The one font exception: the macro text uses bundled JetBrains Mono (OFL-1.1; listed in `THIRD_PARTY.md`). Its fixed
-  advance, measured at runtime, gives exact columns for the caret, squiggles and wrapping, which FRIZQT and ARIALN
-  cannot. Every other string uses the game's font objects.
+- The one font exception: macro text uses bundled JetBrains Mono (OFL-1.1; listed in `THIRD_PARTY.md`) by
+  default. On zhCN, zhTW and koKR it uses the font file returned by `ChatFontNormal:GetFont()` for locale glyph
+  coverage, keeping the editor's size and spacing. Hidden FontStrings measure text for caret positions, squiggles,
+  wrapping, history diffs and recipe previews, so layout supports proportional fonts. Every other string uses the
+  game's font objects.
 - Every player-visible phrase lives in `Locales/enUS.lua` and is read through `ns.L`, never as a bare string.
 - Every saved option gets a default in an `ns.DEFAULTS` table in `Core/Core.lua`, copied into `MacroAssistForeverDB`
   on load, so an old save file and a new setting agree.
