@@ -227,6 +227,7 @@ function Icons.Search(known, icons, needle)
 	if type(needle) ~= "string" or needle == "" then
 		return spells, matches
 	end
+	local lowered = needle:lower()
 	local seen = {}
 	for _, entry in ipairs(known) do
 		if entry.icon ~= nil and Icons.Matches(entry.label, needle) and not seen[entry.icon] then
@@ -234,9 +235,20 @@ function Icons.Search(known, icons, needle)
 			spells[#spells + 1] = entry
 		end
 	end
+	-- The icon list runs to every client icon, so the needle is lowered once and each entry keeps its
+	-- lowercase name beside the name (the picker's entries already keep their name the same way), instead
+	-- of lowering both strings for every icon on every keystroke.
 	for _, entry in ipairs(icons) do
-		if Icons.Matches(entry.name, needle) then
-			matches[#matches + 1] = entry
+		local name = entry.name
+		if type(name) == "string" then
+			local loweredName = entry.nameLower
+			if loweredName == nil then
+				loweredName = name:lower()
+				entry.nameLower = loweredName
+			end
+			if loweredName:find(lowered, 1, true) then
+				matches[#matches + 1] = entry
+			end
 		end
 	end
 	return spells, matches

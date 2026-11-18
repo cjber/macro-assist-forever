@@ -93,6 +93,12 @@ equal(matches[3].name, "achievement_pet_01", "the third match follows")
 local noneSpells, noneMatches = Icons.Search(known, all, "")
 equal(#noneSpells, 0, "an empty search has no spells")
 equal(#noneMatches, 0, "an empty search has no icons")
+local upperSpells, upperMatches = Icons.Search(known, all, "PET")
+equal(#upperSpells, 2, "an uppercase search finds the same spells")
+equal(#upperMatches, 3, "an uppercase search finds the same icons")
+local mixed = { { icon = 7, name = "Ability_Hunter_Pet_Owl" } }
+equal(#select(2, Icons.Search(known, mixed, "pet")), 1, "a mixed-case file name still matches")
+equal(#select(2, Icons.Search(known, mixed, "OWL")), 1, "a cached name still matches a new needle")
 
 -- The prefix filters read the file name's own subject: ability_<class>_, spell_<school>_, inv_<slot>_.
 local classKind, classToken = Icons.Kind("ability_hunter_quickshot")
