@@ -1,108 +1,58 @@
-# Macro Assist Forever
+# AGENTS.md
 
 Macro Assist Forever gives WoW: Forever (`Interface 16001`) a macro window of its own: General and character tabs, a
-list of every macro, and an editor with a locale-aware font, line numbers, completions, live condition values and diagnostics
-as you type. Blizzard's macro panel still opens; our window covers it at alpha 0. It never runs macros for the player.
+list of every macro, and an editor with a locale-aware font, line numbers, completions, live condition values and
+diagnostics as you type. Blizzard's macro panel still opens; our window covers it at alpha 0. It never runs macros for
+the player.
 
-It uses `## OptionalDeps: ForeverCore` so it can load and explain a missing core. ForeverCore is the standalone
-addon every Forever addon needs: the report window, the error journal, the debug log and the family page are core's
-alone. The release pinned in `tools/forever-core.txt` ships in the `.pkgmeta` `externals`. The one core runtime file
-carried here is the shared warning below.
+It declares ForeverCore in `## OptionalDeps` so it can load and explain a missing core (the release pinned in
+`tools/forever-core.txt` ships in `.pkgmeta` `externals`). No core runtime file is vendored: a shared file that needs
+a change is changed in forever-core. `Core/ForeverRequire.lua` is the one shared file carried here, copied byte for
+byte: never edit it, nor `tools/deadcode.py`, `tools/check_client_load.py`, `tools/check_menu_scroll.py` or
+`core-shared-drift.yml`, which are copied from forever-core too.
 
 ## Commands
 
 ```sh
-export FOREVER_CORE=forever-core   # or ../forever-core, the checkout of tools/forever-core.txt's ref
-stylua --check .
-luacheck .
-for spec in tests/*_spec.lua; do luajit "$spec" || exit 1; done
-python3 tools/forever_sim/sync.py check
-python3 tools/forever_sim/fetch.py
-luajit tools/forever_sim/run.lua
-python3 -m tools.forever_tools.assets
-python3 tools/screenshots.py
-python3 tools/check_screenshots.py
-python3 tools/visual_audit.py
-python3 tools/check_client_load.py
-python3 tools/check_menu_scroll.py
-bash tools/typecheck.sh
-python3 tools/deadcode.py --check
-python3 tools/changelog.py --check
-python3 tools/check_api_docs.py            # docs/api.md names every MacroAssistForever.API member and its minor
-python3 tools/forever_tools/credits.py --check # Data/Credits.lua and both thanks blocks are current (WFA-31)
-python3 tools/gen_icon_names.py --check
-uv run --project tools --frozen --group dev ruff check tools &&
-uv run --project tools --frozen --group dev ruff format --check tools
+python3 tools/gate.py               # the fast local gate: format, lint, typecheck, specs, generated data, changelog
+python3 tools/gate.py --changed     # only the steps the diff against origin/main reaches
+python3 tools/screenshots.py && python3 tools/visual_audit.py   # render every UI scene, then audit its layout
 ```
 
-A change's player-facing notes go in `changes/<issue>.md` as bold-lead bullets, with an optional `### For addon
-authors` section after them. The release commit gathers them with `python3 tools/changelog.py release X.Y.Z`; no
-other pull request edits `CHANGELOG.md`, and CI's `--check --base` fails one that does.
-
-CI runs the same gate in the jobs `deadcode`, `check`, `python`, `typecheck`, `project-rules` (changelog, credits and API docs),
-`workflows`, `secrets` and `package`, each on every pull request. The Lua tools (LuaJIT, luac5.1, luacheck, LuaLS, StyLua and
-gitleaks) come from forever-core's `.github/actions/toolchain`, which reads the pins in `tools/toolchain.json`; the
-Python tools (ruff, ty, zizmor and actionlint) run with `uv run --project tools --frozen --group dev` from
-`tools/pyproject.toml` and `tools/uv.lock`. The `check`, `typecheck` and `package` jobs check out
-cjber/forever-core at the ref in `tools/forever-core.txt` into `forever-core/` and set `FOREVER_CORE` to it. The
-separate `core-shared` workflow runs the client load rule, the menu rule and the vendored-tooling drift check.
-`tools/deadcode.py`, `tools/deadcode-allow.txt`, `tools/check_client_load.py`, `tools/check_menu_scroll.py` and
-`.github/workflows/core-shared-drift.yml` are copied from forever-core: change them there, never here.
-`Core/ForeverRequire.lua`, the one out-of-date warning every Forever addon carries, is copied byte for byte from
-forever-core too, and is never edited here.
-`tools/forever_tools/` is the suite's shared Python tooling and `tools/forever_sim/` is the vendored simulator; both
-are never edited by hand. The simulator's `fetch.py` cache lives in `tools/.cache/` and is never committed.
-
-## Workflow
-
-- Keep Lua compatible with Lua 5.1 and the game's addon sandbox.
-- Never call protected functions.
-- Never touch Blizzard's Lua state. WFA-38 in `wow-forever-addon` lists what addon code may do to Blizzard's frames,
-  how to restyle one by drawing on top, and when a `taint-ok` exception holds.
-- Do not add an idle `OnUpdate` handler or a polling timer. Work starts from an event or a player action.
-- Parser code in `Core/` is pure Lua with no client calls, so the specs can cover it without the game.
-- Render every player-facing UI scene and inspect the PNG at full size. Keep the render reproducible and audit its
-  layout with `tools/visual_audit.py`.
-- Do not save frames, functions, userdata, or client tables.
-- `Core/Require.lua` runs after `Core/ForeverRequire.lua` and stops the addon with one line in `UIErrorsFrame` when
-  the loaded ForeverCore lacks the member the addon calls. Every file after it opens with `if ns.broken then return end`.
-- `Core/Core.lua` registers the addon's shared services once at load (`ns.core = ForeverCore.Register(...)`) and
-  attaches the saved table at login. Everything shared (report, journal, log, family page) is ForeverCore's, read
-  from the `ForeverCore` global: never copy one of its runtime files here.
-- The specs and the sim load ForeverCore the way the client does: `tests/forever_core.lua` finds the checkout
-  (`FOREVER_CORE`, else `../forever-core`) and reads its TOC, so a spec never fakes a shared module.
-- Run `stylua --check .`, `luacheck .`, every `tests/*_spec.lua` under LuaJIT, and `python3 tools/changelog.py --check`
-  before proposing changes.
-- Sign commits with `git commit -S`; do not add `-s` sign-off lines.
-- Release: load `.agents/skills/release/SKILL.md` when preparing or publishing a release.
-  A cloud session cannot push tags: once the version's PR is merged and `.github/workflows/ci.yml` passed on main,
-  smoke that exact commit with the headless client, then start the Release workflow on main with `version` (and
-  `commit` for an older main commit); it tags that commit and publishes.
+`gate.py` loads ForeverCore from `$FOREVER_CORE`, else `../forever-core`: set it in a worktree. CI adds the simulator,
+the package build, actionlint, zizmor and gitleaks. A change's player-facing notes go in `changes/<issue>.md`; only
+the release commit edits `CHANGELOG.md` (`python3 tools/changelog.py release X.Y.Z`). Release:
+`.agents/skills/release/SKILL.md`, after smoking that exact commit with the headless client.
 
 ## Rules
 
-- Blizzard's `MacroFrame` still opens and closes through every player path. Our own window, built from its frame
-  templates, covers it at alpha 0, and every part inside it is ours. Touch Blizzard's frame only with `HookScript` and
+- Lua 5.1 in the game's sandbox. Never call protected functions. Never touch Blizzard's Lua state (WFA-38).
+- Blizzard's `MacroFrame` still opens and closes through every player path. Our window, built from its frame
+  templates, covers it at alpha 0 and every part inside is ours. Touch Blizzard's frame only with `HookScript` and
   engine calls, and reach the macro store only through the global macro APIs.
-- The one font exception: macro text uses bundled JetBrains Mono (OFL-1.1; listed in `THIRD_PARTY.md`) by
-  default. On zhCN, zhTW and koKR it uses the font file returned by `ChatFontNormal:GetFont()` for locale glyph
-  coverage, keeping the editor's size and spacing. Hidden FontStrings measure text for caret positions, squiggles,
-  wrapping, history diffs and recipe previews, so layout supports proportional fonts. Every other string uses the
-  game's font objects.
-- Every player-visible phrase lives in `Locales/enUS.lua` and is read through `ns.L`, never as a bare string.
-- `Core/API.lua` publishes `MacroAssistForever.API` under forever-core's `docs/api-conventions.md`. Every member stays
-  pure (no client call), returns fresh tables and answers a wrong argument with `APIKit.Invalid()`. A member change
-  updates `docs/api.md`, `types/API.lua` and `tests/api_spec.lua` with it; an addition raises `minor`.
-- Every saved option gets a default in an `ns.DEFAULTS` table in `Core/Core.lua`, copied into `MacroAssistForeverDB`
-  on load, so an old save file and a new setting agree.
-- The addon needs ForeverCore to work and declares it in `## OptionalDeps` so the shared warning can explain a
-  missing core. It works with nothing else installed. No core runtime file is vendored: a shared
-  file that needs a change is changed in forever-core and reaches players with its release. `Core/ForeverRequire.lua`
-  is the one shared file carried here, copied byte for byte.
+- No idle `OnUpdate` handler or polling timer: work starts from an event or a player action. Do not save frames,
+  functions, userdata or client tables.
+- Parser code in `Core/` is pure Lua with no client calls, so specs cover it without the game.
+- `Core/Require.lua` runs after `Core/ForeverRequire.lua` and stops the addon with one `UIErrorsFrame` line when the
+  loaded ForeverCore lacks a member it calls; every file after it opens with `if ns.broken then return end`.
+  `Core/Core.lua` registers the shared services once (`ns.core = ForeverCore.Register(...)`).
+- Specs and the simulator load ForeverCore the way the client does (`tests/forever_core.lua` reads its TOC), so a spec
+  never fakes a shared module.
+- Macro text uses bundled JetBrains Mono (OFL-1.1, in `THIRD_PARTY.md`); on zhCN, zhTW and koKR it uses the file
+  `ChatFontNormal:GetFont()` returns, for glyph coverage. Hidden FontStrings measure text, so layout supports
+  proportional fonts. Every other string uses the game's font objects.
+- Every player-visible phrase lives in `Locales/enUS.lua` and is read through `ns.L`.
+- `Core/API.lua` publishes `MacroAssistForever.API` under forever-core's `docs/api-conventions.md`: members stay pure,
+  return fresh tables and answer a wrong argument with `APIKit.Invalid()`. A member change updates `docs/api.md`,
+  `types/API.lua` and `tests/api_spec.lua`; an addition raises `minor`.
+- Every saved option gets a default in `ns.DEFAULTS` (`Core/Core.lua`), copied into `MacroAssistForeverDB` on load.
+- Render every player-facing UI scene and inspect the PNG at full size; keep the render reproducible.
+- Before cleanup, dead-code or refactoring work, read the live roots and settled shapes in `.sloppatrol/instructions.md`.
 
 ## Standards
 
-- `wow-forever-addon`: https://github.com/cjber/forever-core/tree/main/.agents/skills/wow-forever-addon
-- `repo-standards`: the RS-* requirements every cjber repo meets (repo, Actions and security settings, rulesets, CI hardening, community files), a skill in cjber/skills whose `audit.py` checks this repo
-
-- For window, widget and asset changes, read [wow-retail-ui-style](https://github.com/cjber/forever-core/tree/main/.agents/skills/wow-retail-ui-style), including its asset registry and blacklist.
+- `wow-forever-addon`: https://github.com/cjber/forever-core/tree/main/.agents/skills/wow-forever-addon (the WFA-*
+  requirements every WoW: Forever addon meets: UI look, assets, README and store page, CI and releases)
+- `wow-retail-ui-style`: https://github.com/cjber/forever-core/tree/main/.agents/skills/wow-retail-ui-style (read it,
+  with its asset registry and blacklist, for window, widget and asset changes)
+- `repo-standards`: the RS-* requirements every cjber and agent-labs-dev repo meets; its `audit.py` checks this repo.
