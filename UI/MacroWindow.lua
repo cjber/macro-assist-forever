@@ -1121,8 +1121,8 @@ function Window:RefreshList(keepScrollOffset)
 	local needle = (self.filter or ""):lower()
 	local selectedVisible = false
 	local provider = CreateDataProvider() --[[@as DataProviderMixin]]
-	-- A summary is a pure function of the body, and a refresh (UPDATE_MACROS, SPELLS_CHANGED, a tab
-	-- switch) otherwise re-parses every macro the player has. Each refresh keeps only the summaries of the
+	-- A summary is a pure function of the body, and a refresh (UPDATE_MACROS, a tab switch, a filter)
+	-- otherwise re-parses every macro the player has. Each refresh keeps only the summaries of the
 	-- bodies it listed, so edits and deleted macros do not pile up.
 	local previous, summaries = self.summaryCache or {}, {}
 	for index = 1, count do

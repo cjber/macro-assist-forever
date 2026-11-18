@@ -241,10 +241,12 @@ function Icons.Search(known, icons, needle)
 	for _, entry in ipairs(icons) do
 		local name = entry.name
 		if type(name) == "string" then
-			local loweredName = entry.nameLower
-			if loweredName == nil then
+			-- The lowercase copy is reused only while it was made from this same name, so a renamed entry is
+			-- lowered again rather than matched on its old name.
+			local loweredName = entry.nameLowerOf == name and entry.nameLower or nil
+			if type(loweredName) ~= "string" then
 				loweredName = name:lower()
-				entry.nameLower = loweredName
+				entry.nameLower, entry.nameLowerOf = loweredName, name
 			end
 			if loweredName:find(lowered, 1, true) then
 				matches[#matches + 1] = entry
