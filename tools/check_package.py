@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # .pkgmeta leaves out of the package, and scaffold_spec asserts the source TOC's order, which the embed step rewrites.
 REPO_ONLY = {"tests/changelog_spec.lua", "tests/scaffold_spec.lua"}
 POLICY = package.Policy(
-    addons=("MacroAssistForever", "ForeverCore"),
+    addons=("MacroAssistForever",),
     # The scenario runs on the simulator, which is tooling and never ships.
     support=("tests", "tools/forever_sim"),
     specs=tuple(
