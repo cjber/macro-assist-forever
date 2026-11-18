@@ -3,6 +3,12 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [Unreleased]
+
+### Changed
+
+- **Macro Assist Forever carries ForeverCore inside itself.** It now works with ForeverCore turned off or uninstalled, and your ForeverCore settings carry over. The separate ForeverCore addon still installs alongside it for now. (cjber/forever-core#801)
+
 ## [0.8.1] - 2026-11-18
 
 <!-- forever-core-sync -->

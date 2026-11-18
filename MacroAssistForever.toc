@@ -10,6 +10,7 @@
 ## X-Website: https://github.com/cjber/macro-assist-forever
 ## X-Curse-Project-ID: 1795141
 ## SavedVariables: MacroAssistForeverDB
+## X-Forever-Core-Embed: 1
 ## IconTexture: Interface\AddOns\MacroAssistForever\media\Icon
 ## X-Forever-Icon: Interface\Icons\INV_Misc_Note_01
 ## AddonCompartmentFunc: MacroAssistForever_OnAddonCompartmentClick
