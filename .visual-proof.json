@@ -1,10 +1,10 @@
 {
-  "input_digest": "9fcac3a7c9c2f2e282a1e36746b5eef638b136b09e0c776b115ae2e1c5cb58ba",
-  "runtime_sha256": "9fcac3a7c9c2f2e282a1e36746b5eef638b136b09e0c776b115ae2e1c5cb58ba",
-  "candidate": "295c26f405ae999af7ebc1a59ed21ad8ac68fa2f23fb51d1ae3725423533a62f",
+  "input_digest": "2f046d4653a2a6cb394397b6213712c42d3ac28caf3cc12c3f8682ca558f07d8",
+  "runtime_sha256": "2f046d4653a2a6cb394397b6213712c42d3ac28caf3cc12c3f8682ca558f07d8",
+  "candidate": "6fcff4e47c6c76a20c9b8c249ef1c11ff5bedd3e99d9a4f9da98a9ddce1ab3a8",
   "client_build": "1.60.1.70959 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "f811ae3abaf720ff2a453c1559481ed6faed7359",
+  "source_commit": "9c0dca21d469347c61b7bcb715d1f87ac70edaed",
   "flows": [
     {
       "name": "macro-window",
@@ -30,16 +30,16 @@
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/66a0b6148a022c87e95fdedf31729f31/raw/f4d5472a0dd2726184952700fbb40f4c5a589afe/1-macro-window.png",
-      "sha256": "d37acea7929966d920bed87f66daa2580564712b27bffd6537ba554d766d1eb3"
+      "url": "https://gist.githubusercontent.com/cjber/824157d227d740d3070b27b502bb387e/raw/14de60d514ed08b205597ddc73069aa1b1b06077/1-macro-window.png",
+      "sha256": "47833e666c838babe3105b5f2a52a82ab8f779b3880028efb9839ead2505806d"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/66a0b6148a022c87e95fdedf31729f31/raw/f4d5472a0dd2726184952700fbb40f4c5a589afe/2-item-insert.png",
-      "sha256": "11abe4c85a570ff54255e8f03ed9659a89f2da1a4307beb19ed10b992fd9e585"
+      "url": "https://gist.githubusercontent.com/cjber/824157d227d740d3070b27b502bb387e/raw/14de60d514ed08b205597ddc73069aa1b1b06077/2-item-insert.png",
+      "sha256": "1976cf2bcde1cfdb441864ea8141e61182ef2d1abb23a5d204a0128fd802c4db"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/66a0b6148a022c87e95fdedf31729f31/raw/f4d5472a0dd2726184952700fbb40f4c5a589afe/3-cleanup.png",
-      "sha256": "c2953c5ac4dd6ce3140775792b97a60a3cbb8ce299aa394e8e6acd1d9579a819"
+      "url": "https://gist.githubusercontent.com/cjber/824157d227d740d3070b27b502bb387e/raw/14de60d514ed08b205597ddc73069aa1b1b06077/3-cleanup.png",
+      "sha256": "2c56b366b24866aca4f427b62113594ba5439f014a97e3bb2c7cc242597085d3"
     }
   ]
 }
