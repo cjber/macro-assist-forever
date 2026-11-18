@@ -3,10 +3,18 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
-## [0.8.1] - 2026-11-17
+## [0.8.1] - 2026-11-18
 
 <!-- forever-core-sync -->
 
+### Changed
+
+- **Updates are published on CurseForge and GitHub.** Wago publishing has ended, so install and update from CurseForge. (cjber/forever-core#649)
+
+### Fixed
+
+- **A turned-off ForeverCore is named as the problem.** With ForeverCore turned off, Macro Assist Forever now says so at login, instead of naming every other Forever addon as out of date. (cjber/forever-core#816)
+- **The addon compartment entry says why Macro Assist Forever stopped.** While Macro Assist Forever cannot start, clicking its entry repeats the line naming the fix instead of raising a Lua error.
 - **Shift-clicking a spell inserts a name the macro check accepts.** A spellbook subtitle such as Racial is left out, and only a rank such as `(Rank 2)` is kept. (#220)
 - **Shift-clicking an item that cannot be equipped inserts `/use`, not `/equip`.** (#221)
 - Ships with the same shared code as your other Forever addons, so they keep working together.
