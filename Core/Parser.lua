@@ -106,6 +106,13 @@ local function ClauseKey(clause)
 	return table.concat(groups, "|")
 end
 
+-- The rank number of a `Rank N` subtitle, or nil for any other subtitle (Racial, a profession tier).
+---@param body string
+---@return string? digits
+local function RankDigits(body)
+	return body:match("^%s*[Rr][Aa][Nn][Kk]%s+(%d+)%s*$")
+end
+
 -- `Spell(Rank N)` at the end of a name. Returns the end of the bare name, the rank and the rank's byte range.
 ---@param text string
 ---@param from integer
@@ -126,7 +133,7 @@ local function ParseRank(text, from, to)
 		return to
 	end
 	local body = inner:sub(1, #inner - #close)
-	local digits = body:match("^%s*[Rr][Aa][Nn][Kk]%s+(%d+)%s*$")
+	local digits = RankDigits(body)
 	if not digits then
 		return to
 	end
@@ -655,4 +662,4 @@ end
 ---@class MacroAssistParser
 ---@field Parse fun(body: string): MacroAssistParse
 ---@type MacroAssistParser
-ns.Parser = { Parse = Parse }
+ns.Parser = { Parse = Parse, RankDigits = RankDigits }

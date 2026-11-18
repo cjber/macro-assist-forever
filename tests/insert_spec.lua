@@ -3,6 +3,7 @@ local ns = {}
 for _, path in ipairs({
 	"Locales/enUS.lua",
 	"Core/Lexer.lua",
+	"Core/Parser.lua",
 	"Core/Length.lua",
 	"Core/Insert.lua",
 	"UI/Editor.lua",
@@ -23,6 +24,12 @@ for _, case in ipairs({
 }) do
 	equal(ns.InsertText(case[1], case[2], case[3], case[4], case[5]), case[6])
 end
+-- Only a rank subtitle is kept: the parser reads `(Racial)` as part of the name (#220).
+equal(ns.SpellInsertName("Heal", "Rank 2"), "Heal(Rank 2)")
+equal(ns.SpellInsertName("Shadowmeld", "Racial"), "Shadowmeld")
+equal(ns.SpellInsertName("Mining", "Apprentice"), "Mining")
+equal(ns.SpellInsertName("Heal", ""), "Heal")
+equal(ns.SpellInsertName("Heal", nil), "Heal")
 equal(ns.InsertText("", 0, "Heilung", "spell", false, "/wirken"), "/wirken Heilung\n")
 local link = "|cffffffff|Hitem:123::::::::|h[Potion of Healing]|h|r"
 equal(ns.ItemLinkName(link), "Potion of Healing")
@@ -89,6 +96,9 @@ _G.C_Item = {
 	GetItemSpell = function()
 		return "Heal"
 	end,
+	IsEquippableItem = function()
+		return false
+	end,
 }
 edit.text, edit.cursor, edit.focused = "", 0, true
 equal(editor:ReceiveDrop(), true)
@@ -98,6 +108,24 @@ cursor = { "item", 123, link }
 edit.text, edit.cursor = "", 0
 equal(editor:ReceiveDrop(), true)
 equal(edit.text, "/use Potion of Healing\n")
+-- `/equip` only for gear without a use spell; a quest item that is neither takes `/use` (#221).
+for _, case in ipairs({
+	{ nil, true, "/equip Potion of Healing\n" },
+	{ nil, false, "/use Potion of Healing\n" },
+	{ "Heal", true, "/use Potion of Healing\n" },
+}) do
+	_G.C_Item.GetItemSpell = function()
+		return case[1]
+	end
+	_G.C_Item.IsEquippableItem = function(item)
+		equal(item, link)
+		return case[2]
+	end
+	edit.text, edit.cursor = "", 0
+	equal(editor:InsertItem(link), true)
+	equal(edit.text, case[3])
+end
+edit.text = "/use Potion of Healing\n"
 cursor = { "macro", 1 }
 equal(editor:ReceiveDrop(), false)
 cursor = { "money", 1 }
