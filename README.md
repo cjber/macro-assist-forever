@@ -11,6 +11,13 @@
 <br><br><a href="https://github.com/sponsors/cjber"><img src="docs/github-sponsors-button.png" alt="Sponsor me on GitHub"></a> <a href="https://ko-fi.com/cjber"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
 </p>
 
+## Known limitations
+
+- A macro holds at most 255 characters in the game. The editor shows how many of the 255 you have used, Import refuses anything longer, and Shorten can rewrite an over-long macro when it can do so without changing what it does.
+- The game does not let addons create, change or delete macros in combat, so New, Import, Rename, Save, Restore and Delete are switched off until combat ends. Edits are saved when you close the window out of combat.
+- Addons cannot reach web sites such as wago.io, so Import takes pasted text only. Characters copies macros only from characters you have already logged in on with this addon.
+- In some fights and instances the game hides other players' names from addons. Then the live value beside a condition such as `@mouseover` can show nothing, and a group member's name can be missing from the completion list.
+
 ## Features
 
 - **Every macro in one searchable list.** General and character tabs hang off the window's right edge, and each macro shows its icon, name and a summary of its main action with a count of other cases. The selected row has a soft gold fill and left bar, and the search box filters by name or summary. The header names the action bar slots the selected macro sits in and the key that presses each, and a macro on no bar is marked.
