@@ -1121,10 +1121,21 @@ function Window:RefreshList(keepScrollOffset)
 	local needle = (self.filter or ""):lower()
 	local selectedVisible = false
 	local provider = CreateDataProvider() --[[@as DataProviderMixin]]
+	-- A summary is a pure function of the body, and a refresh (UPDATE_MACROS, SPELLS_CHANGED, a tab
+	-- switch) otherwise re-parses every macro the player has. Bodies are at most 255 letters and only
+	-- change when a macro is saved, so keeping the summary beside its body stays small.
+	self.summaryCache = self.summaryCache or {}
 	for index = 1, count do
 		local actual = base + index
 		local name, icon, body = GetMacroInfo(actual)
-		local summary = name and ns.ExplainSummary(body or "") or ""
+		local bodyText = body or ""
+		local summary = name and self.summaryCache[bodyText] or nil
+		if summary == nil then
+			summary = name and ns.ExplainSummary(bodyText) or ""
+			if name then
+				self.summaryCache[bodyText] = summary
+			end
+		end
 		if actual == self.selected and self.pendingIcon ~= nil then
 			icon = self.pendingIcon
 		end

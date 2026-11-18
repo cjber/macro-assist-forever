@@ -1,3 +1,4 @@
 ### Fixed
 
 - **Searching the icon picker no longer stalls on each letter.** The search lowered every icon name and the typed text again for each of the client's 30,000 icons on every keystroke, taking about 5 ms a letter in the headless harness. It now lowers the typed text once and keeps each icon's lowercase name with the icon, so a letter costs under 1 ms for most searches and the same icons are found in the same order.
+- **The macro list no longer re-reads every macro on each refresh.** Refreshing the list (a macro changed, spells changed, a tab switch) parsed all 120 macro bodies again to rebuild their one-line summaries, about 2.5 ms in the headless harness. A summary depends only on its body, so the list now keeps each summary with its body and only parses a macro whose text actually changed.
