@@ -9,7 +9,7 @@
     },
     {
       "source": "UI/MacroWindow.lua",
-      "sha256": "82f380608cd28afa04dac8cd11758174969ec2ad25f0c1e335a6416e6a43ee73",
+      "sha256": "c885f845d5a6b95fb370317298f55959ad0a3ad565d24839cda6b31b28e6f09d",
       "review": "Pinned client b401e0332adfbf0460d319b06d8ea29279a941f1: Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml ButtonFrameTemplate inherits ButtonFrameBaseTemplate then PortraitFrameBaseTemplate, whose TitleContainer.TitleText inherits GameFontNormal. Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml SharedButtonSmallTemplate declares GameFontNormal/GameFontHighlight/GameFontDisable for normal/highlight/disabled states. Read BuildHeader, BuildExplainPanel, Build, character copy callbacks, InitializeRow, BarText, RefreshHeader, UpdateButtons and Notice caller. Explicit header name/nameEdit use GameFontNormalLarge; meta, count, empty, explanation rows and copy status use GameFontHighlightSmall; explanation title uses GameFontNormalSmall. MacroAssistRowTemplate Summary inherits GameFontHighlightSmall in MacroWindow.xml. SearchBoxTemplate inherits InputBoxInstructionsTemplate in Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml: Instructions is GameFontDisableSmall. Only colour changes follow these assignments. Tooltips, tab tooltips, dynamic names/summaries/source buttons, explanation output and placeholder values are excluded. Copy diff and measurements use MacroAssistMono, a font-file contract excluded here. Notice goes to Editor.lua problem, explicitly GameFontHighlightSmall.",
       "bindings": [
         {
