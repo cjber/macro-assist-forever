@@ -96,12 +96,12 @@ equal(#noneMatches, 0, "an empty search has no icons")
 local upperSpells, upperMatches = Icons.Search(known, all, "PET")
 equal(#upperSpells, 2, "an uppercase search finds the same spells")
 equal(#upperMatches, 3, "an uppercase search finds the same icons")
-local mixed = { { icon = 7, name = "Ability_Hunter_Pet_Owl" } }
-equal(#select(2, Icons.Search(known, mixed, "pet")), 1, "a mixed-case file name still matches")
-equal(#select(2, Icons.Search(known, mixed, "OWL")), 1, "a cached name still matches a new needle")
-mixed[1].name = "inv_sword_04"
-equal(#select(2, Icons.Search(known, mixed, "sword")), 1, "a renamed entry matches its new name")
-equal(#select(2, Icons.Search(known, mixed, "pet")), 0, "and no longer its old one")
+-- Search matches names as Icons.FileName hands them over: a path in any case becomes its lowercase file name.
+equal(
+	Icons.FileName("Interface\\Icons\\Ability_Hunter_Pet_Owl.blp"),
+	"ability_hunter_pet_owl",
+	"file names arrive lowercase"
+)
 
 -- The prefix filters read the file name's own subject: ability_<class>_, spell_<school>_, inv_<slot>_.
 local classKind, classToken = Icons.Kind("ability_hunter_quickshot")

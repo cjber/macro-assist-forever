@@ -235,22 +235,12 @@ function Icons.Search(known, icons, needle)
 			spells[#spells + 1] = entry
 		end
 	end
-	-- The icon list runs to every client icon, so the needle is lowered once and each entry keeps its
-	-- lowercase name beside the name (the picker's entries already keep their name the same way), instead
-	-- of lowering both strings for every icon on every keystroke.
+	-- The icon list runs to every client icon. Its names are Icons.FileName's lowercase file names, so only the
+	-- needle is lowered, once, rather than both strings for every icon on every keystroke.
 	for _, entry in ipairs(icons) do
 		local name = entry.name
-		if type(name) == "string" then
-			-- The lowercase copy is reused only while it was made from this same name, so a renamed entry is
-			-- lowered again rather than matched on its old name.
-			local loweredName = entry.nameLowerOf == name and entry.nameLower or nil
-			if type(loweredName) ~= "string" then
-				loweredName = name:lower()
-				entry.nameLower, entry.nameLowerOf = loweredName, name
-			end
-			if loweredName:find(lowered, 1, true) then
-				matches[#matches + 1] = entry
-			end
+		if type(name) == "string" and name:find(lowered, 1, true) then
+			matches[#matches + 1] = entry
 		end
 	end
 	return spells, matches
