@@ -138,4 +138,15 @@ MacroAssistForeverDB.kept = true
 addon.OnEvent(addon, "ADDON_LOADED", addonName)
 equal(MacroAssistForeverDB.kept, true, "a saved value is kept")
 
+-- A startup error after the slash command still leaves /macroassist answering.
+_G.SLASH_MACROASSISTFOREVER1, SlashCmdList.MACROASSISTFOREVER = nil, nil
+local initialize = ns.History.Initialize
+ns.History.Initialize = function()
+	error("history failed")
+end
+equal(pcall(addon.OnEvent, addon, "ADDON_LOADED", addonName), false, "the startup error reaches the client")
+equal(SLASH_MACROASSISTFOREVER1, "/macroassist", "the command is registered before the failing step")
+equal(type(SlashCmdList.MACROASSISTFOREVER), "function", "with its handler")
+ns.History.Initialize = initialize
+
 print("scaffold_spec: the TOC loads and the addon initialises")

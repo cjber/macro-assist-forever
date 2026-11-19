@@ -17,4 +17,8 @@ local ready = ForeverCore ~= nil
 	and type(ForeverCore.APIKit.Invalid) == "function"
 	and type(ForeverCore.APIKit.Publish) == "function"
 
-ns.ForeverRequire(ready)
+-- Core/Core.lua's slash words; the pin gate (forever_tools.require_slash) keeps the two lists equal. A
+-- stopped addon still answers them with the line that names the fix, as its addon compartment entry does.
+ns.Slash = { key = "MACROASSISTFOREVER", "/macroassist" }
+
+ns.ForeverRequire(ready, ns.Slash)

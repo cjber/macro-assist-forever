@@ -169,4 +169,8 @@ checkRendering(pasted, "several long lines")
 -- A short macro still draws one FontString per measured row, so the same path serves both.
 checkRendering("one two\nthree four\nfive", "short macro")
 
+-- The EditBox draws its selection above the coloured rows, so an opaque selection would hide the selected text.
+local alpha = ns.Editor.SELECTION_COLOR[4]
+equal(alpha > 0 and alpha < 1, true, "the selection colour is translucent")
+
 print(("editor rows: %d checks"):format(checks))

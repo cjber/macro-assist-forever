@@ -1941,8 +1941,9 @@ end)
 scenario("/macroassist and the addon compartment toggle the window in combat and on the gamepad", function(sim)
 	world.install(sim)
 	sim:login()
-	equal(#sim:slashCommands(ADDON), 1, "the addon registers one slash command key")
-	equal(sim:slashCommands(ADDON)[1], "/macroassist", "the command is /macroassist")
+	-- The packed addon carries ForeverCore, whose /fcore the client then credits to this addon's folder.
+	local expected = ForeverCore.embedded() and { "/fcore", "/macroassist" } or { "/macroassist" }
+	equal(table.concat(sim:slashCommands(ADDON), " "), table.concat(expected, " "), "the addon's slash commands")
 	check(sim.G.SLASH_MACROASSISTFOREVER2 == nil, "the client's /ma is not registered by the addon")
 	check(not sim.G[PLAYER], "the macro window was built at login")
 
@@ -2173,4 +2174,10 @@ scenario("/macroassist report opens ForeverCore's report with this addon's lines
 	local report = sim.G[ADDON .. "Report"]
 	check(report ~= nil and report:IsShown(), "/macroassist report did not open the report window")
 	sim:expectNoErrors(ADDON)
+end)
+
+-- Every surface, run here with the same ForeverCore as the scenarios above, so the packed addon walks them on its
+-- embedded copy instead of the runner's default exercise, which loads the standalone checkout.
+scenario("exercise: every surface and the addon's own widgets", function(sim)
+	sim:exercise({ addons = { ADDON } })
 end)

@@ -39,6 +39,9 @@ local POPUP_LABEL_WIDTH = 180
 local POPUP_HELP_X = 194
 local POPUP_TAG_WIDTH = 34
 local POPUP_TAG_RIGHT = 10
+-- The EditBox draws its text selection above the coloured overlay, so the selection colour must be translucent or it
+-- hides the selected text. Gold matches the current-line highlight, stronger so a selection still reads as one.
+local SELECTION_COLOR = { 1, 0.82, 0.2, 0.3 }
 
 local COLOUR_CLOSE = "|r"
 local COLOUR_GREEN = "|cff33ff99"
@@ -158,6 +161,7 @@ end
 ---@field onEscape? fun()
 ---@field onShorten? fun()
 local Editor = {}
+Editor.SELECTION_COLOR = SELECTION_COLOR
 
 -- The byte offset of every UTF-8 character start, plus a final sentinel at #text + 1, so a cursor position can
 -- only land between characters. The client's Lua strings are byte strings; players still type multibyte names.
@@ -501,6 +505,7 @@ function Editor.Create(parent, statusParent)
 	self.edit:SetFontObject(FONT_NAME)
 	self.edit:SetSpacing(LINE_SPACING)
 	self.edit:SetTextColor(1, 1, 1, 0)
+	self.edit:SetHighlightColor(unpack(SELECTION_COLOR))
 	self.edit:SetJustifyH("LEFT")
 	self.edit:SetFrameLevel(self.textArea:GetFrameLevel() + 3)
 
