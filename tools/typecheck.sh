@@ -2,6 +2,11 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+# --no-luals runs every check here but LuaLS itself, which holds gigabytes; CI always runs it.
+run_luals=1
+if [[ ${1:-} == --no-luals ]]; then
+    run_luals=0
+fi
 annotations=.types/vscode-wow-api
 # The annotation checkout and the LuaLS version come from tools/toolchain.json, synced from ForeverCore: the one
 # place either is pinned, and the file CI installs LuaLS from.
@@ -23,7 +28,7 @@ if [[ "$(git -C "$annotations" rev-parse HEAD)" != "$revision" ]] ||
     echo "Expected a clean WoW API checkout at $revision, with its pinned FrameXML submodule, in $annotations" >&2
     exit 1
 fi
-if [[ "$(lua-language-server --version)" != "$luals" ]]; then
+if ((run_luals)) && [[ "$(lua-language-server --version)" != "$luals" ]]; then
     echo "Install lua-language-server $luals to match CI." >&2
     exit 1
 fi
@@ -36,6 +41,11 @@ python3 tools/check_client_load.py
 python3 tools/check_menu_scroll.py
 python3 tools/lint_client_calls.py
 python3 tools/check_font_glyphs.py
+# --no-luals (gate --changed): the checks above run, and the whole-repo LuaLS run is left to CI.
+if ((! run_luals)); then
+    echo "typecheck: LuaLS left to CI (--no-luals)"
+    exit 0
+fi
 # A fresh output path prevents a crashed server from reusing an earlier clean report.
 report_dir=$(mktemp -d)
 trap 'rm -rf "$report_dir"' EXIT
