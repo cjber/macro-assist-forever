@@ -367,6 +367,24 @@ local function BuildExplainPanel(parent)
 	return panel
 end
 
+-- Where the window sits: the place the player last dropped it, kept in the saved variables from UIParent's TOPLEFT,
+-- else over Blizzard's MacroFrame once Blizzard_MacroUI has loaded, else where the panel manager puts a left-area
+-- panel. That default covers the Spellbook and Character pane, so the player can drag the window by its frame (the
+-- title bar or any edge; rows and the editor keep their own drags). MacroFrame itself is never moved.
+---@param frame Frame
+local function Place(frame)
+	local db = type(MacroAssistForeverDB) == "table" and MacroAssistForeverDB or nil
+	local saved = db and type(db.position) == "table" and db.position or nil
+	frame:ClearAllPoints()
+	if saved and type(saved.x) == "number" and type(saved.y) == "number" then
+		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", saved.x, saved.y)
+	elseif MacroFrame then
+		frame:SetPoint("TOPLEFT", MacroFrame, "TOPLEFT", 0, 0)
+	else
+		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", LEFT_PANEL_X, LEFT_PANEL_Y)
+	end
+end
+
 ---@return table
 function Window.Create()
 	if Window.frame then
@@ -378,11 +396,28 @@ function Window.Create()
 	Window.frame = frame
 	frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 	frame:SetFrameStrata("HIGH")
-	frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", LEFT_PANEL_X, LEFT_PANEL_Y)
+	Place(frame)
 	frame:SetFrameLevel(10)
 	frame:EnableMouse(true)
 	frame:SetToplevel(true)
 	frame:SetClampedToScreen(true)
+	frame:SetMovable(true)
+	frame:RegisterForDrag("LeftButton")
+	frame:SetScript("OnDragStart", function(self)
+		self:StartMoving()
+	end)
+	frame:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		local left, top = self:GetLeft(), self:GetTop()
+		local parentTop = UIParent:GetTop()
+		if not (left and top and parentTop) then
+			return
+		end
+		if type(MacroAssistForeverDB) == "table" then
+			MacroAssistForeverDB.position = { x = left - (UIParent:GetLeft() or 0), y = top - parentTop }
+		end
+		Place(self)
+	end)
 	frame.TitleContainer.TitleText:SetText(L["Macros"])
 	frame.PortraitContainer.portrait:SetTexture(ns.Icon)
 	frame.Inset:Hide()
@@ -952,14 +987,14 @@ function Window.Create()
 	return Window
 end
 
--- Once Blizzard_MacroUI loads, sit exactly over MacroFrame and above it. Engine calls only: points, strata and level.
+-- Once Blizzard_MacroUI loads, sit above MacroFrame, over it unless the player moved the window. Engine calls only:
+-- points, strata and level.
 function Window.AttachToMacroFrame()
 	local frame = Window.frame
 	if not frame or not MacroFrame then
 		return
 	end
-	frame:ClearAllPoints()
-	frame:SetPoint("TOPLEFT", MacroFrame, "TOPLEFT", 0, 0)
+	Place(frame)
 	frame:SetFrameStrata("HIGH")
 	frame:SetFrameLevel(MacroFrame:GetFrameLevel() + 10)
 end

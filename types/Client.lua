@@ -17,6 +17,7 @@ C_InputInterfaceStyle = nil
 ---@field diagnostics boolean
 ---@field history table<string, MacroAssistHistoryRecord>
 ---@field characters? table<string, table>
+---@field position? { x: number, y: number } The macro window's top left, from UIParent's top left, once moved
 ---@type MacroAssistSaved
 MacroAssistForeverDB = nil
 

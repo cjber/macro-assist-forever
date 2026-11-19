@@ -35,6 +35,7 @@
 - **Copy a macro from another character.** Characters lists the other characters' macros and shows the differing lines before Keep both or Replace. Replace asks for a second click, and both are off in combat.
 - **Shorten a macro that is over 255.** The status line offers Shorten when a lossless rewrite exists, the preview shows only the changed lines, and Apply puts the rewrite in the editor without saving. It trims redundant whitespace, uses each command's shortest alias, and drops clauses the checker calls unreachable.
 - **History with Restore.** Every save, rename and delete keeps the previous name, icon and text, the newest 20 for each macro. History lists them with their time and what changed, and Restore puts one back. Deleted macros stay in a Deleted section until restored.
+- **Put the window where you want it.** Drag it by its title bar or any edge, off the Spellbook or Character pane, and it opens there next time.
 - **Safe to open in combat.** Every button that writes to your macros is off in combat, Restore included, with a line saying why. Edits are saved when the window closes out of combat.
 
 <p align="center"><img src="docs/screenshots/window.png" alt="The macro list beside the mono editor"></p>
