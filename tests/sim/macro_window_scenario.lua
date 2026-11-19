@@ -1941,8 +1941,9 @@ end)
 scenario("/macroassist and the addon compartment toggle the window in combat and on the gamepad", function(sim)
 	world.install(sim)
 	sim:login()
-	equal(#sim:slashCommands(ADDON), 1, "the addon registers one slash command key")
-	equal(sim:slashCommands(ADDON)[1], "/macroassist", "the command is /macroassist")
+	-- The packed addon carries ForeverCore, whose /fcore the client then credits to this addon's folder.
+	local expected = ForeverCore.embedded() and { "/fcore", "/macroassist" } or { "/macroassist" }
+	equal(table.concat(sim:slashCommands(ADDON), " "), table.concat(expected, " "), "the addon's slash commands")
 	check(sim.G.SLASH_MACROASSISTFOREVER2 == nil, "the client's /ma is not registered by the addon")
 	check(not sim.G[PLAYER], "the macro window was built at login")
 
