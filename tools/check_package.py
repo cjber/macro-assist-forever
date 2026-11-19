@@ -22,8 +22,8 @@ POLICY = package.Policy(
         for spec in sorted(path.relative_to(ROOT).as_posix() for path in ROOT.glob("tests/*_spec.lua"))
         if spec not in REPO_ONLY
     )
-    # The embedded copy elected with no standalone ForeverCore loaded.
-    + ("tests/embedded_scenario.lua",),
+    # With no standalone ForeverCore loaded: the embedded copy elected, and every editor feature working on it.
+    + ("tests/embedded_scenario.lua", "tests/sim/macro_window_scenario.lua"),
 )
 
 if __name__ == "__main__":
