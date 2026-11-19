@@ -691,7 +691,7 @@
     },
     {
       "source": "UI/Editor.lua",
-      "sha256": "e1299451f722f474ffc0cfdd79f28266ff542774e1ac84e79575c4b22c79d483",
+      "sha256": "03394d388172b1c02ad4c5d7f7149683e46e891eb1bec79fb8f2cffde70b0612",
       "review": "Read EnsureFont, EditorFontPath, Create, UpdateStatus, NowText, Notice, UpdatePopup, DrawLines and MacroWindow.lua/Shorten.lua/Recipes.lua consumers. problem/nowLabel/now/length and popup detail/tagText explicitly use GameFontHighlightSmall, shortenLabel uses GameFontNormalSmall; no later font overrides. MacroAssistMono uses bundled JetBrains Mono, or the file returned by ChatFontNormal:GetFont() for zhCN/zhTW/koKR, with editor size/spacing. This file-based font, macro text, completions labels, previews/diffs and hidden measures are excluded from FontObject phrase bindings. Dynamic diagnostic/completion/live-condition output, tooltips, numeric line numbers and placeholder values are excluded.",
       "bindings": [
         {

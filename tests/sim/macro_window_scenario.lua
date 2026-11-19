@@ -2174,3 +2174,9 @@ scenario("/macroassist report opens ForeverCore's report with this addon's lines
 	check(report ~= nil and report:IsShown(), "/macroassist report did not open the report window")
 	sim:expectNoErrors(ADDON)
 end)
+
+-- Every surface, run here with the same ForeverCore as the scenarios above, so the packed addon walks them on its
+-- embedded copy instead of the runner's default exercise, which loads the standalone checkout.
+scenario("exercise: every surface and the addon's own widgets", function(sim)
+	sim:exercise({ addons = { ADDON } })
+end)
