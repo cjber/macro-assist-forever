@@ -155,13 +155,7 @@ addon:SetScript("OnEvent", function(_, event, name)
 		return
 	end
 	if event == "ADDON_LOADED" and name == addonName then
-		MacroAssistForeverDB = type(MacroAssistForeverDB) == "table" and MacroAssistForeverDB or {}
-		for key, value in pairs(ns.DEFAULTS) do
-			if MacroAssistForeverDB[key] == nil then
-				MacroAssistForeverDB[key] = type(value) == "table" and {} or value
-			end
-		end
-		ns.History.Initialize(MacroAssistForeverDB)
+		-- The slash command goes in first, so a startup error below still leaves /macroassist answering.
 		_G.SLASH_MACROASSISTFOREVER1 = "/macroassist"
 		SlashCmdList.MACROASSISTFOREVER = function(message)
 			local command = type(message) == "string" and message:lower():match("^%s*(.-)%s*$") or ""
@@ -170,6 +164,13 @@ addon:SetScript("OnEvent", function(_, event, name)
 			end
 			ns.Toggle()
 		end
+		MacroAssistForeverDB = type(MacroAssistForeverDB) == "table" and MacroAssistForeverDB or {}
+		for key, value in pairs(ns.DEFAULTS) do
+			if MacroAssistForeverDB[key] == nil then
+				MacroAssistForeverDB[key] = type(value) == "table" and {} or value
+			end
+		end
+		ns.History.Initialize(MacroAssistForeverDB)
 		-- Blizzard_MacroUI_Bootstrap.lua defines ShowMacroFrame at startup, before the load-on-demand UI itself.
 		hooksecurefunc("ShowMacroFrame", AfterShowMacroFrame)
 		Attach() -- Blizzard_MacroUI may already be loaded by another addon
