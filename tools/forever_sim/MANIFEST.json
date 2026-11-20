@@ -3,7 +3,7 @@
   "source": {
     "repository": "https://github.com/cjber/forever-core",
     "path": ".agents/skills/wow-forever-addon/tooling/forever_sim",
-    "revision": "eb57f4c8e62f9afbb4e2baf4d51286452689cc58"
+    "revision": "0c0ccc9baeaa0f51e9c29c12c14af6917fd055ea"
   },
   "files": {
     "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
