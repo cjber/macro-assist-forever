@@ -247,6 +247,8 @@ end)
 
 scenario("a group member completes inside a raid message", function(sim)
 	world.install(sim)
+	-- A named realm, where UnitFullName's second return is the realm the "Name-Realm" completion joins on.
+	sim.world.player.realm = "Forever"
 	sim:login()
 	local window = open(sim)
 	characterTab(sim, window)

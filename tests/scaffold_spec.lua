@@ -46,6 +46,9 @@ _G.ForeverCore = {
 local coreNs = {}
 assert(loadfile(dofile("tests/forever_core.lua").directory() .. "/Core/APIKit.lua"))("ForeverCore", coreNs)
 _G.ForeverCore.APIKit = coreNs.APIKit
+_G.ForeverCore.CharacterKey = function()
+	return "Barry Buckfast-6941"
+end
 
 local ns = {}
 local addonName = "MacroAssistForever"

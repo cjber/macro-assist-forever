@@ -168,12 +168,13 @@ for _, partial in ipairs({
 	{ Register = function() end, APIKit = {} },
 	{ Register = function() end, APIKit = { Invalid = kit.Invalid } },
 	{ Register = function() end, APIKit = { Publish = kit.Publish } },
+	{ Register = function() end, APIKit = kit },
 }) do
 	local incomplete = Run(partial)
-	check(incomplete.broken == true, "a core missing an APIKit member stops the addon")
-	check(#messages == 1, "a core missing an APIKit member shows one warning")
+	check(incomplete.broken == true, "a core missing an APIKit member or CharacterKey stops the addon")
+	check(#messages == 1, "a core missing an APIKit member or CharacterKey shows one warning")
 end
-local complete = Run({ API = 1, Register = function() end, APIKit = kit })
+local complete = Run({ API = 1, Register = function() end, APIKit = kit, CharacterKey = function() end })
 check(complete.broken == nil, "a complete core leaves the addon unbroken")
 check(#messages == 0, "a complete core shows nothing")
 check(type(complete.ForeverRequire) == "function", "the shared warning is loaded")

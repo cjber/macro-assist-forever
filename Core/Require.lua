@@ -10,12 +10,14 @@ ns.Icon = C_AddOns.GetAddOnMetadata(addonName, "X-Forever-Icon")
 -- update, never ForeverCore.
 --
 -- Register supplies shared services; APIKit's minor 2 members supply the public engine's argument errors and
--- discovery. Stop before loading the API if any member is absent, so the shared warning explains an older core.
+-- discovery. CharacterKey (ForeverCore 1.15.8) keys each character's macro snapshot. Stop before loading the API if
+-- any member is absent, so the shared warning explains an older core.
 local ready = ForeverCore ~= nil
 	and type(ForeverCore.Register) == "function"
 	and type(ForeverCore.APIKit) == "table"
 	and type(ForeverCore.APIKit.Invalid) == "function"
 	and type(ForeverCore.APIKit.Publish) == "function"
+	and type(ForeverCore.CharacterKey) == "function"
 
 -- Core/Core.lua's slash words; the pin gate (forever_tools.require_slash) keeps the two lists equal. A
 -- stopped addon still answers them with the line that names the fix, as its addon compartment entry does.

@@ -31,6 +31,13 @@ _G.Constants = { MacroConsts = { MAX_ACCOUNT_MACROS = 120 } }
 _G.UnitFullName = function()
 	return "Barry", "Azeroth"
 end
+-- On a named realm ForeverCore's key is the "Name-Realm" this snapshot was saved under before.
+local characterKey = "Barry-Azeroth"
+_G.ForeverCore = {
+	CharacterKey = function()
+		return characterKey
+	end,
+}
 _G.GetNumMacros = function()
 	return 1, 1
 end
@@ -43,6 +50,7 @@ _G.GetMacroInfo = function(index)
 	end
 end
 local current = C.CaptureCurrent(db)
+assert(current == "Barry-Azeroth", "a named realm's key changed")
 assert(#db.characters[current].general == 1, "capture keeps account macros")
 assert(#db.characters[current].character == 1, "capture reads the separate character slot range")
 assert(db.characters[current].character[1].body == "/say Character", "capture preserves character macro bodies")
@@ -53,6 +61,27 @@ assert(
 )
 local one = C.PlanMacro(entries[2], db.characters[current].general, true)
 assert(#one.create == 1 and one.create[1].body == "/cast Trap", "a character macro cannot be copied to General")
+
+-- On a Forever realm UnitFullName's second return is the surname: two characters sharing a first name keep separate
+-- snapshots under ForeverCore's key, and the snapshot saved under the old "Name-Surname" key is dropped so it is not
+-- offered as another character.
+local forever = { characters = { ["Barry-Buckfast"] = { name = "Barry", realm = "Buckfast" } } }
+_G.UnitFullName = function()
+	return "Barry", "Buckfast"
+end
+characterKey = nil
+assert(C.CaptureCurrent(forever) == nil, "a character without a key was captured")
+assert(forever.characters["Barry-Buckfast"], "a capture without a key dropped the old snapshot")
+characterKey = "Barry Buckfast-6941"
+assert(C.CaptureCurrent(forever) == "Barry Buckfast-6941", "the Forever key was not used")
+assert(forever.characters["Barry-Buckfast"] == nil, "the old snapshot is still offered as another character")
+_G.UnitFullName = function()
+	return "Barry", "Stonefist"
+end
+characterKey = "Barry Stonefist-6941"
+C.CaptureCurrent(forever)
+local others = C.Sources(forever, "Barry Stonefist-6941")
+assert(#others == 1 and others[1].realm == "Buckfast", "characters sharing a first name collided")
 
 -- The conflict diff shows only changed lines, old before new, and says so when the bodies agree.
 local rows = C.Diff(
