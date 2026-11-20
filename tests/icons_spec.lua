@@ -93,6 +93,15 @@ equal(matches[3].name, "achievement_pet_01", "the third match follows")
 local noneSpells, noneMatches = Icons.Search(known, all, "")
 equal(#noneSpells, 0, "an empty search has no spells")
 equal(#noneMatches, 0, "an empty search has no icons")
+local upperSpells, upperMatches = Icons.Search(known, all, "PET")
+equal(#upperSpells, 2, "an uppercase search finds the same spells")
+equal(#upperMatches, 3, "an uppercase search finds the same icons")
+-- Search matches names as Icons.FileName hands them over: a path in any case becomes its lowercase file name.
+equal(
+	Icons.FileName("Interface\\Icons\\Ability_Hunter_Pet_Owl.blp"),
+	"ability_hunter_pet_owl",
+	"file names arrive lowercase"
+)
 
 -- The prefix filters read the file name's own subject: ability_<class>_, spell_<school>_, inv_<slot>_.
 local classKind, classToken = Icons.Kind("ability_hunter_quickshot")

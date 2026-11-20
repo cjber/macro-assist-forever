@@ -1156,10 +1156,21 @@ function Window:RefreshList(keepScrollOffset)
 	local needle = (self.filter or ""):lower()
 	local selectedVisible = false
 	local provider = CreateDataProvider() --[[@as DataProviderMixin]]
+	-- A summary is a pure function of the body, and a refresh (UPDATE_MACROS, a tab switch, a filter)
+	-- otherwise re-parses every macro the player has. Each refresh keeps only the summaries of the
+	-- bodies it listed, so edits and deleted macros do not pile up.
+	local previous, summaries = self.summaryCache or {}, {}
 	for index = 1, count do
 		local actual = base + index
 		local name, icon, body = GetMacroInfo(actual)
-		local summary = name and ns.ExplainSummary(body or "") or ""
+		local bodyText = body or ""
+		local summary = name and (summaries[bodyText] or previous[bodyText]) or nil
+		if summary == nil then
+			summary = name and ns.ExplainSummary(bodyText) or ""
+		end
+		if name then
+			summaries[bodyText] = summary
+		end
 		if actual == self.selected and self.pendingIcon ~= nil then
 			icon = self.pendingIcon
 		end
@@ -1175,6 +1186,7 @@ function Window:RefreshList(keepScrollOffset)
 			end
 		end
 	end
+	self.summaryCache = summaries
 	self.frame.scrollBox:SetDataProvider(provider, ScrollBoxConstants.RetainScrollPosition)
 	self.frame.empty:SetShown(count == 0)
 	if self.frame.scrollBox.ForEachFrame then
