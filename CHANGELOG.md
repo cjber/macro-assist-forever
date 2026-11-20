@@ -3,6 +3,17 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.5] - 2026-11-20
+
+### Changed
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
+### Fixed
+
+- **Searching the icon picker does less work on each letter.** The search lowered every icon name and the typed text again for each of the client's 30,000 icons on every keystroke. It now lowers the typed text once and matches the icons' file names, which are already lowercase, and the same icons are found in the same order.
+- **The macro list reuses each macro's summary.** Refreshing the list (a macro changed, a tab switch, typing in the filter) parsed every macro body again to rebuild its one-line summary. A summary depends only on its body, so the list now parses only a macro whose text changed.
+
 ## [0.8.4] - 2026-11-20
 
 <!-- forever-core-sync -->
