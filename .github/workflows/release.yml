@@ -185,6 +185,12 @@ jobs:
           persist-credentials: false
       - name: Embed ForeverCore
         run: python3 -m tools.forever_tools.embed --core forever-core
+      # An embedded-core release waits until every Forever addon embeds ForeverCore on main, so no published addon
+      # still ships the shared top-level folder that a removal or downgrade would roll back (cjber/forever-core#448).
+      - name: Hold until every Forever addon embeds ForeverCore
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -m tools.forever_tools.fleet
       # Build the zip without uploading, check the ForeverCore copy it carries, then upload that exact file.
       - name: Build the release ZIP
         uses: BigWigsMods/packager@01e8631a69c69d7654c788d152630d5fed9e3812 # v2.7.0
