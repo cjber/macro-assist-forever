@@ -1,10 +1,10 @@
 {
-  "input_digest": "dc5208d2fb2a98328de3ee51874195e72172447288569c1280d0b7fae7985fb1",
-  "runtime_sha256": "dc5208d2fb2a98328de3ee51874195e72172447288569c1280d0b7fae7985fb1",
-  "candidate": "0d4c6e1e01b3aaf0b4995385d18328b938598e777444319bc8b087cfca6c6359",
+  "input_digest": "5ddabae4aceba58eaa24bd19f6eb1cea1961b5cc1ab6fa40d12d98bfec8132ed",
+  "runtime_sha256": "5ddabae4aceba58eaa24bd19f6eb1cea1961b5cc1ab6fa40d12d98bfec8132ed",
+  "candidate": "aaeb355e7b7f06c7c390b91d4d73a59905d620fc1b3eb9b004a9ceb9c26eeef8",
   "client_build": "1.60.1.70959 (Interface 16001)",
   "tested_artifact": "source-tree",
-  "source_commit": "43c39fccda03c1b88b627a5451fc80c3c727829d",
+  "source_commit": "d826aca422add55407980f3caa4040cc1ed9a2a5",
   "flows": [
     {
       "name": "macro-window",
@@ -12,34 +12,12 @@
         "/macroassist"
       ],
       "result": "pass"
-    },
-    {
-      "name": "item-insert",
-      "steps": [
-        "sha256:2045c9b8fad292a70124012e0298b300c733ff7098b5a2688e3fe484099aaa0b maf_223_insert.lua"
-      ],
-      "result": "pass"
-    },
-    {
-      "name": "cleanup",
-      "steps": [
-        "sha256:1ef42ebd1fe2d6f419d69064831c092eb73711d5b0fe2c9f4d99890d1f1fb37e maf_cleanup.lua"
-      ],
-      "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/7c6148074e1b384d86b160f40de2fdb2/raw/a7f8909df7bb404d9820e573e4f18af17d7da9ee/1-macro-window.png",
-      "sha256": "6614187a7f109b71f86b1df4b896fb3ab293720250f7a83d7fff0941d9fa018e"
-    },
-    {
-      "url": "https://gist.githubusercontent.com/cjber/7c6148074e1b384d86b160f40de2fdb2/raw/a7f8909df7bb404d9820e573e4f18af17d7da9ee/2-item-insert.png",
-      "sha256": "301c0f44120525be1710c4e005af83c15d9dbdbcf715320e3cb47d44ebb73b25"
-    },
-    {
-      "url": "https://gist.githubusercontent.com/cjber/7c6148074e1b384d86b160f40de2fdb2/raw/a7f8909df7bb404d9820e573e4f18af17d7da9ee/3-cleanup.png",
-      "sha256": "ef383cc4de7c4a9347fc004870d2c3d8ba121ef6f4a3957e9205156311cb0091"
+      "url": "https://gist.githubusercontent.com/cjber/4be4415483c06af7369e0b1976791e83/raw/4f4085079b34c793e763b58cb0b311a1991027fe/1-macro-window.png",
+      "sha256": "18621e0b1985cb3616a9a93b2379f367d0fa23ba4ddd198b3a8af872c788ef85"
     }
   ]
 }
