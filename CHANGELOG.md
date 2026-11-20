@@ -3,6 +3,18 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.3] - 2026-11-19
+
+### Changed
+
+- **Macro Assist Forever carries ForeverCore inside itself.** It now works with ForeverCore turned off or uninstalled, and your ForeverCore settings carry over. You no longer need to install ForeverCore separately. If you have it installed, you can keep it or remove it. (cjber/forever-core#801)
+
+### Fixed
+
+- **Move the macro window.** Drag it by its title bar or any edge to get it off the Spellbook or Character pane. It opens where you left it, after a reload too (#230).
+- **/macroassist says why Macro Assist Forever stopped.** While Macro Assist Forever cannot start, typing /macroassist repeats the line naming the fix instead of reading "Unknown command".
+- **/macroassist keeps working after a startup error.** If part of Macro Assist Forever fails to start, /macroassist still answers.
+
 ## [0.8.2] - 2026-11-18
 
 <!-- forever-core-sync -->
