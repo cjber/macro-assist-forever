@@ -7,9 +7,7 @@ what the game loads; `tests/*_spec.lua` load them in that order inside a stubbed
 - The vendored `tools/forever_tools/` and the files copied from forever-core are never edited by hand.
 - Taint: never replace a Blizzard global or hook a secure function a spec does not already hook.
 - Parser code in `Core/` stays pure: no frames, no client calls, so its specs need no game.
-- Never use the network, and never start the game, Battle.net, Lutris or Wine. The headless client (forever-core's
-  `wow-forever-addon/in-game.md`) tests the build linked into the game, not this checkout, so in-game checks belong to
-  the agent that ships a change.
+- Never use the network, and never start the game, Battle.net, Lutris or Wine.
 
 ## Live roots
 
