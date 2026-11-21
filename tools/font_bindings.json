@@ -830,7 +830,7 @@
     },
     {
       "source": "UI/Context.lua",
-      "sha256": "c3b77984f50d42443f0914bc1ae44db2aef237a231daadc4a7e65a7d0d23ad73",
+      "sha256": "bd37eb3a447590a2b2565c3a74c9112b94b5724324cc1bbb16ec8f005152a6bb",
       "review": "Read AvailableRecipes and RecipeStates and their Recipes.lua/Editor.lua consumers. Passes through static Data/Recipes.lua titles and dynamic client spell/class names; contains no independently bound phrases. Pins the recipe-title path reviewed above. Dynamic game data is excluded.",
       "bindings": []
     }

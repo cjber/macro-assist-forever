@@ -19,6 +19,7 @@ ns.Roster = Roster
 ---@class MacroAssistRosterApi
 ---@field inRaid fun(): boolean
 ---@field groupCount fun(): integer
+---@field realm? fun(): string?
 ---@field name fun(unit: string): string?, string?
 ---@field class fun(unit: string): string?
 
@@ -57,13 +58,16 @@ function Roster.Read(api)
 	if count < 1 then
 		return false, raid, members
 	end
+	-- UnitFullName returns a surname in its second slot on Forever, where GetRealmName returns "".
+	local playerRealm = api.realm and ns.Readable((api.realm()))
+	local namedRealm = type(playerRealm) == "string" and playerRealm ~= ""
 	for _, unit in ipairs(Roster.Units(raid, count)) do
 		local name, realm = api.name(unit)
 		name, realm = ns.Readable(name), ns.Readable(realm)
-		if type(name) == "string" and name ~= "" and type(realm) == "string" and realm ~= "" then
-			name = name .. "-" .. realm
-		end
 		if type(name) == "string" and name ~= "" then
+			if namedRealm and type(realm) == "string" and realm ~= "" then
+				name = name .. "-" .. realm
+			end
 			local className
 			if api.class then
 				className = ns.Readable((api.class(unit)))
