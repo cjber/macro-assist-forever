@@ -650,6 +650,21 @@ function Editor.Create(parent, statusParent)
 	})
 	self.popup:SetBackdropColor(0.07, 0.07, 0.08, 0.98)
 	self.popup:SetBackdropBorderColor(1, 1, 1, 0.18)
+	-- Leave Enter to the multiline edit box whenever the completion list is hidden.
+	local function acceptCompletion()
+		self.click = nil
+		local item = self.completion.items[self.completion.selected]
+		if item then
+			self:InsertCompletion(item)
+		end
+		return true
+	end
+	self.popup:SetScript("OnShow", function()
+		self.edit:SetScript("OnEnterPressed", acceptCompletion)
+	end)
+	self.popup:SetScript("OnHide", function()
+		self.edit:SetScript("OnEnterPressed", nil)
+	end)
 	self.popup.rows = {}
 	for index = 1, POPUP_ROWS do
 		local row = CreateFrame("Button", nil, self.popup) --[[@as MacroAssistCompletionRow]]
@@ -782,10 +797,7 @@ function Editor.Create(parent, statusParent)
 	self.edit:SetScript("OnTabPressed", function()
 		self.click = nil
 		if self.popup:IsShown() then
-			local item = self.completion.items[self.completion.selected]
-			if item then
-				self:InsertCompletion(item)
-			end
+			self:MoveCompletion(IsShiftKeyDown() and -1 or 1)
 			return true
 		end
 		local diagnostic = self:DiagnosticAt((self.edit:GetCursorPosition() or 0) + 1)
@@ -1411,7 +1423,7 @@ function Editor:ShowCompletionTooltip(index)
 	if item.detail and item.detail ~= "" then
 		GameTooltip:AddLine(item.detail, 1, 1, 1, true)
 	end
-	GameTooltip:AddLine(L["Tab to insert."], 0.2, 1, 0.6, true)
+	GameTooltip:AddLine(L["Enter to insert. Tab or Shift-Tab to cycle."], 0.2, 1, 0.6, true)
 	GameTooltip:Show()
 end
 
