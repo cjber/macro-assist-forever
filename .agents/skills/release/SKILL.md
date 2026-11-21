@@ -49,7 +49,7 @@ authorization. A preparation-only request ends before tags or uploads.
    twice, requiring identical output bytes. Inspect the actual images at readable
    size, including the changed features and empty/error states. Then run
    `python3 tools/check_screenshots.py` and `python3 tools/visual_audit.py`. Commit the current
-   images, `docs/screenshots/layout.json` and `docs/screenshots/scenes.sha256`; remove obsolete
+   images, `docs/screenshots/layout.json` and `docs/screenshots/scenes/<image>.sha256`; remove obsolete
    images and their references. Regenerate `media/icon-400.png` from `media/icon.svg` if the
    icon changed, and check README image links against the files that will exist on main.
 6. Record the intended store summary, description, logo and gallery set with exact
