@@ -3,6 +3,16 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.7] - 2026-11-21
+
+### Changed
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
+### Fixed
+
+- **Copying macros from another character tells apart characters with the same name.** On a Forever realm each character's macros were saved under its first name and surname alone, so two characters with the same name on different servers shared one entry. Each character now has its own.
+
 ## [0.8.6] - 2026-11-20
 
 <!-- forever-core-sync -->
