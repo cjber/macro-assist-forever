@@ -86,6 +86,9 @@ _G.ForeverCore = {
 		return { Report = {}, Attach = function() end }
 	end,
 	APIKit = APIKit,
+	CharacterKey = function()
+		return "Barry Buckfast-6941"
+	end,
 }
 
 local ns = {}

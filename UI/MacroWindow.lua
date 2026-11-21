@@ -626,7 +626,11 @@ function Window.Create()
 	local currentCharacter = frame.currentCharacter
 	local function destinationFor(scope)
 		local current = currentCharacter or ns.CharacterMacros.CaptureCurrent(MacroAssistForeverDB)
-		local record = MacroAssistForeverDB.characters[current]
+		-- Nil only before the client names the character, when no snapshot of this character exists yet.
+		local record = current and MacroAssistForeverDB.characters[current]
+		if not record then
+			return {}
+		end
 		record[scope] = record[scope] or {}
 		return record[scope]
 	end

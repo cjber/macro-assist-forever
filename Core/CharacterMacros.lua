@@ -13,9 +13,10 @@ function Characters.Key(name, realm)
 	return key(name, realm)
 end
 
-function Characters.Capture(db, name, realm, general, character)
+-- `id` is the snapshot's key, "Name-Realm" when not given.
+function Characters.Capture(db, name, realm, general, character, id)
 	db.characters = db.characters or {}
-	db.characters[key(name, realm)] = {
+	db.characters[id or key(name, realm)] = {
 		name = name,
 		realm = realm,
 		general = general or {},
@@ -23,7 +24,15 @@ function Characters.Capture(db, name, realm, general, character)
 	}
 end
 
+-- This character's snapshot, keyed by ForeverCore.CharacterKey: on a Forever realm UnitFullName's second return is the
+-- surname, not a realm, so only the core's key (name, surname and server) tells characters apart. Nil, capturing
+-- nothing, until the client names the character.
+---@return string?
 function Characters.CaptureCurrent(db)
+	local id = ForeverCore.CharacterKey()
+	if not id then
+		return nil
+	end
 	local name, realm = UnitFullName("player")
 	name = name or UnitName("player") or "Unknown"
 	realm = realm or (GetRealmName and GetRealmName()) or "Unknown"
@@ -41,8 +50,14 @@ function Characters.CaptureCurrent(db)
 	end
 	capture(1, account or 0, general)
 	capture(accountLimit + 1, accountLimit + (count or 0), character)
-	Characters.Capture(db, name, realm, general, character)
-	return key(name, realm)
+	-- A snapshot saved before this key was "Name-<UnitFullName's second return>": drop it, so this character is not
+	-- offered as a source of its own macros.
+	local old = key(name, realm)
+	if old ~= id and db.characters then
+		db.characters[old] = nil
+	end
+	Characters.Capture(db, name, realm, general, character, id)
+	return id
 end
 
 function Characters.Sources(db, current)
