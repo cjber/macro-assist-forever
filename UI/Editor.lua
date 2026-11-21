@@ -141,6 +141,7 @@ end
 ---@field numberFonts FontString[]
 ---@field squiggles MacroAssistSquiggle[]
 ---@field completion MacroAssistCompletionState
+---@field acceptCompletion fun(): boolean
 ---@field rows MacroAssistEditorRow[]
 ---@field diagnostics MacroAssistDiagnostic[]
 ---@field parsed MacroAssistParse?
@@ -650,6 +651,26 @@ function Editor.Create(parent, statusParent)
 	})
 	self.popup:SetBackdropColor(0.07, 0.07, 0.08, 0.98)
 	self.popup:SetBackdropBorderColor(1, 1, 1, 0.18)
+	-- Leave Enter to the multiline edit box whenever the completion list is hidden.
+	self.acceptCompletion = function()
+		self.click = nil
+		local item = self.completion.items[self.completion.selected]
+		if item then
+			self:InsertCompletion(item)
+		end
+		return true
+	end
+	self.popup:SetScript("OnShow", function()
+		self:UpdateStatus()
+	end)
+	self.popup:SetScript("OnHide", function()
+		self.edit:SetScript("OnEnterPressed", nil)
+		self:UpdateStatus()
+		self:HideCompletionTooltip()
+		if self.edit:HasFocus() then
+			self:UpdateDiagnosticTooltip()
+		end
+	end)
 	self.popup.rows = {}
 	for index = 1, POPUP_ROWS do
 		local row = CreateFrame("Button", nil, self.popup) --[[@as MacroAssistCompletionRow]]
@@ -782,10 +803,7 @@ function Editor.Create(parent, statusParent)
 	self.edit:SetScript("OnTabPressed", function()
 		self.click = nil
 		if self.popup:IsShown() then
-			local item = self.completion.items[self.completion.selected]
-			if item then
-				self:InsertCompletion(item)
-			end
+			self:MoveCompletion(IsShiftKeyDown() and -1 or 1)
 			return true
 		end
 		local diagnostic = self:DiagnosticAt((self.edit:GetCursorPosition() or 0) + 1)
@@ -985,10 +1003,15 @@ function Editor:OnCursorChanged(x, y, width, height)
 	end
 	self:UpdateHighlight()
 	self:ResolvePendingClick(row)
-	self:UpdateDiagnosticTooltip()
 	if self.popup:IsShown() then
-		self:PositionPopup()
+		local position = self.edit:GetCursorPosition() or 0
+		if position < self.completion.from - 1 or position > self.completion.to then
+			self:HideCompletion()
+		else
+			self:PositionPopup()
+		end
 	end
+	self:UpdateDiagnosticTooltip()
 end
 
 -- The release half of the click rule: `upRow` is the row under the pointer on release, `x` its offset from the
@@ -1115,10 +1138,11 @@ end
 ---@param owner Frame
 ---@param diagnostic MacroAssistDiagnostic
 ---@param anchor string
-local function ShowDiagnosticTooltip(owner, diagnostic, anchor)
+---@param showFix boolean
+local function ShowDiagnosticTooltip(owner, diagnostic, anchor, showFix)
 	GameTooltip:SetOwner(owner, anchor)
 	GameTooltip:SetText(diagnostic.message, 1, 1, 1, 1, true)
-	if diagnostic.fix then
+	if diagnostic.fix and showFix then
 		GameTooltip:AddLine(L["Tab: fix"], 0.2, 1, 0.2, true)
 	end
 	GameTooltip:Show()
@@ -1142,7 +1166,7 @@ function Editor:UpdateDiagnosticTooltip()
 	local position = (self.edit:GetCursorPosition() or 0) + 1
 	local diagnostic = self:DiagnosticAt(position)
 	if diagnostic then
-		ShowDiagnosticTooltip(self.edit, diagnostic, "ANCHOR_CURSOR")
+		ShowDiagnosticTooltip(self.edit, diagnostic, "ANCHOR_CURSOR", not self.popup:IsShown())
 	elseif GameTooltip:IsOwned(self.edit) then
 		GameTooltip:Hide()
 	end
@@ -1339,7 +1363,7 @@ function Editor:UpdateStatus()
 		local colour = first.severity == "error" and COLOUR_RED or COLOUR_YELLOW
 		local phrase = count == 1 and L["%d problem"] or L["%d problems"]
 		local text = colour .. phrase:format(count) .. COLOUR_CLOSE .. " " .. first.message
-		if first.fix then
+		if first.fix and not self.popup:IsShown() then
 			text = text .. "  " .. COLOUR_MUTED .. L["Tab to fix"] .. COLOUR_CLOSE
 		end
 		self.problem:SetText(text .. suffix)
@@ -1411,7 +1435,9 @@ function Editor:ShowCompletionTooltip(index)
 	if item.detail and item.detail ~= "" then
 		GameTooltip:AddLine(item.detail, 1, 1, 1, true)
 	end
-	GameTooltip:AddLine(L["Tab to insert."], 0.2, 1, 0.6, true)
+	local hint = self.edit:GetScript("OnEnterPressed") and L["Enter to insert. Tab or Shift-Tab to cycle."]
+		or L["Click to insert. Tab or Shift-Tab to choose."]
+	GameTooltip:AddLine(hint, 0.2, 1, 0.6, true)
 	GameTooltip:Show()
 end
 
@@ -1440,6 +1466,7 @@ function Editor:MoveCompletion(delta)
 		selected = 1
 	end
 	self.completion.selected = selected
+	self.edit:SetScript("OnEnterPressed", self.acceptCompletion)
 	if selected <= self.completion.offset then
 		self.completion.offset = selected - 1
 	elseif selected > self.completion.offset + POPUP_ROWS then
@@ -1476,9 +1503,20 @@ function Editor:RefreshCompletions()
 	self.completion.to = result.to or 0
 	self.completion.selected = 1
 	self.completion.offset = 0
-	if #self.completion.items == 0 then
+	local first = self.completion.items[1]
+	if not first or first.insert == text:sub(self.completion.from, self.completion.to) then
 		self:HideCompletion()
 		return
+	end
+	local rowIndex = Editor.RowAtCursor(self.rows, cursor - 1)
+	local row = rowIndex and self.rows[rowIndex]
+	local line = row and self.parsed and self.parsed.lines[row.line]
+	local command = line and line.command and ns.CommandAliases[line.command.nameLower]
+	-- A match inside chat prose is optional until the player navigates to a suggestion.
+	if first.kind == "member" and command and command.kind == "chat" then
+		self.edit:SetScript("OnEnterPressed", nil)
+	else
+		self.edit:SetScript("OnEnterPressed", self.acceptCompletion)
 	end
 	self:RenderCompletion()
 	self:PositionPopup()

@@ -130,6 +130,16 @@ local function reportCursor(editor, position)
 	move(editor.edit, editor.RowOffset(row, position, editor.textMeasure), -row.y, 1, editor.lineHeight)
 end
 
+-- The sim dispatches scripts but does not implement the multiline EditBox's default Enter action.
+local function pressEditorEnter(editor)
+	local enter = editor.edit:GetScript("OnEnterPressed")
+	if enter then
+		enter(editor.edit)
+	else
+		editor.edit:Insert("\n")
+	end
+end
+
 local function setText(sim, window, text, edited)
 	sim:input(function()
 		local editor = window.editor
@@ -303,8 +313,15 @@ scenario("a group member completes inside a raid message", function(sim)
 	equal(member.kind, "member", "a group name has the member kind")
 	equal(member.detail, "Mage", "a group name shows the member's class")
 
-	local tab = editor.edit:GetScript("OnTabPressed")
-	check(tab(editor.edit), "Tab did not insert the member name")
+	pressEditorEnter(editor)
+	equal(textOf(window), "/raid Tank 1: Alph\n", "Enter preserved the raid message and started a new line")
+	setText(sim, window, "/raid Tank 1: Alph", false)
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	check(editor.edit:GetScript("OnTabPressed")(editor.edit), "Tab did not choose a member suggestion")
+	check(editor.edit:GetScript("OnEnterPressed") ~= nil, "navigating did not enable Enter to insert the member")
+	pressEditorEnter(editor)
 	equal(textOf(window), "/raid Tank 1: Alphonse-Forever", "the member name did not replace the typed word")
 	check(not editor.popup:IsShown(), "the popup stayed open after inserting the member name")
 
@@ -993,6 +1010,90 @@ scenario("a click right of a line's end keeps the cursor on that line", function
 	equal(cursor, 15, "the click moved the cursor past line 2's newline")
 end)
 
+scenario("Tab and Shift-Tab wrap the completion selection", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local editor = window.editor
+	local partial = "/"
+	setText(sim, window, partial)
+	sim:input(function()
+		editor:RefreshCompletions()
+	end)
+	check(editor.popup:IsShown(), "completion did not open for a slash command")
+	local count = #editor.completion.items
+	check(count > 2, "cycling needs at least three suggestions to distinguish directions")
+	equal(editor.completion.selected, 1, "initial completion selection")
+	local tab = editor.edit:GetScript("OnTabPressed")
+
+	check(tab(editor.edit), "Tab was not handled")
+	equal(editor.completion.selected, 2, "Tab selected the next suggestion")
+	sim.modifiers.shift = true
+	check(tab(editor.edit), "Shift-Tab was not handled")
+	equal(editor.completion.selected, 1, "Shift-Tab selected the previous suggestion")
+	check(tab(editor.edit), "Shift-Tab was not handled at the first suggestion")
+	equal(editor.completion.selected, count, "Shift-Tab wrapped to the last suggestion")
+	sim.modifiers.shift = false
+	check(tab(editor.edit), "Tab was not handled at the last suggestion")
+	equal(editor.completion.selected, 1, "Tab wrapped to the first suggestion")
+	equal(textOf(window), partial, "cycling preserved the macro text")
+	check(editor.popup:IsShown(), "cycling closed the completion list")
+end)
+
+scenario("Enter starts a new line after an exact completion", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local editor = window.editor
+	for _, text in ipairs({ "/cast Arcane Shot(Rank 4)", "/stopcasting", "#showtooltip" }) do
+		setText(sim, window, text)
+		editor:RefreshCompletions()
+		pressEditorEnter(editor)
+		equal(textOf(window), text .. "\n", "Enter after " .. text)
+	end
+end)
+
+scenario("Enter leaves a completion behind when the caret moves to another line", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local editor = window.editor
+	local text = "/cast Arc\n/say ready"
+	setText(sim, window, text)
+	reportCursor(editor, #"/cast Arc")
+	editor:RefreshCompletions()
+	check(editor.popup:IsShown(), "the first line did not open completions")
+	reportCursor(editor, #text)
+	pressEditorEnter(editor)
+	equal(textOf(window), text .. "\n", "Enter at the end of the second line")
+	check(not editor.popup:IsShown(), "the first line's completion list remained visible")
+end)
+
+scenario("quick-fix hints track the completion list and Escape restores Tab", function(sim)
+	local window = openNamed(sim)
+	characterTab(sim, window)
+	local editor = window.editor
+	local tooltip = sim.G.GameTooltip
+	local text = "/stopcastin"
+	editor:Focus()
+	setText(sim, window, text, true)
+	local function hasTooltipHint()
+		return tooltip:NumLines() >= 2 and tooltip:GetLeftLine(2):GetText() == "Tab: fix"
+	end
+	local function hasStatusHint()
+		return editor.problem:GetText():find("Tab to fix", 1, true) ~= nil
+	end
+	check(hasStatusHint() and hasTooltipHint(), "closed completions did not show both fix hints")
+	editor:RefreshCompletions()
+	check(editor.popup:IsShown(), "the mistyped command did not open completions")
+	reportCursor(editor, #text)
+	check(not hasStatusHint(), "the status offered a Tab fix while Tab cycles completions")
+	check(not hasTooltipHint(), "the tooltip offered a Tab fix while Tab cycles completions")
+	check(editor.edit:GetScript("OnEscapePressed")(editor.edit), "Escape was not handled")
+	check(not editor.popup:IsShown(), "Escape did not close the completion list")
+	check(hasStatusHint() and hasTooltipHint(), "Escape did not restore both fix hints")
+	equal(textOf(window), text, "Escape preserved the problem text")
+	check(editor.edit:GetScript("OnTabPressed")(editor.edit), "Tab did not apply the fix after Escape")
+	equal(textOf(window), "/stopcasting", "Tab fixed the command")
+end)
+
 scenario("completion, a problem and its fix", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)
@@ -1006,10 +1107,11 @@ scenario("completion, a problem and its fix", function(sim)
 	check(#editor.completion.items > 0, "completion returned no items")
 	local down = editor.edit:GetScript("OnArrowPressed")
 	check(down(editor.edit, "DOWN"), "Down did not move the completion selection")
-	local tab = editor.edit:GetScript("OnTabPressed")
-	check(tab(editor.edit), "Tab did not insert the highlighted completion")
-	check(textOf(window):find("Arcane Shot", 1, true) ~= nil, "the completion was not inserted")
+	local enter = editor.edit:GetScript("OnEnterPressed")
+	check(enter and enter(editor.edit), "Enter did not insert the highlighted completion")
+	equal(textOf(window), "/cast Arcane Shot(Rank 4)", "Enter selected the ranked spell")
 	check(not editor.popup:IsShown(), "the popup stayed open after insertion")
+	equal(editor.edit:GetScript("OnEnterPressed"), nil, "the closed popup left Enter to the multiline edit box")
 
 	setText(sim, window, "/cast Nope", true)
 	check(#editor.diagnostics == 1, "an unknown spell was not reported")
@@ -1039,6 +1141,18 @@ scenario("completion, a problem and its fix", function(sim)
 		end
 	end
 	check(fixSquiggle, "the mistyped command has no squiggle")
+	sim:input(function()
+		local edit = editor.edit
+		local scale = edit:GetEffectiveScale()
+		sim.mouseX = (edit:GetLeft() + editor.RowOffset(editor.rows[1], 4, editor.textMeasure)) * scale
+		sim.mouseY = (fixSquiggle:GetBottom() + fixSquiggle:GetHeight() / 2) * scale
+		edit:GetScript("OnMouseDown")(edit, "LeftButton")
+		reportCursor(editor, 4)
+		edit:GetScript("OnMouseUp")(edit, "LeftButton")
+	end)
+	equal(textOf(window), "/stopcastin", "clicking the underline only placed the caret")
+	equal(editor.edit:GetCursorPosition(), 4, "the click placed the caret on the problem")
+	check(not editor.popup:IsShown(), "the completion list was open before applying the fix")
 	local fixTab = editor.edit:GetScript("OnTabPressed")
 	check(fixTab(editor.edit), "Tab did not consume the fix")
 	check(textOf(window) == "/stopcasting", "the fix did not replace the command")
@@ -1068,7 +1182,7 @@ scenario("completion, a problem and its fix", function(sim)
 	setText(sim, window, original, false)
 end)
 
-scenario("plain words offer checked recipes and Tab inserts one", function(sim)
+scenario("plain words offer checked recipes and Enter inserts one", function(sim)
 	world.install(sim)
 	sim.world.player.classFile = "HUNTER"
 	sim.world.player.className = "Hunter"
@@ -1095,8 +1209,8 @@ scenario("plain words offer checked recipes and Tab inserts one", function(sim)
 	check(recipe.insert:find("Mend Pet", 1, true) ~= nil, "the recipe did not resolve its spell name")
 	check(recipe.insert:find("%s", 1, true) == nil, "the recipe left its spell placeholder")
 
-	local tab = editor.edit:GetScript("OnTabPressed")
-	check(tab(editor.edit), "Tab did not insert the recipe")
+	local enter = editor.edit:GetScript("OnEnterPressed")
+	check(enter and enter(editor.edit), "Enter did not insert the recipe")
 	equal(textOf(window), recipe.insert, "the recipe did not replace the whole line")
 	check(not editor.popup:IsShown(), "the popup stayed open after inserting a recipe")
 

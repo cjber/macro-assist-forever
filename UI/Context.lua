@@ -309,6 +309,7 @@ function ns.Context.Members()
 		groupCount = function()
 			return GetNumGroupMembers()
 		end,
+		realm = GetRealmName,
 		name = function(unit)
 			return UnitFullName(unit)
 		end,

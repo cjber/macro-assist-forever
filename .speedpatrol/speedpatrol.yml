@@ -1,8 +1,8 @@
 version: 1
 
 # Speedpatrol profile for Macro Assist Forever, written by hand because `speedpatrol init` reads a repo without
-# package.json as an HTTP API. The game client cannot run here, so every benchmark is a command over the headless
-# Lua harness the specs use. There is no bench script yet, so only the spec gate is timed.
+# package.json as an HTTP API. The game client cannot run here, so every benchmark is a command over the offline
+# Lua spec harness the specs use. There is no bench script yet, so only the spec gate is timed.
 project:
   name: macro-assist-forever
   source: .
