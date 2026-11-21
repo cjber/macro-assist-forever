@@ -102,6 +102,9 @@ equal(grouped, false, "an unreadable count is treated as unavailable")
 equal(#members, 0, "an unreadable count produces no rows")
 rawset(globals, "canaccessvalue", originalCanAccess)
 local realmApi = api(false, 1, {})
+realmApi.realm = function()
+	return "Home"
+end
 realmApi.name = function()
 	return "Barry", "Normal"
 end
@@ -112,5 +115,18 @@ realmApi.name = function()
 end
 _, _, realmMembers = ns.Roster.Read(realmApi)
 equal(realmMembers[1].name, "Barry", "an empty local realm adds no separator")
+
+local foreverApi = api(true, 1, {})
+foreverApi.realm = function()
+	return ""
+end
+foreverApi.name = function()
+	return "Syrberus", "Ironhide"
+end
+local _, _, foreverMembers = ns.Roster.Read(foreverApi)
+equal(foreverMembers[1].name, "Syrberus", "a Forever raid completion uses the bare character name")
+foreverApi.realm = nil
+_, _, foreverMembers = ns.Roster.Read(foreverApi)
+equal(foreverMembers[1].name, "Syrberus", "a missing realm reader adds no suffix")
 
 print(("roster: %d checks"):format(checks))

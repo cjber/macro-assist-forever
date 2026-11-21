@@ -17,7 +17,7 @@ read_globals = {
 	"GetFlyoutSlotInfo", "GetInventoryItemLink", "GetInventoryItemTexture", "GREEN_FONT_COLOR_CODE",
 	"GetActionInfo", "GetActionText", "GetBindingKey", "GetBindingText",
 	"GetMacroIndexByName", "GetMacroInfo", "GetServerTime",
-	"GetNumMacros", "HideUIPanel", "hooksecurefunc", "IsModifiedClick", "GetCursorInfo", "ClearCursor",
+	"GetNumMacros", "HideUIPanel", "hooksecurefunc", "IsModifiedClick", "IsShiftKeyDown", "GetCursorInfo", "ClearCursor",
 	"IconDataProviderExtraType", "IconDataProviderMixin",
 	"INVSLOT_FIRST_EQUIPPED", "INVSLOT_LAST_EQUIPPED", "MacroFrame",
 	"NUM_BAG_SLOTS", "NORMAL_FONT_COLOR", "BreakUpLargeNumbers",

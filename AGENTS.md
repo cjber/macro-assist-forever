@@ -22,7 +22,7 @@ python3 tools/screenshots.py && python3 tools/visual_audit.py   # render every U
 `gate.py` loads ForeverCore from `$FOREVER_CORE`, else `../forever-core`: set it in a worktree. CI adds the simulator,
 the package build, actionlint, zizmor and gitleaks. A change's player-facing notes go in `changes/<issue>.md`; only
 the release commit edits `CHANGELOG.md` (`python3 tools/changelog.py release X.Y.Z`). Release:
-`.agents/skills/release/SKILL.md`, after smoking that exact commit with the headless client.
+`.agents/skills/release/SKILL.md`, after checking the `headless-smoke` commit status on that exact commit.
 
 ## Rules
 
