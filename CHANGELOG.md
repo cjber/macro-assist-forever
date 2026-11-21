@@ -3,6 +3,16 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.9] - 2026-11-21
+
+### Changed
+
+- **Tab cycles through editor suggestions.** Use Tab to move forward, Shift-Tab to move back, and Enter to insert the highlighted suggestion. In chat messages, choose a name before pressing Enter to insert it. With the list closed, Tab applies the quick fix under the cursor.
+
+### Fixed
+
+- **Raid message completion uses bare character names on Forever realms.** It no longer inserts the character's surname.
+
 ## [0.8.8] - 2026-11-21
 
 <!-- forever-core-sync -->
