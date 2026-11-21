@@ -276,6 +276,7 @@ ns.L = {
 	["No change"] = true,
 	["on %s"] = true,
 	["Enter to insert. Tab or Shift-Tab to cycle."] = true,
+	["Click to insert. Tab or Shift-Tab to choose."] = true,
 	["Tab: fix"] = true,
 	["Tab to fix"] = true,
 	["What it does"] = true,
