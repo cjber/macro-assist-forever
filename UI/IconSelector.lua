@@ -90,9 +90,6 @@ local SLOT_LABELS = {
 ---@field buttons MacroAssistIconButton[]
 
 ---@class MacroAssistIconPicker : Frame
----@field SetBackdrop fun(self: MacroAssistIconPicker, backdrop: table)
----@field SetBackdropColor fun(self: MacroAssistIconPicker, r: number, g: number, b: number, a: number)
----@field SetBackdropBorderColor fun(self: MacroAssistIconPicker, r: number, g: number, b: number, a: number)
 ---@field searchBox MacroAssistSearchBox
 ---@field dropdown MacroAssistFilterDropdown
 ---@field editor MacroAssistEditor
@@ -117,7 +114,7 @@ local Picker = {}
 ---@param editor MacroAssistEditor
 ---@return MacroAssistIconPicker
 function Picker.Create(parent, surface, editor)
-	local frame = CreateFrame("Frame", nil, parent, "BackdropTemplate") --[[@as MacroAssistIconPicker]]
+	local frame = CreateFrame("Frame", nil, parent, "InsetFrameTemplate") --[[@as MacroAssistIconPicker]]
 	for name, method in pairs(Picker) do
 		if type(method) == "function" and name ~= "Create" then
 			frame[name] = method
@@ -127,15 +124,6 @@ function Picker.Create(parent, surface, editor)
 	frame:SetPoint("TOPLEFT", surface, "TOPLEFT", 0, 0)
 	frame:SetPoint("BOTTOMRIGHT", surface, "BOTTOMRIGHT", 0, 0)
 	frame:SetFrameLevel(surface:GetFrameLevel() + 2)
-	frame:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8X8",
-		edgeFile = "Interface\\Buttons\\WHITE8X8",
-		tile = false,
-		edgeSize = 1,
-		insets = { left = 1, right = 1, top = 1, bottom = 1 },
-	})
-	frame:SetBackdropColor(0.035, 0.035, 0.04, 0.94)
-	frame:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
 	frame.show = "all"
 	frame.search = ""
 	frame.editor = editor

@@ -441,9 +441,6 @@ end
 
 ---@class MacroAssistCompletionPopup : Frame
 ---@field rows MacroAssistCompletionRow[]
----@field SetBackdrop fun(self: MacroAssistCompletionPopup, backdrop: table)
----@field SetBackdropColor fun(self: MacroAssistCompletionPopup, r: number, g: number, b: number, a: number)
----@field SetBackdropBorderColor fun(self: MacroAssistCompletionPopup, r: number, g: number, b: number, a: number)
 
 ---@class MacroAssistSquiggle : Frame
 ---@field texture Texture
@@ -623,12 +620,13 @@ function Editor.Create(parent, statusParent)
 	self.meter:SetPoint("RIGHT", self.length, "LEFT", -8, 0)
 	self.meterTrack = self.meter:CreateTexture(nil, "BACKGROUND")
 	self.meterTrack:SetAllPoints(self.meter)
-	self.meterTrack:SetColorTexture(1, 1, 1, 0.12)
+	self.meterTrack:SetAtlas("common-stat-bar-BG")
 	self.meterFill = self.meter:CreateTexture(nil, "ARTWORK")
 	self.meterFill:SetPoint("TOPLEFT", self.meter, "TOPLEFT", 0, 0)
 	self.meterFill:SetPoint("BOTTOMLEFT", self.meter, "BOTTOMLEFT", 0, 0)
 	self.meterFill:SetWidth(0)
-	self.meterFill:SetColorTexture(1, 0.82, 0.2, 0.9)
+	self.meterFill:SetAtlas("common-stat-bar-white")
+	self.meterFill:SetVertexColor(1, 0.82, 0.2, 0.9)
 
 	self.now = statusParent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	self.now:SetPoint("LEFT", self.nowLabel, "RIGHT", 6, 0)
@@ -636,21 +634,12 @@ function Editor.Create(parent, statusParent)
 	self.now:SetJustifyH("LEFT")
 	self.now:SetWordWrap(false)
 
-	self.popup = CreateFrame("Frame", nil, self.textArea, "BackdropTemplate") --[[@as MacroAssistCompletionPopup]]
+	self.popup = CreateFrame("Frame", nil, self.textArea, "InsetFrameTemplate") --[[@as MacroAssistCompletionPopup]]
 	self.popup:SetFrameStrata("DIALOG")
 	self.popup:SetFrameLevel(self.textArea:GetFrameLevel() + 20)
 	self.popup:SetClampedToScreen(true)
 	self.popup:EnableMouse(true)
 	self.popup:Hide()
-	self.popup:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8X8",
-		edgeFile = "Interface\\Buttons\\WHITE8X8",
-		tile = false,
-		edgeSize = 1,
-		insets = { left = 1, right = 1, top = 1, bottom = 1 },
-	})
-	self.popup:SetBackdropColor(0.07, 0.07, 0.08, 0.98)
-	self.popup:SetBackdropBorderColor(1, 1, 1, 0.18)
 	-- Leave Enter to the multiline edit box whenever the completion list is hidden.
 	self.acceptCompletion = function()
 		self.click = nil
