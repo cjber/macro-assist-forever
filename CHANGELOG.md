@@ -3,6 +3,12 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.11] - 2026-11-22
+
+<!-- forever-core-sync -->
+
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
 ## [0.8.10] - 2026-11-21
 
 ### Changed
