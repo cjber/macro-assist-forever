@@ -508,7 +508,7 @@ function Window.Create()
 	header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", INSET_RIGHT, HEADER_TOP)
 	frame.header = header
 
-	local editorSurface = CreateFrame("Frame", nil, frame, "MacroAssistInsetTemplate")
+	local editorSurface = CreateFrame("Frame", nil, frame, "MacroAssistInsetTemplate") --[[@as Frame]]
 	editorSurface:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -GAP)
 	editorSurface:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, BOTTOM_OFFSET + STATUS_HEIGHT)
 	frame.editorSurface = editorSurface
