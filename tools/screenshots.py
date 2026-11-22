@@ -207,7 +207,6 @@ RED = wowmock.rgb("ff4040")
 YELLOW = wowmock.rgb("ffd100")
 DIM = wowmock.rgb("9d9d9d")
 SURFACE = (0.035, 0.035, 0.04, 0.94)
-EDGE = (0.45, 0.45, 0.45, 1)
 RULE = (1, 1, 1, 0.08)
 
 
@@ -896,11 +895,7 @@ end
 
 def draw_editor(canvas, body, current_line, caret_column, data):
     editor_x, editor_y, editor_w, editor_h = editor_geometry()
-    canvas.fill(editor_x, editor_y, editor_w, editor_h, SURFACE)
-    canvas.fill(editor_x, editor_y, editor_w, 1, EDGE)
-    canvas.fill(editor_x, editor_y + editor_h - 1, editor_w, 1, EDGE)
-    canvas.fill(editor_x, editor_y, 1, editor_h, EDGE)
-    canvas.fill(editor_x + editor_w - 1, editor_y, 1, editor_h, EDGE)
+    inset(canvas, editor_x, editor_y, editor_w, editor_h)
     canvas.fill(editor_x + GUTTER_WIDTH, editor_y + 6, 1, editor_h - 12, RULE)
     lines = body.split("\n")
     text_x = editor_x + GUTTER_WIDTH + 10
@@ -981,12 +976,7 @@ def draw_completion(canvas, completion, caret_position, text_x, text_y, text_w):
     if y + height > editor_y + editor_h - 4:
         y = text_y + caret_y - height - 2
     y = max(editor_y + 4, min(y, editor_y + editor_h - height - 4))
-    # A flat dark panel with a 1-unit white edge, from the client's white primitive rather than a tooltip file.
-    canvas.fill(x, y, width, height, (0.07, 0.07, 0.08, 0.98))
-    canvas.fill(x, y, width, 1, (1, 1, 1, 0.18))
-    canvas.fill(x, y + height - 1, width, 1, (1, 1, 1, 0.18))
-    canvas.fill(x, y, 1, height, (1, 1, 1, 0.18))
-    canvas.fill(x + width - 1, y, 1, height, (1, 1, 1, 0.18))
+    inset(canvas, x, y, width, height)
     items = completion[2][:rows]
     for index, item in enumerate(items):
         row_y = y + POPUP_INSET_TOP + index * POPUP_ROW_HEIGHT
@@ -1066,11 +1056,19 @@ def status_bar(canvas, x, y, w, length, now, data):
     canvas.text(x + 24, y, "No problems", font, GREEN, box_height=STATUS_HEIGHT)
     canvas.text(x + 112, y, "Now", font, MUTED, box_height=STATUS_HEIGHT)
     now_x = x + 112 + canvas.text_width("Now", font) + 6
-    meter_w = 90
+    meter_w = number("STATUS_METER_WIDTH", EDITOR)
     mx = x + w - 10 - label_w - 8 - meter_w
     canvas.text(now_x, y, fit(canvas, now, font, mx - 8 - now_x), font, box_height=STATUS_HEIGHT)
-    canvas.fill(mx, y + 9, meter_w, 4, (1, 1, 1, 0.12))
-    canvas.fill(mx, y + 9, meter_w * min(length, 255) / 255, 4, (1, 0.82, 0.2, 0.9))
+    canvas.draw(canvas.ui.atlas("common-stat-bar-BG"), mx, y + 9, meter_w, 4)
+    if length > 0:
+        canvas.draw(
+            canvas.ui.atlas("common-stat-bar-white"),
+            mx,
+            y + 9,
+            meter_w * min(length, 255) / 255,
+            4,
+            (1, 0.82, 0.2, 0.9),
+        )
     canvas.text(x + w - 10 - label_w, y, label, font, MUTED, box_height=STATUS_HEIGHT)
 
 
@@ -1135,11 +1133,7 @@ def picker_filter_dropdown(canvas, right, top, text):
 def draw_picker(canvas, icon=PICKER_ICON):
     """The picker in the editor's rectangle: search and filter, one scrolling grid, and its own status strip."""
     x, y, w, h = editor_geometry()
-    canvas.fill(x, y, w, h, SURFACE)
-    canvas.fill(x, y, w, 1, EDGE)
-    canvas.fill(x, y + h - 1, w, 1, EDGE)
-    canvas.fill(x, y, 1, h, EDGE)
-    canvas.fill(x + w - 1, y, 1, h, EDGE)
+    inset(canvas, x, y, w, h)
 
     left = x + PICKER_PADDING
     top = y + PICKER_PADDING

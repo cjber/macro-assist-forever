@@ -114,7 +114,7 @@ local Picker = {}
 ---@param editor MacroAssistEditor
 ---@return MacroAssistIconPicker
 function Picker.Create(parent, surface, editor)
-	local frame = CreateFrame("Frame", nil, parent, "InsetFrameTemplate") --[[@as MacroAssistIconPicker]]
+	local frame = CreateFrame("Frame", nil, parent, "MacroAssistInsetTemplate") --[[@as MacroAssistIconPicker]]
 	for name, method in pairs(Picker) do
 		if type(method) == "function" and name ~= "Create" then
 			frame[name] = method

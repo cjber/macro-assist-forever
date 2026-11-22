@@ -624,7 +624,7 @@ function Editor.Create(parent, statusParent)
 	self.meterFill = self.meter:CreateTexture(nil, "ARTWORK")
 	self.meterFill:SetPoint("TOPLEFT", self.meter, "TOPLEFT", 0, 0)
 	self.meterFill:SetPoint("BOTTOMLEFT", self.meter, "BOTTOMLEFT", 0, 0)
-	self.meterFill:SetWidth(0)
+	self.meterFill:Hide()
 	self.meterFill:SetAtlas("common-stat-bar-white")
 	self.meterFill:SetVertexColor(1, 0.82, 0.2, 0.9)
 
@@ -634,7 +634,7 @@ function Editor.Create(parent, statusParent)
 	self.now:SetJustifyH("LEFT")
 	self.now:SetWordWrap(false)
 
-	self.popup = CreateFrame("Frame", nil, self.textArea, "InsetFrameTemplate") --[[@as MacroAssistCompletionPopup]]
+	self.popup = CreateFrame("Frame", nil, self.textArea, "MacroAssistInsetTemplate") --[[@as MacroAssistCompletionPopup]]
 	self.popup:SetFrameStrata("DIALOG")
 	self.popup:SetFrameLevel(self.textArea:GetFrameLevel() + 20)
 	self.popup:SetClampedToScreen(true)
@@ -1339,6 +1339,7 @@ function Editor:UpdateStatus()
 	self.shorten:SetShown(self.shortenText ~= nil)
 	self.length:SetText(COLOUR_MUTED .. L["%d/%d"]:format(length, ns.MacroLimit) .. COLOUR_CLOSE)
 	self.meterFill:SetWidth(STATUS_METER_WIDTH * math.min(length, ns.MacroLimit) / ns.MacroLimit)
+	self.meterFill:SetShown(length > 0)
 	local suffix = ""
 	if self.inCombat then
 		suffix = "  " .. COLOUR_RED .. L["Saving is disabled in combat."] .. COLOUR_CLOSE
