@@ -508,22 +508,9 @@ function Window.Create()
 	header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", INSET_RIGHT, HEADER_TOP)
 	frame.header = header
 
-	-- The code surface is a BackdropTemplate, not an InsetFrameTemplate: a dark panel behind the editor, filling the
-	-- right column down to the status line.
-	local editorSurface = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+	local editorSurface = CreateFrame("Frame", nil, frame, "MacroAssistInsetTemplate") --[[@as Frame]]
 	editorSurface:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -GAP)
 	editorSurface:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", INSET_RIGHT, BOTTOM_OFFSET + STATUS_HEIGHT)
-	-- The tooltip's old loose backdrop files are blacklisted by the suite asset gate, so the same dark fill and
-	-- 1-unit grey edge come from the client's white primitive instead of the pre-NineSlice tooltip files.
-	editorSurface:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8X8",
-		edgeFile = "Interface\\Buttons\\WHITE8X8",
-		tile = false,
-		edgeSize = 1,
-		insets = { left = 1, right = 1, top = 1, bottom = 1 },
-	})
-	editorSurface:SetBackdropColor(0.035, 0.035, 0.04, 0.94)
-	editorSurface:SetBackdropBorderColor(0.45, 0.45, 0.45, 1)
 	frame.editorSurface = editorSurface
 
 	local statusBar = CreateFrame("Frame", nil, frame)

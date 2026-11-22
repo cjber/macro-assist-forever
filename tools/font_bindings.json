@@ -3,13 +3,13 @@
   "producers": [
     {
       "source": "UI/MacroWindow.xml",
-      "sha256": "7e5f93b42f32c7913b935c08e47197ed61e17a4a0d73b5759c35b33e4015eb02",
+      "sha256": "a1d8f273a0f94a6e7a0c5bcdde1b23bbd0c3ad7da0f889b6261ad83b0888d14c",
       "review": "Read every virtual row template and MacroWindow.lua, History.lua, Recipes.lua and IconSelector.lua initializers. Name/recipe Title/history Summary inherit GameFontHighlight; macro Summary/recipe Note inherit GameFontHighlightSmall; icon row Title/Note inherit GameFontNormal/GameFontHighlightSmall; icon Label inherits NumberFontNormal. No later font setters except diff Text, replaced with MacroAssistMono and excluded. Template declarations contain no locale phrases.",
       "bindings": []
     },
     {
       "source": "UI/MacroWindow.lua",
-      "sha256": "94e7618a1060c35ce5b7b8baea562ba161873a46beff61f0b134918db37d7350",
+      "sha256": "2f3f860672a22f071fe31ed7ae9d5c92534615fce3087b5aed68112470254307",
       "review": "Pinned client b401e0332adfbf0460d319b06d8ea29279a941f1: Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml ButtonFrameTemplate inherits ButtonFrameBaseTemplate then PortraitFrameBaseTemplate, whose TitleContainer.TitleText inherits GameFontNormal. Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml SharedButtonSmallTemplate declares GameFontNormal/GameFontHighlight/GameFontDisable for normal/highlight/disabled states. Read BuildHeader, BuildExplainPanel, Build, character copy callbacks, InitializeRow, BarText, RefreshHeader, UpdateButtons and Notice caller. Explicit header name/nameEdit use GameFontNormalLarge; meta, count, empty, explanation rows and copy status use GameFontHighlightSmall; explanation title uses GameFontNormalSmall. MacroAssistRowTemplate Summary inherits GameFontHighlightSmall in MacroWindow.xml. SearchBoxTemplate inherits InputBoxInstructionsTemplate in Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml: Instructions is GameFontDisableSmall. Only colour changes follow these assignments. Tooltips, tab tooltips, dynamic names/summaries/source buttons, explanation output and placeholder values are excluded. Copy diff and measurements use MacroAssistMono, a font-file contract excluded here. Notice goes to Editor.lua problem, explicitly GameFontHighlightSmall.",
       "bindings": [
         {
@@ -691,7 +691,7 @@
     },
     {
       "source": "UI/Editor.lua",
-      "sha256": "4e05021abb49d1402ce921de698313e751c3473384f3dbb1cb6aa4b9873394e0",
+      "sha256": "fc47f03314266fdae32a5e22a8e271e892f5c559b1a49aed835961721e0274d9",
       "review": "Read EnsureFont, EditorFontPath, Create, UpdateStatus, NowText, Notice, UpdatePopup, DrawLines and MacroWindow.lua/Shorten.lua/Recipes.lua consumers. problem/nowLabel/now/length and popup detail/tagText explicitly use GameFontHighlightSmall, shortenLabel uses GameFontNormalSmall; no later font overrides. MacroAssistMono uses bundled JetBrains Mono, or the file returned by ChatFontNormal:GetFont() for zhCN/zhTW/koKR, with editor size/spacing. This file-based font, macro text, completions labels, previews/diffs and hidden measures are excluded from FontObject phrase bindings. Dynamic diagnostic/completion/live-condition output, tooltips, numeric line numbers and placeholder values are excluded.",
       "bindings": [
         {
@@ -753,7 +753,7 @@
     },
     {
       "source": "UI/IconSelector.lua",
-      "sha256": "dbf24d2441065d901448ee3333c862dd0caf9df8938fe71ee55173f9d8e4f61d",
+      "sha256": "b19692cf1f7dc5a75450a22139a3cf4779948353b311f9596e62802c82133741",
       "review": "Read Create, InitializeRow, BuildRows, UpdateStatus, FilterText, KindLabel, SetupMenu and MacroWindow.lua callers. keep/statusText explicitly use GameFontHighlightSmall. MacroAssistIconTemplate Label inherits NumberFontNormal; MacroAssistIconRowTemplate Title/Note inherit GameFontNormal/GameFontHighlightSmall in MacroWindow.xml; no later overrides. SearchBoxTemplate inherits InputBoxInstructionsTemplate in pinned Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml (client b401e0332adfbf0460d319b06d8ea29279a941f1): Instructions inherits GameFontDisableSmall. Dropdown/menu text, tooltip text, dynamic icon/spell/item names, section notes containing helper results and placeholder values are excluded.",
       "bindings": [
         {

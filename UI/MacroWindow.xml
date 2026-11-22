@@ -1,6 +1,20 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\..\Blizzard_SharedXML\UI.xsd">
 
+	<!-- Native InsetFrameTemplate art applied directly to the host without its NineSlice child frame.
+	     The tiled marble is the native inset's background only:
+	     https://github.com/Gethe/wow-ui-source/blob/966519cf0ad2c10301ea011a88c14b25697c9687/Interface/AddOns/Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml#L389-L401 -->
+	<Frame name="MacroAssistInsetTemplate" inherits="NineSliceCodeTemplate" virtual="true">
+		<KeyValues>
+			<KeyValue key="layoutType" value="InsetFrameTemplate" type="string"/>
+		</KeyValues>
+		<Layers>
+			<Layer level="BACKGROUND" textureSubLevel="-5">
+				<Texture file="Interface\FrameGeneral\UI-Background-Marble" horizTile="true" vertTile="true" setAllPoints="true"/>
+			</Layer>
+		</Layers>
+	</Frame>
+
 	<!-- One macro in the scroll box. Rows are two lines: a 26-unit icon and the name above the summary. The selected
 	     row is a soft gold fill with a 2-unit bar on its left, not the auction house's bright row glow. -->
 	<Button name="MacroAssistRowTemplate" virtual="true" motionScriptsWhileDisabled="true">
