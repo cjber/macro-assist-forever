@@ -1338,7 +1338,9 @@ function Editor:UpdateStatus()
 	end
 	self.shorten:SetShown(self.shortenText ~= nil)
 	self.length:SetText(COLOUR_MUTED .. L["%d/%d"]:format(length, ns.MacroLimit) .. COLOUR_CLOSE)
-	self.meterFill:SetWidth(STATUS_METER_WIDTH * math.min(length, ns.MacroLimit) / ns.MacroLimit)
+	local fill = math.min(length, ns.MacroLimit) / ns.MacroLimit
+	self.meterFill:SetWidth(STATUS_METER_WIDTH * fill)
+	self.meterFill:SetTexCoord(0, fill, 1, 0) -- ColoredProgressBarMixin:SetFillPercent
 	self.meterFill:SetShown(length > 0)
 	local suffix = ""
 	if self.inCombat then

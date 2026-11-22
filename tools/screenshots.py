@@ -1061,14 +1061,14 @@ def status_bar(canvas, x, y, w, length, now, data):
     canvas.text(now_x, y, fit(canvas, now, font, mx - 8 - now_x), font, box_height=STATUS_HEIGHT)
     canvas.draw(canvas.ui.atlas("common-stat-bar-BG"), mx, y + 9, meter_w, 4)
     if length > 0:
-        canvas.draw(
-            canvas.ui.atlas("common-stat-bar-white"),
-            mx,
-            y + 9,
-            meter_w * min(length, 255) / 255,
-            4,
-            (1, 0.82, 0.2, 0.9),
-        )
+        fill_w = meter_w * min(length, 255) / 255
+        pixel_width = canvas.px(mx + meter_w) - canvas.px(mx)
+        pixel_height = canvas.px(y + 13) - canvas.px(y + 9)
+        fill_pixels = canvas.px(mx + fill_w) - canvas.px(mx)
+        atlas = canvas.ui.atlas("common-stat-bar-white")
+        fill = atlas.image.resize((pixel_width, pixel_height), Image.Resampling.LANCZOS)
+        fill = fill.crop((0, 0, fill_pixels, pixel_height))
+        canvas.draw(fill, mx, y + 9, fill_w, 4, (1, 0.82, 0.2, 0.9), flip_v=True)
     canvas.text(x + w - 10 - label_w, y, label, font, MUTED, box_height=STATUS_HEIGHT)
 
 
