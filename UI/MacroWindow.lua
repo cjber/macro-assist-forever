@@ -231,12 +231,11 @@ local ACTION_SLOTS = 180
 local Window = {}
 ns.MacroWindow = Window
 
--- The close button and the editor's Escape close the window through here: Blizzard's panel when it is shown,
--- otherwise our own frame. HideUIPanel is the client's public panel API, not a method on a Blizzard object;
--- tests/sim/macro_window_scenario.lua proves the call leaves no taint in Blizzard's panel code.
+-- Hide the visible frame directly so closing from addon code bypasses the panel manager's gamepad binding
+-- teardown (#306). MacroFrame's OnHide hook closes the overlay when the frames are paired.
 function Window.ClosePanel()
 	if MacroFrame and MacroFrame:IsShown() then
-		HideUIPanel(MacroFrame)
+		MacroFrame:Hide()
 	elseif Window.frame then
 		Window.frame:Hide()
 	end

@@ -91,9 +91,8 @@ local function Attach()
 	end
 end
 
--- The panel manager refuses an addon's ShowUIPanel and HideUIPanel in combat. Under the gamepad interface, Blizzard's
--- frame controls manager takes every panel that shows into its focus in the same call, so a show or hide an addon
--- starts taints the protected call that follows (#158). In both cases our own window opens and closes by itself.
+-- The panel manager refuses an addon's ShowUIPanel in combat. With the gamepad interface, showing a panel from
+-- addon code taints the frame controls manager (#158). In both cases our own opener uses the standalone window.
 local function PanelManagerAvailable()
 	local styles, api = Enum and Enum.InputDeviceInterfaceType, C_InputInterfaceStyle
 	local gamepad = styles ~= nil
@@ -106,8 +105,8 @@ end
 -- ShowMacroFrame is what /macro, /m, the game menu's Macros button and the chat menu all call. Our OnShow hook
 -- runs first in the call that actually opens the panel; when it did not run, the panel was already open, so this
 -- second press of the same command closes the pair. When it did run but found our window already shown, a cold
--- /macroassist left it there, so this /m press closes the pair as well. Combat and the gamepad interface refuse an
--- addon's hide, as ns.Toggle already knows, so there the pair stays open.
+-- /macroassist left it there, so this /m press closes the pair as well. In combat or the gamepad interface,
+-- leave the panel opened by Blizzard in place.
 local function AfterShowMacroFrame()
 	if panelJustShowed then
 		panelJustShowed = false
@@ -133,11 +132,6 @@ function ns.Toggle()
 	local panelShown = panel ~= nil and panel:IsShown()
 	local windowShown = window ~= nil and window:IsShown()
 	if panelShown or windowShown then
-		-- The panel manager refuses an addon's hide in combat or under the gamepad interface, so a pair opened
-		-- before then stays together until it can close.
-		if panelShown and not PanelManagerAvailable() then
-			return
-		end
 		ns.MacroWindow.ClosePanel()
 	elseif panel and PanelManagerAvailable() and ShowMacroFrame then
 		ShowMacroFrame()
