@@ -3,6 +3,12 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.14] - 2026-11-24
+
+### Fixed
+
+- Closing the macro window no longer blocks the game's controller interactions.
+
 ## [0.8.13] - 2026-11-24
 
 ### Changed
