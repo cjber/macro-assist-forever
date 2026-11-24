@@ -1,20 +1,25 @@
-local function runClose(hasPanel, panelShown)
-	local windowHidden, panelHidden = false, false
+local function runClose(panelShown, gamepadUI, combat)
+	local closeCalls, windowHidden = 0, false
+	local panel = {
+		IsShown = function()
+			return panelShown
+		end,
+	}
 	local env = setmetatable({
-		HideUIPanel = function()
-			error("closing the macro window must bypass HideUIPanel")
+		MacroFrame = panel,
+		InputUtil = {
+			IsGamepadUIEnabled = function()
+				return gamepadUI
+			end,
+		},
+		InCombatLockdown = function()
+			return combat
+		end,
+		HideUIPanel = function(frame)
+			assert(frame == panel, "the panel manager should close the Blizzard frame")
+			closeCalls = closeCalls + 1
 		end,
 	}, { __index = _G })
-	if hasPanel then
-		env.MacroFrame = {
-			IsShown = function()
-				return panelShown
-			end,
-			Hide = function()
-				panelHidden = true
-			end,
-		}
-	end
 
 	local ns = {}
 	setfenv(assert(loadfile("UI/MacroWindow.lua")), env)("MacroAssistForever", ns)
@@ -25,12 +30,14 @@ local function runClose(hasPanel, panelShown)
 	}
 
 	ns.MacroWindow.ClosePanel()
-	assert(panelHidden == panelShown, "a visible Blizzard macro panel should close through its frame")
-	assert(windowHidden ~= panelShown, "the standalone overlay should close when Blizzard's panel is absent or hidden")
+	local canClosePanel = panelShown and not gamepadUI and not combat
+	assert(closeCalls == (canClosePanel and 1 or 0), "only an unmanaged visible panel should use HideUIPanel")
+	assert(windowHidden ~= panelShown, "the standalone overlay should close directly")
 end
 
-runClose(true, true)
-runClose(true, false)
-runClose(false, false)
+runClose(true, true, false)
+runClose(true, false, true)
+runClose(true, false, false)
+runClose(false, true, true)
 
 print("macro_window_close_spec: ok")

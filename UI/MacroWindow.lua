@@ -231,11 +231,16 @@ local ACTION_SLOTS = 180
 local Window = {}
 ns.MacroWindow = Window
 
--- Hide the visible frame directly so closing from addon code bypasses the panel manager's gamepad binding
--- teardown (#306). MacroFrame's OnHide hook closes the overlay when the frames are paired.
+-- Use the same gamepad UI check as FrameControlsManager, where panel hides remove the binding set.
+function Window.CanManagePanel()
+	return not InCombatLockdown() and not InputUtil.IsGamepadUIEnabled()
+end
+
 function Window.ClosePanel()
 	if MacroFrame and MacroFrame:IsShown() then
-		MacroFrame:Hide()
+		if Window.CanManagePanel() then
+			HideUIPanel(MacroFrame)
+		end
 	elseif Window.frame then
 		Window.frame:Hide()
 	end
@@ -977,8 +982,8 @@ function Window.Create()
 	return Window
 end
 
--- Once Blizzard_MacroUI loads, sit above MacroFrame, over it unless the player moved the window. Engine calls only:
--- points, strata and level.
+-- While paired, put Blizzard's close button over ours without changing its parent or click handler.
+-- A player click reaches the panel manager in Blizzard's context, so it can remove gamepad bindings immediately.
 function Window.AttachToMacroFrame()
 	local frame = Window.frame
 	if not frame or not MacroFrame then
@@ -987,6 +992,12 @@ function Window.AttachToMacroFrame()
 	Place(frame)
 	frame:SetFrameStrata("HIGH")
 	frame:SetFrameLevel(MacroFrame:GetFrameLevel() + 10)
+	local close = MacroFrame.CloseButton
+	close:ClearAllPoints()
+	close:SetPoint("CENTER", frame.CloseButton, "CENTER")
+	close:SetIgnoreParentAlpha(true)
+	close:SetFrameStrata(frame:GetFrameStrata())
+	close:SetFrameLevel(frame.CloseButton:GetFrameLevel() + 1)
 end
 
 -- The character tab is the player's own portrait, drawn by the client into the tab's square icon; UNIT_PORTRAIT_UPDATE
