@@ -26,7 +26,7 @@ read_globals = {
 	-- The current group, read for name completion.
 	"GetNumGroupMembers", "IsInRaid",
 	-- The slash command, the addon compartment and the gamepad input style.
-	"C_InputInterfaceStyle", "ShowMacroFrame",
+	"InputUtil", "ShowMacroFrame",
 	"SLASH_MACROASSISTFOREVER1", "SLASH_MACROASSISTFOREVER2",
 	"SLASH_USE1", "SLASH_EQUIP1", "SLASH_CAST1",
 	-- ForeverCore, the addon this one requires.

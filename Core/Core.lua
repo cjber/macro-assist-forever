@@ -74,51 +74,44 @@ local function Attach()
 			windowWasShown = window ~= nil and window:IsShown()
 			panelJustShowed = true
 			frame:SetAlpha(0)
+			window.CloseButton:Hide()
 			window:Show()
 		end)
 		MacroFrame:HookScript("OnHide", function(frame)
 			panelJustShowed = false
 			windowWasShown = false
-			if ns.MacroWindow.frame then
-				ns.MacroWindow.frame:Hide()
+			local window = ns.MacroWindow.frame
+			if window then
+				window:Hide()
+				window.CloseButton:Show()
 			end
 			frame:SetAlpha(1)
 		end)
 	end
 	if MacroFrame:IsShown() then
 		MacroFrame:SetAlpha(0)
-		ns.MacroWindow.frame:Show()
+		local window = ns.MacroWindow.frame
+		window.CloseButton:Hide()
+		window:Show()
 	end
-end
-
--- The panel manager refuses an addon's ShowUIPanel and HideUIPanel in combat. Under the gamepad interface, Blizzard's
--- frame controls manager takes every panel that shows into its focus in the same call, so a show or hide an addon
--- starts taints the protected call that follows (#158). In both cases our own window opens and closes by itself.
-local function PanelManagerAvailable()
-	local styles, api = Enum and Enum.InputDeviceInterfaceType, C_InputInterfaceStyle
-	local gamepad = styles ~= nil
-		and api ~= nil
-		and api.GetCurrentStyle ~= nil
-		and api.GetCurrentStyle() == styles.Gamepad
-	return not InCombatLockdown() and not gamepad
 end
 
 -- ShowMacroFrame is what /macro, /m, the game menu's Macros button and the chat menu all call. Our OnShow hook
 -- runs first in the call that actually opens the panel; when it did not run, the panel was already open, so this
 -- second press of the same command closes the pair. When it did run but found our window already shown, a cold
--- /macroassist left it there, so this /m press closes the pair as well. Combat and the gamepad interface refuse an
--- addon's hide, as ns.Toggle already knows, so there the pair stays open.
+-- /macroassist left it there, so this /m press closes the pair as well. In combat or the gamepad interface,
+-- leave the panel opened by Blizzard in place.
 local function AfterShowMacroFrame()
 	if panelJustShowed then
 		panelJustShowed = false
 		local foundOpen = windowWasShown
 		windowWasShown = false
-		if foundOpen and PanelManagerAvailable() then
+		if foundOpen then
 			ns.MacroWindow.ClosePanel()
 		end
 		return
 	end
-	if MacroFrame and MacroFrame:IsShown() and PanelManagerAvailable() then
+	if MacroFrame and MacroFrame:IsShown() then
 		ns.MacroWindow.ClosePanel()
 	end
 end
@@ -126,20 +119,15 @@ end
 -- Every way in (/macroassist and the addon compartment) toggles the same window. ShowMacroFrame is called only
 -- once Blizzard_MacroUI is loaded and the panel manager can take it: that is the function Blizzard's own /macro
 -- handler calls (Blizzard_ChatFrameBase/Shared/SlashCommands.lua), so Blizzard's panel sits at alpha 0 underneath.
--- Every other case opens or closes our own window by itself, and nothing here loads Blizzard_MacroUI.
+-- Otherwise open the standalone window. ClosePanel handles both modes, and nothing here loads Blizzard_MacroUI.
 function ns.Toggle()
 	local panel = MacroFrame
 	local window = ns.MacroWindow.frame
 	local panelShown = panel ~= nil and panel:IsShown()
 	local windowShown = window ~= nil and window:IsShown()
 	if panelShown or windowShown then
-		-- The panel manager refuses an addon's hide in combat or under the gamepad interface, so a pair opened
-		-- before then stays together until it can close.
-		if panelShown and not PanelManagerAvailable() then
-			return
-		end
 		ns.MacroWindow.ClosePanel()
-	elseif panel and PanelManagerAvailable() and ShowMacroFrame then
+	elseif panel and ns.MacroWindow.CanManagePanel() and ShowMacroFrame then
 		ShowMacroFrame()
 	else
 		ns.MacroWindow.Create()

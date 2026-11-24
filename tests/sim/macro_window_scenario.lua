@@ -55,6 +55,17 @@ local function panelClosed(sim)
 	return sim.G.MacroFrame ~= nil and not sim.G.MacroFrame:IsShown() and (window == nil or not window:IsShown())
 end
 
+local function clickWindowClose(sim, window)
+	local panel = sim.G.MacroFrame
+	local button = panel and panel:IsShown() and panel.CloseButton or window.CloseButton
+	if button ~= window.CloseButton then
+		equal(select(2, button:GetPoint(1)), window.CloseButton, "Blizzard's close button overlays ours")
+		check(not window.CloseButton:IsShown(), "the paired window still has an addon-owned close button")
+	end
+	check(button:IsVisible(), "the active close button is hidden")
+	sim:click(button)
+end
+
 local function open(sim)
 	pressMacroCommand(sim)
 	local window = sim.G[PLAYER]
@@ -734,7 +745,7 @@ scenario("copy controls wait for a source, stop in combat, and reset when reopen
 	check(keep:IsEnabled() and replace:IsEnabled(), "copy actions did not come back after combat")
 
 	-- Closing the window hides the child panel with it; reopening starts from no selection, not the old status.
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 	check(not panel:IsShown(), "the copy panel stayed shown with the window closed")
 	local reopened = open(sim)
@@ -936,7 +947,7 @@ scenario("the search box filters the list by name and summary", function(sim)
 	sim:advance(0.1)
 	equal(window:GetWidth(), width, "switching tabs changed the window width")
 	equal(window:GetHeight(), height, "switching tabs changed the window height")
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 end)
 
@@ -968,7 +979,7 @@ scenario("the caret is one measured line, follows the cursor and shows only whil
 		editor:ClearFocus()
 	end)
 	check(not editor.caret:IsShown(), "the caret stayed after the editor lost focus")
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 end)
 
@@ -1462,7 +1473,7 @@ scenario("Save, Cancel, New, Rename and Delete", function(sim)
 	check(textOf(window) == "/cast Wing Clip", "Cancel did not revert the editor")
 
 	setText(sim, window, "/cast Hide Save", true)
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 	check(select(3, sim.G.GetMacroInfo(121)) == "/cast Hide Save", "hiding the window did not save the edit")
 	window = open(sim)
@@ -1789,7 +1800,7 @@ scenario("every identity surface shows the TOC's X-Forever-Icon", function(sim)
 	equal(window.history.PortraitContainer.portrait:GetTexture(), icon, "the History portrait is not the addon icon")
 	sim:click(window.history.CloseButton)
 	sim:advance(0.1)
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 end)
 
@@ -1953,7 +1964,7 @@ end)
 
 scenario("closing by our X and the editor's Escape, and reopening", function(sim)
 	local window = openNamed(sim)
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 	check(not window:IsShown(), "our close button did not hide our window")
 	check(not sim.G.MacroFrame:IsShown(), "our close button did not close Blizzard's MacroFrame")
@@ -2019,6 +2030,17 @@ scenario("the gamepad interface walks the window on and off", function(sim)
 	sim:login()
 	sim:setGamepad(true)
 	local window = open(sim)
+	local manager = sim.G.GamepadMode.FrameControlsManager
+	local panel = sim.G.MacroFrame
+	local function tracksMacroFrame()
+		for _, frame in ipairs(manager.shownFrames) do
+			if frame == panel then
+				return true
+			end
+		end
+		return false
+	end
+	check(tracksMacroFrame(), "the gamepad manager did not register MacroFrame")
 	sim:gamepadNavigate()
 	characterTab(sim, window)
 	sim:gamepadNavigate()
@@ -2028,9 +2050,14 @@ scenario("the gamepad interface walks the window on and off", function(sim)
 	sim:click(window.newButton)
 	sim:advance(0.2)
 	sim:click(window.header.rename)
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
-	check(not sim.G.MacroFrame:IsShown(), "the gamepad path did not close the panel")
+	check(panelClosed(sim), "the gamepad close button did not close both frames")
+	check(not tracksMacroFrame(), "the gamepad manager retained the closed MacroFrame")
+	check(manager.focusedFrame ~= panel, "the gamepad manager still focuses the closed MacroFrame")
+	sim:gamepadNavigate()
+	sim:bindingSetChange()
+	sim:expectNoGamepadTaint(ADDON)
 	window = open(sim)
 	sim:gamepadNavigate()
 	sim:expectNoGamepadTaint(ADDON)
@@ -2038,7 +2065,7 @@ scenario("the gamepad interface walks the window on and off", function(sim)
 	sim:click(window.Tabs[1])
 	sim:advance(0.1)
 	check(selectedRow(window).Name:GetText() == "General One", "the mouse path stopped working after the gamepad")
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 end)
 
@@ -2059,13 +2086,13 @@ scenario("the window moves off the Spellbook and opens where it was dropped", fu
 	check(type(position) == "table", "the dropped place was not saved")
 	equal(position.x, 500, "the saved left edge")
 	equal(position.y, -200, "the saved top edge")
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 	window = open(sim)
 	local x, y = select(4, window:GetPoint(1))
 	equal(x, 500, "reopening keeps the dropped left edge")
 	equal(y, -200, "reopening keeps the dropped top edge")
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 end)
 
@@ -2079,7 +2106,7 @@ scenario("a saved window place is used after a reload", function(sim)
 	equal(relativePoint, "TOPLEFT", "the window's anchor on UIParent")
 	equal(x, 420, "the saved left edge after a reload")
 	equal(y, -150, "the saved top edge after a reload")
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 end)
 
@@ -2091,7 +2118,7 @@ scenario("an old saved file still opens the window", function(sim)
 	check(window:IsShown(), "the window did not open from the old save file")
 	characterTab(sim, window)
 	check(#rows(window) == 5, "the old save file broke the character list")
-	sim:click(window.CloseButton)
+	clickWindowClose(sim, window)
 	sim:advance(0.2)
 end)
 
@@ -2151,8 +2178,7 @@ scenario("/macroassist and the addon compartment toggle the window in combat and
 	sim:advance(0.2)
 	check(isClosed(), "Escape's CloseAllWindows path did not close the pair")
 
-	-- The gamepad interface cannot take a Blizzard panel from addon code without tainting its frame controls, so
-	-- each way in opens and closes our own window instead, and the game's own macro path still opens the panel.
+	-- /macroassist opens the standalone window under the gamepad UI. Blizzard can still open its paired panel.
 	sim:setGamepad(true)
 	sim:slash("/macroassist")
 	check(isWindowShown(), "/macroassist did not open our window with the gamepad")
@@ -2163,6 +2189,11 @@ scenario("/macroassist and the addon compartment toggle the window in combat and
 	end)
 	sim:advance(0.2)
 	check(isOpen(), "the game's own macro path did not open Blizzard's panel")
+	sim:slash("/macroassist")
+	check(isOpen(), "/macroassist closed a gamepad-managed panel")
+	local editor = sim.G[PLAYER].editor.edit
+	editor:GetScript("OnEscapePressed")(editor)
+	check(isOpen(), "the editor closed a gamepad-managed panel")
 	sim:gamepadNavigate()
 	sim:input(function()
 		sim.G.CloseAllWindows()
@@ -2196,7 +2227,7 @@ scenario("/macroassist and the addon compartment toggle the window in combat and
 	sim:advance(0.2)
 	check(isClosed(), "the addon compartment did not close the macro window")
 
-	-- Combat: the panel manager refuses addon calls, so our own window opens and closes by itself as well.
+	-- With no paired panel, combat still allows the standalone window to open and close.
 	sim:enterCombat()
 	sim:slash("/macroassist")
 	check(isWindowShown(), "/macroassist did not open our window in combat")
