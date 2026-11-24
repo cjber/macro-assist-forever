@@ -3,6 +3,13 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.13] - 2026-11-24
+
+### Changed
+
+- Use the game’s inset frames for the editor, suggestions and icon picker, and its progress bar art for the character count.
+- Ships with the same shared code as your other Forever addons, so they keep working together.
+
 ## [0.8.12] - 2026-11-22
 
 <!-- forever-core-sync -->
