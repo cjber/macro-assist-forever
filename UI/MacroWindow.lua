@@ -239,7 +239,9 @@ end
 function Window.ClosePanel()
 	if MacroFrame and MacroFrame:IsShown() then
 		if Window.CanManagePanel() then
-			HideUIPanel(MacroFrame)
+			-- A plain Hide runs MacroFrame's own OnHide, so the panel manager stops tracking it and our overlay
+			-- closes, without HideUIPanel's binding-set teardown reaching the protected gamepad call from us.
+			MacroFrame:Hide()
 		end
 	elseif Window.frame then
 		Window.frame:Hide()
