@@ -54,13 +54,6 @@ ns.DEFAULTS = {
 }
 
 local attached = false
--- True when the MacroFrame OnShow hook has just run inside the ShowMacroFrame call that is still on the stack.
--- The post-hook reads it to tell "this call opened the panel" from "the panel was already open", then clears it.
-local panelJustShowed = false
--- True when the OnShow hook found our own window already shown, as a cold /macroassist leaves it. The post-hook
--- then closes the pair, because that /m press found the window open.
-local windowWasShown = false
-
 local function Attach()
 	if not MacroFrame then
 		return
@@ -71,15 +64,11 @@ local function Attach()
 		attached = true
 		MacroFrame:HookScript("OnShow", function(frame)
 			local window = ns.MacroWindow.frame
-			windowWasShown = window ~= nil and window:IsShown()
-			panelJustShowed = true
 			frame:SetAlpha(0)
 			window.CloseButton:Hide()
 			window:Show()
 		end)
 		MacroFrame:HookScript("OnHide", function(frame)
-			panelJustShowed = false
-			windowWasShown = false
 			local window = ns.MacroWindow.frame
 			if window then
 				window:Hide()
@@ -96,30 +85,12 @@ local function Attach()
 	end
 end
 
--- ShowMacroFrame is what /macro, /m, the game menu's Macros button and the chat menu all call. Our OnShow hook
--- runs first in the call that actually opens the panel; when it did not run, the panel was already open, so this
--- second press of the same command closes the pair. When it did run but found our window already shown, a cold
--- /macroassist left it there, so this /m press closes the pair as well. In combat or the gamepad interface,
--- leave the panel opened by Blizzard in place.
-local function AfterShowMacroFrame()
-	if panelJustShowed then
-		panelJustShowed = false
-		local foundOpen = windowWasShown
-		windowWasShown = false
-		if foundOpen then
-			ns.MacroWindow.ClosePanel()
-		end
-		return
-	end
-	if MacroFrame and MacroFrame:IsShown() then
-		ns.MacroWindow.ClosePanel()
-	end
-end
-
--- Every way in (/macroassist and the addon compartment) toggles the same window. ShowMacroFrame is called only
--- once Blizzard_MacroUI is loaded and the panel manager can take it: that is the function Blizzard's own /macro
--- handler calls (Blizzard_ChatFrameBase/Shared/SlashCommands.lua), so Blizzard's panel sits at alpha 0 underneath.
--- Otherwise open the standalone window. ClosePanel handles both modes, and nothing here loads Blizzard_MacroUI.
+-- Every way in (/macroassist and the addon compartment) opens the same window and closes it again only while it
+-- stands alone. ShowMacroFrame is called only once Blizzard_MacroUI is loaded and the panel manager can take it: that
+-- is the function Blizzard's own /macro handler calls (Blizzard_ChatFrameBase/Shared/SlashCommands.lua), so
+-- Blizzard's panel sits at alpha 0 underneath. A paired panel is left open here, because hiding it from addon code
+-- would run the panel manager under our taint; the player closes it with the X or Escape. Otherwise open the
+-- standalone window. Nothing here loads Blizzard_MacroUI.
 function ns.Toggle()
 	local panel = MacroFrame
 	local window = ns.MacroWindow.frame
@@ -160,7 +131,6 @@ addon:SetScript("OnEvent", function(_, event, name)
 		end
 		ns.History.Initialize(MacroAssistForeverDB)
 		-- Blizzard_MacroUI_Bootstrap.lua defines ShowMacroFrame at startup, before the load-on-demand UI itself.
-		hooksecurefunc("ShowMacroFrame", AfterShowMacroFrame)
 		Attach() -- Blizzard_MacroUI may already be loaded by another addon
 		-- The journal and the log are ForeverCore's, kept under `errors` and `log` in this table, the same keys the
 		-- vendored files used, so a /reload keeps earlier sessions' errors.
