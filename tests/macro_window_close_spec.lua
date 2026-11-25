@@ -1,5 +1,5 @@
 local function runClose(panelShown, gamepadUI, combat)
-	local closeCalls, windowHidden = 0, false
+	local windowHidden = false
 	local panel = {
 		IsShown = function()
 			return panelShown
@@ -15,9 +15,8 @@ local function runClose(panelShown, gamepadUI, combat)
 		InCombatLockdown = function()
 			return combat
 		end,
-		HideUIPanel = function(frame)
-			assert(frame == panel, "the panel manager should close the Blizzard frame")
-			closeCalls = closeCalls + 1
+		HideUIPanel = function()
+			error("ClosePanel ran the panel manager from addon code (ADDON_ACTION_FORBIDDEN under the gamepad UI)")
 		end,
 	}, { __index = _G })
 
@@ -29,10 +28,9 @@ local function runClose(panelShown, gamepadUI, combat)
 		end,
 	}
 
-	ns.MacroWindow.ClosePanel()
-	local canClosePanel = panelShown and not gamepadUI and not combat
-	assert(closeCalls == (canClosePanel and 1 or 0), "only an unmanaged visible panel should use HideUIPanel")
-	assert(windowHidden ~= panelShown, "the standalone overlay should close directly")
+	local closed = ns.MacroWindow.ClosePanel()
+	assert(closed == not panelShown, "a paired panel is left for Blizzard to close")
+	assert(windowHidden ~= panelShown, "only the standalone overlay closes directly")
 end
 
 runClose(true, true, false)

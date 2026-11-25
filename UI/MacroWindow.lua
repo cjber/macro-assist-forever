@@ -236,14 +236,20 @@ function Window.CanManagePanel()
 	return not InCombatLockdown() and not InputUtil.IsGamepadUIEnabled()
 end
 
+-- Closes the standalone window. A paired Blizzard panel is never hidden from here: HideUIPanel from addon code runs
+-- the panel manager's gamepad binding teardown under our taint (ADDON_ACTION_FORBIDDEN
+-- SetPreferredGamepadInteractTarget).
+-- The player closes the pair through Blizzard's own close button or Escape, which reach the panel manager untainted.
+-- Returns whether the window closed.
+---@return boolean
 function Window.ClosePanel()
 	if MacroFrame and MacroFrame:IsShown() then
-		if Window.CanManagePanel() then
-			HideUIPanel(MacroFrame)
-		end
-	elseif Window.frame then
+		return false
+	end
+	if Window.frame then
 		Window.frame:Hide()
 	end
+	return true
 end
 
 ---@param tab MacroAssistTab
@@ -898,7 +904,9 @@ function Window.Create()
 		Window:OpenShorten()
 	end
 	frame.editor.onEscape = function()
-		Window.ClosePanel()
+		if not Window.ClosePanel() then
+			frame.editor.edit:ClearFocus()
+		end
 	end
 	frame.picker = ns.IconPicker.Create(frame, editorSurface, frame.editor)
 	frame.picker.onPick = function(icon)
