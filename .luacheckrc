@@ -11,7 +11,7 @@ read_globals = {
 	"UIParent",
 	-- The macro window and editor.
 	"canaccessvalue", "Constants", "CreateAndInitFromMixin", "CreateDataProvider", "CreateFont",
-	"CreateMacro", "CreateScrollBoxListLinearView", "C_Container", "C_Item", "C_Spell", "C_SpellBook",
+	"CreateMacro", "CreateScrollBoxListLinearView", "C_Container", "C_Item", "C_Macro", "C_Spell", "C_SpellBook",
 	"DeleteMacro", "EditMacro",
 	"Enum", "EventRegistry", "FONT_COLOR_CODE_CLOSE", "GameFontHighlightSmall", "GameTooltip", "GetCursorPosition", "GetFlyoutInfo",
 	"GetFlyoutSlotInfo", "GetInventoryItemLink", "GetInventoryItemTexture", "GREEN_FONT_COLOR_CODE",

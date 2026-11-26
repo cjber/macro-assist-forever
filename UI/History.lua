@@ -148,14 +148,13 @@ function Panel.Create(parent)
 		local provider = CreateDataProvider() --[[@as DataProviderMixin]]
 		local rows = {}
 		local live = owner:LiveMacroNames()
-		local selectedName
+		local selectedName, currentIcon, currentBody
 		if owner.selected then
-			selectedName = GetMacroInfo(owner.selected)
+			selectedName, currentIcon, currentBody = ns.StoredMacro(owner.selected)
 		end
 		-- The newest snapshot is compared with the macro's live text; every older one with the next newer snapshot.
 		local current
 		if selectedName then
-			local _, currentIcon, currentBody = GetMacroInfo(owner.selected)
 			current = { name = selectedName, icon = currentIcon, body = currentBody or "" }
 		end
 

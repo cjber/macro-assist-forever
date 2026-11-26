@@ -1758,6 +1758,58 @@ scenario("the icon picker previews, searches and keeps a pick through Save", fun
 	sim:advance(0.1)
 end)
 
+scenario("a question mark macro keeps its stored icon through save, rename and restore", function(sim)
+	local window = openNamed(sim)
+	local original = "#showtooltip\n/castsequence Hunter's Mark, Arcane Shot"
+	sim.G.EditMacro(121, nil, 134400, original)
+	characterTab(sim, window)
+	local function stored()
+		return sim.G.C_Macro.GetSelectedMacroIcon(121)
+	end
+	check(select(2, sim.G.GetMacroInfo(121)) == world.SHOWN_ICON, "the client does not show the cast's icon")
+
+	setText(sim, window, original .. "\n/petattack", true)
+	sim:click(window.saveButton)
+	sim:advance(0.1)
+	equal(stored(), 134400, "saving the body fixed the shown icon to the macro")
+
+	-- Opening the picker and leaving it picks nothing.
+	sim:click(window.header.iconButton)
+	sim:advance(0.2)
+	sim:click(window.header.rename)
+	sim:advance(0.1)
+	check(not window.saveButton:IsEnabled(), "opening the picker alone offers a save")
+
+	sim:click(window.header.rename)
+	sim:advance(0.2)
+	typeName(sim, window, "Aimed")
+	sim:click(window.saveButton)
+	sim:advance(0.2)
+	equal(sim.G.GetMacroInfo(121), "Aimed", "the rename was not written")
+	equal(stored(), 134400, "a rename fixed the shown icon to the macro")
+
+	local snapshots = 0
+	for _, record in pairs(sim.G.MacroAssistForeverDB.history) do
+		for _, snapshot in ipairs(record.entries) do
+			snapshots = snapshots + 1
+			equal(snapshot.icon, 134400, "History kept the shown icon")
+		end
+	end
+	check(snapshots > 0, "History has no snapshot of the saves")
+
+	sim:click(window.historyButton)
+	sim:advance(0.1)
+	local entry = historyRows(window)[#historyRows(window)]
+	check(entry, "History lists no snapshot of the saves")
+	sim:click(entry)
+	sim:advance(0.1)
+	sim:click(window.history.restoreButton)
+	sim:advance(0.1)
+	equal(stored(), 134400, "Restore fixed the shown icon to the macro")
+	sim:click(window.history.CloseButton)
+	sim:advance(0.1)
+end)
+
 scenario("history keeps a snapshot before a save and restores it", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)

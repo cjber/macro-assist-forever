@@ -1,7 +1,7 @@
 -- The client's macro store and spellbook, which the simulator does not boot itself: the globals Blizzard_MacroUI and
 -- this addon call, and a small spellbook with rank subtexts and a flyout so completion and checks have real data.
 
-local M = {}
+local M = { SHOWN_ICON = 135812 }
 
 local ICONS = {
 	"INV_Misc_QuestionMark",
@@ -52,16 +52,30 @@ function M.install(sim)
 	G.GetNumMacros = function()
 		return #account, #character
 	end
-	G.GetMacroInfo = function(index)
+	local function stored(index)
 		local isCharacter = index > maxAccount
-		local info = list(isCharacter)[index - base(isCharacter)]
+		return list(isCharacter)[index - base(isCharacter)]
+	end
+	local function path(icon)
+		if type(icon) == "string" and not icon:find("[\\/]") then
+			return "Interface\\Icons\\" .. icon
+		end
+		return icon
+	end
+	-- GetMacroInfo reports the icon shown: a question mark macro that casts something wears that action's icon, and
+	-- only C_Macro.GetSelectedMacroIcon still says question mark.
+	G.GetMacroInfo = function(index)
+		local info = stored(index)
 		if info then
-			local icon = info.icon
-			if type(icon) == "string" and not icon:find("[\\/]") then
-				icon = "Interface\\Icons\\" .. icon
-			end
+			local question = info.icon == 134400 or info.icon == "INV_Misc_QuestionMark"
+			local icon = question and info.body:find("/cast", 1, true) and M.SHOWN_ICON or path(info.icon)
 			return info.name, icon, info.body
 		end
+	end
+	G.C_Macro = G.C_Macro or {}
+	G.C_Macro.GetSelectedMacroIcon = function(index)
+		local info = stored(index)
+		return info and path(info.icon)
 	end
 	-- The client keeps each macro list in name order: EditMacro's return is "the new index ... as they are sorted
 	-- alphabetically", and CreateMacro returns the index the client's own picker selects. Inserting by name here is

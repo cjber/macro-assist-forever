@@ -3,6 +3,12 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.19] - 2026-11-26
+
+### Fixed
+
+- Saving, renaming, copying or restoring a macro with the question mark icon keeps the question mark, so the icon still follows what the macro casts. A macro already stuck on one icon goes back when you pick the question mark for it again. Thanks to user_2ah7snz09jll7yv5 for the report.
+
 ## [0.8.18] - 2026-11-26
 
 <!-- forever-core-sync -->

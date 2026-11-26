@@ -16,6 +16,7 @@ local function load(path)
 	chunk("MacroAssistForever", ns)
 end
 load("Locales/enUS.lua")
+load("Core/CharacterMacros.lua")
 load("UI/MacroWindow.lua")
 
 local Window = assert(ns.MacroWindow, "the macro window is not published")
@@ -23,20 +24,26 @@ local macros = {
 	[121] = { name = "Last", icon = 134400, body = "/cast Arcane Shot" },
 }
 local drafts = { [121] = "/cast Wings Clip" }
-local snapshots = 0
+local snapshots = {}
 ns.History = {
-	Snapshot = function()
-		snapshots = snapshots + 1
+	Snapshot = function(_, macro)
+		snapshots[#snapshots + 1] = macro
 	end,
 }
 
 _G.MacroAssistForeverDB = {}
+-- The client shows a question mark macro with its cast's icon; only the selected icon is the stored one.
 _G.GetMacroInfo = function(index)
 	local macro = macros[index]
 	if macro then
-		return macro.name, macro.icon, macro.body
+		return macro.name, 132218, macro.body
 	end
 end
+_G.C_Macro = {
+	GetSelectedMacroIcon = function(index)
+		return macros[index] and macros[index].icon
+	end,
+}
 _G.InCombatLockdown = function()
 	return false
 end
@@ -74,7 +81,8 @@ equal(window.selected, nil, "Delete left a selection after the tab emptied")
 equal(drafts[121], nil, "Delete left the deleted macro's draft")
 equal(window.desiredPosition, 1, "Delete did not keep the deleted position for the list")
 equal(window.deleteArmed, false, "Delete stayed armed")
-equal(snapshots, 1, "Delete did not snapshot the macro before removing it")
+equal(#snapshots, 1, "Delete did not snapshot the macro before removing it")
+equal(snapshots[1].icon, 134400, "Delete kept the shown icon instead of the stored one")
 yes(next(drafts) == nil, "a draft survived the delete")
 
 print(("delete: %d checks"):format(checks))
