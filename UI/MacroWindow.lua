@@ -1304,7 +1304,7 @@ function Window:WriteMacro(index, name, icon, body)
 		end
 		return false
 	end
-	local oldName, oldIcon, oldBody = GetMacroInfo(index)
+	local oldName, oldIcon, oldBody = ns.StoredMacro(index)
 	local snapshot
 	local previousRecord
 	if oldName then
@@ -1378,7 +1378,7 @@ function Window:WriteDelete(index)
 	if InCombatLockdown() then
 		return false
 	end
-	local name, icon, body = GetMacroInfo(index)
+	local name, icon, body = ns.StoredMacro(index)
 	if name then
 		ns.History.Snapshot(MacroAssistForeverDB, {
 			name = name,
@@ -1399,10 +1399,10 @@ function Window:SaveCurrent()
 	if not self.dirty and not pending then
 		return true
 	end
-	local name, icon, body = GetMacroInfo(self.selected)
+	local name, icon, body = ns.StoredMacro(self.selected)
 	if pending then
 		name = self:PendingName() or name
-		icon = self.pendingIcon
+		icon = self.pendingIcon or icon
 	end
 	local ok, actual = self:WriteMacro(self.selected, name, icon, self.dirty and self.frame.editor:GetText() or body)
 	if not ok then
@@ -1579,7 +1579,7 @@ function Window:HasPending()
 	if not self.selected then
 		return false
 	end
-	local name, icon = GetMacroInfo(self.selected)
+	local name, icon = ns.StoredMacro(self.selected)
 	if name and self:PendingName() and self:PendingName() ~= name then
 		return true
 	end
@@ -1613,7 +1613,7 @@ function Window:OpenPicker(focusName)
 	if not self.selected or InCombatLockdown() then
 		return
 	end
-	local name, icon = GetMacroInfo(self.selected)
+	local name, icon = ns.StoredMacro(self.selected)
 	if not name then
 		return
 	end
@@ -1621,12 +1621,9 @@ function Window:OpenPicker(focusName)
 	if self.pendingName == nil then
 		self.pendingName = name
 	end
-	if self.pendingIcon == nil then
-		self.pendingIcon = icon
-	end
 	self.picking = true
 	local className = UnitClass("player")
-	self.frame.picker:Open(self.pendingIcon, self.frame.editor:GetText(), className)
+	self.frame.picker:Open(self.pendingIcon or icon, self.frame.editor:GetText(), className)
 	self.frame.editorSurface:Hide()
 	-- The picker has its own status strip over the same row; the editor's text and counter would show through it.
 	self.frame.statusBar:Hide()

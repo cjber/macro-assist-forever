@@ -49,11 +49,18 @@ _G.GetMacroInfo = function(index)
 		return "Character", 2, "/say Character"
 	end
 end
+-- The stored icon differs from the shown one for a question mark macro; a copy must carry the stored one.
+_G.C_Macro = {
+	GetSelectedMacroIcon = function(index)
+		return index == 121 and 134400 or 1
+	end,
+}
 local current = C.CaptureCurrent(db)
 assert(current == "Barry-Azeroth", "a named realm's key changed")
 assert(#db.characters[current].general == 1, "capture keeps account macros")
 assert(#db.characters[current].character == 1, "capture reads the separate character slot range")
 assert(db.characters[current].character[1].body == "/say Character", "capture preserves character macro bodies")
+assert(db.characters[current].character[1].icon == 134400, "capture kept the shown icon instead of the stored one")
 local entries = C.Macros(db, current)
 assert(
 	#entries == 2 and entries[1].scope == "general" and entries[2].scope == "character",

@@ -13,6 +13,20 @@ function Characters.Key(name, realm)
 	return key(name, realm)
 end
 
+-- A macro as the client stores it, for every read that is written back or kept. GetMacroInfo's icon is the one shown,
+-- which for the question mark icon follows the spell the macro would cast; writing that back fixes the icon to it.
+---@param index integer
+---@return string? name
+---@return any icon
+---@return string? body
+function ns.StoredMacro(index)
+	local name, _, body = GetMacroInfo(index)
+	if not name then
+		return nil
+	end
+	return name, C_Macro.GetSelectedMacroIcon(index), body
+end
+
 -- `id` is the snapshot's key, "Name-Realm" when not given.
 function Characters.Capture(db, name, realm, general, character, id)
 	db.characters = db.characters or {}
@@ -42,7 +56,7 @@ function Characters.CaptureCurrent(db)
 	local accountLimit = constants and constants.MAX_ACCOUNT_MACROS or 120
 	local function capture(first, last, target)
 		for index = first, last do
-			local macroName, icon, body = GetMacroInfo(index)
+			local macroName, icon, body = ns.StoredMacro(index)
 			if macroName then
 				target[#target + 1] = { name = macroName, icon = icon, body = body or "" }
 			end
