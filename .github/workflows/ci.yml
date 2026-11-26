@@ -47,7 +47,7 @@ jobs:
           persist-credentials: false
       # Every tool version below lives in this checkout's tools/toolchain.json, which the action reads and installs
       # and verifies each pin from.
-      - uses: cjber/forever-core/.github/actions/toolchain@2596f68e68f9a727496a19f3f801c8a7039357d2 # main
+      - uses: cjber/forever-core/.github/actions/toolchain@008cd360f0b5972f6b30e0c6a7bd4eed7d299345 # main
         id: toolchain
         with:
           tools: lua stylua
@@ -102,7 +102,7 @@ jobs:
           path: forever-core
           persist-credentials: false
       # LuaLS's pin lives in this checkout's tools/toolchain.json, which the action installs and verifies.
-      - uses: cjber/forever-core/.github/actions/toolchain@2596f68e68f9a727496a19f3f801c8a7039357d2 # main
+      - uses: cjber/forever-core/.github/actions/toolchain@008cd360f0b5972f6b30e0c6a7bd4eed7d299345 # main
         with:
           tools: lua luals
       - run: bash tools/typecheck.sh
@@ -162,7 +162,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       # gitleaks's pin lives in this checkout's tools/toolchain.json, which the action installs and verifies.
-      - uses: cjber/forever-core/.github/actions/toolchain@2596f68e68f9a727496a19f3f801c8a7039357d2 # main
+      - uses: cjber/forever-core/.github/actions/toolchain@008cd360f0b5972f6b30e0c6a7bd4eed7d299345 # main
         with:
           tools: gitleaks
       - run: gitleaks git --redact --no-banner .
@@ -194,7 +194,7 @@ jobs:
           persist-credentials: false
       # check_package.py runs each spec over the packaged files and parses the package with the client's grammar,
       # so the job needs both LuaJIT and luac5.1 from the same pinned toolchain the other jobs use.
-      - uses: cjber/forever-core/.github/actions/toolchain@2596f68e68f9a727496a19f3f801c8a7039357d2 # main
+      - uses: cjber/forever-core/.github/actions/toolchain@008cd360f0b5972f6b30e0c6a7bd4eed7d299345 # main
         id: toolchain
         with:
           tools: lua
