@@ -25,8 +25,7 @@ read_globals = {
 	"UnitName", "UnitFullName", "GetRealmName",
 	-- The current group, read for name completion.
 	"GetNumGroupMembers", "IsInRaid",
-	-- The slash command, the addon compartment and the gamepad input style.
-	"InputUtil", "ShowMacroFrame",
+	-- The slash command and the addon compartment.
 	"SLASH_MACROASSISTFOREVER1", "SLASH_MACROASSISTFOREVER2",
 	"SLASH_USE1", "SLASH_EQUIP1", "SLASH_CAST1",
 	-- ForeverCore, the addon this one requires.

@@ -29,7 +29,8 @@ the release commit edits `CHANGELOG.md` (`python3 tools/changelog.py release X.Y
 - Lua 5.1 in the game's sandbox. Never call protected functions. Never touch Blizzard's Lua state (WFA-38).
 - Blizzard's `MacroFrame` still opens and closes through every player path. Our window, built from its frame
   templates, covers it at alpha 0 and every part inside is ours. Touch Blizzard's frame only with `HookScript` and
-  engine calls, and reach the macro store only through the global macro APIs.
+  engine calls, never open or hide it from addon code (`ShowMacroFrame` and `ShowUIPanel` run Blizzard's panel
+  manager under our taint), and reach the macro store only through the global macro APIs.
 - No idle `OnUpdate` handler or polling timer: work starts from an event or a player action. Do not save frames,
   functions, userdata or client tables.
 - Parser code in `Core/` is pure Lua with no client calls, so specs cover it without the game.

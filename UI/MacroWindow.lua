@@ -231,11 +231,6 @@ local ACTION_SLOTS = 180
 local Window = {}
 ns.MacroWindow = Window
 
--- Use the same gamepad UI check as FrameControlsManager, where panel hides remove the binding set.
-function Window.CanManagePanel()
-	return not InCombatLockdown() and not InputUtil.IsGamepadUIEnabled()
-end
-
 -- Closes the standalone window. A paired Blizzard panel is never hidden from here: HideUIPanel from addon code runs
 -- the panel manager's gamepad binding teardown under our taint (ADDON_ACTION_FORBIDDEN
 -- SetPreferredGamepadInteractTarget).
@@ -378,9 +373,10 @@ local function BuildExplainPanel(parent)
 end
 
 -- Where the window sits: the place the player last dropped it, kept in the saved variables from UIParent's TOPLEFT,
--- else over Blizzard's MacroFrame once Blizzard_MacroUI has loaded, else where the panel manager puts a left-area
--- panel. That default covers the Spellbook and Character pane, so the player can drag the window by its frame (the
--- title bar or any edge; rows and the editor keep their own drags). MacroFrame itself is never moved.
+-- else over Blizzard's MacroFrame while it is open, else where the panel manager puts a left-area panel. A loaded
+-- MacroFrame has no position until the panel manager first shows it, so a window hung from it then is off screen. The
+-- default covers the Spellbook and Character pane, so the player can drag the window by its frame (the title bar or
+-- any edge; rows and the editor keep their own drags). MacroFrame itself is never moved.
 ---@param frame Frame
 local function Place(frame)
 	local db = type(MacroAssistForeverDB) == "table" and MacroAssistForeverDB or nil
@@ -388,7 +384,7 @@ local function Place(frame)
 	frame:ClearAllPoints()
 	if saved and type(saved.x) == "number" and type(saved.y) == "number" then
 		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", saved.x, saved.y)
-	elseif MacroFrame then
+	elseif MacroFrame and MacroFrame:IsShown() then
 		frame:SetPoint("TOPLEFT", MacroFrame, "TOPLEFT", 0, 0)
 	else
 		frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", LEFT_PANEL_X, LEFT_PANEL_Y)

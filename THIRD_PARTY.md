@@ -22,7 +22,7 @@
 | Kal66 | Insert item and spell names in macros | CurseForge thread 8714679; #174 |
 | Kal66 | Reported long pasted macros running past the editor | CurseForge; #171 |
 | Pinnnnnnnnnn | Asked for raid member names in the editor | CurseForge; #153, #182 |
-| carlramrod | Closing the macro window keeps controller interactions | Discord; #306 |
+| carlramrod | Closing macros keeps controller input, and opening them keeps Edit Mode working | Discord; #306, #328 |
 
 ## Inspired by
 
