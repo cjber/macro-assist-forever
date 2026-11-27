@@ -81,7 +81,7 @@ For help, ideas and each day's release notes, join [cjber's Workshop on Discord]
 
 <!-- forever-credits:start -->
 
-Thanks to Kal66, zizhengwu, Pinnnnnnnnnn and everyone who reported a bug or asked for a feature.
+Thanks to Kal66, zizhengwu, Pinnnnnnnnnn, carlramrod and everyone who reported a bug or asked for a feature.
 
 <!-- forever-credits:end -->
 
