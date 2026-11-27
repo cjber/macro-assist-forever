@@ -66,7 +66,6 @@ local client = {
 		return { RegisterEvent = function() end, SetScript = function() end }
 	end,
 	hooksecurefunc = function() end,
-	ShowMacroFrame = function() end,
 	GetNumMacros = function()
 		return 0, 0
 	end,

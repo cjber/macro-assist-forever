@@ -50,7 +50,7 @@ These images are generated previews of the Macro Assist UI.
 
 ## Usage
 
-Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Close it with the X or Escape. General holds account macros and the character tab holds this character's macros.
+Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` and the addon compartment open the same window on its own. Close it with the X or Escape. With a controller, open it from the game menu or `/m`. General holds account macros and the character tab holds this character's macros.
 
 Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Rename, or a click on the header icon, opens the picker; Back to code returns to the editor. Recipes lists the general and class macros, with the whole macro beside the list; pick one and Import creates it. Characters copies a macro from another character into the open tab. While grouped, the completion list offers the other members' names inside a `/raid`, `/party` or other chat message, after `@` and `target=`, and as the first argument of `/invite`, `/target`, `/tell` and the other player commands. Cancel puts the editor back to the saved text, and Save writes it immediately. History lists the macro's earlier versions, and Restore puts one back. Closing also saves your text out of combat.
 

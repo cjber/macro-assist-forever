@@ -8,9 +8,9 @@ globals = { "MacroAssistForever", "MacroAssistForeverDB", "SlashCmdList" }
 read_globals = {
 	"C_AddOns", "CreateFrame", "ChatFontNormal", "GetLocale",
 	"date", "InCombatLockdown",
-	"UIParent",
+	"UIParent", "UISpecialFrames",
 	-- The macro window and editor.
-	"canaccessvalue", "Constants", "CreateAndInitFromMixin", "CreateDataProvider", "CreateFont",
+	"canaccessvalue", "Constants", "CreateDataProvider", "CreateFont",
 	"CreateMacro", "CreateScrollBoxListLinearView", "C_Container", "C_Item", "C_Macro", "C_Spell", "C_SpellBook",
 	"DeleteMacro", "EditMacro",
 	"Enum", "EventRegistry", "FONT_COLOR_CODE_CLOSE", "GameFontHighlightSmall", "GameTooltip", "GetCursorPosition", "GetFlyoutInfo",
@@ -18,15 +18,14 @@ read_globals = {
 	"GetActionInfo", "GetActionText", "GetBindingKey", "GetBindingText",
 	"GetMacroIndexByName", "GetMacroInfo", "GetServerTime",
 	"GetNumMacros", "HideUIPanel", "hooksecurefunc", "IsModifiedClick", "IsShiftKeyDown", "GetCursorInfo", "ClearCursor",
-	"IconDataProviderExtraType", "IconDataProviderMixin",
+	"GetLooseMacroIcons", "GetLooseMacroItemIcons", "GetMacroIcons", "GetMacroItemIcons",
 	"INVSLOT_FIRST_EQUIPPED", "INVSLOT_LAST_EQUIPPED", "MacroFrame",
 	"NUM_BAG_SLOTS", "NORMAL_FONT_COLOR", "BreakUpLargeNumbers",
 	"PickupMacro", "ScrollBoxConstants", "ScrollUtil", "SecureCmdOptionParse", "SetPortraitTexture", "UnitClass",
 	"UnitName", "UnitFullName", "GetRealmName",
 	-- The current group, read for name completion.
 	"GetNumGroupMembers", "IsInRaid",
-	-- The slash command, the addon compartment and the gamepad input style.
-	"InputUtil", "ShowMacroFrame",
+	-- The slash command and the addon compartment.
 	"SLASH_MACROASSISTFOREVER1", "SLASH_MACROASSISTFOREVER2",
 	"SLASH_USE1", "SLASH_EQUIP1", "SLASH_CAST1",
 	-- ForeverCore, the addon this one requires.

@@ -3,6 +3,14 @@
 All notable changes to Macro Assist Forever are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses semantic versioning.
 
+## [0.8.21] - 2026-11-27
+
+### Fixed
+
+- Opening macros with `/macroassist` or the addon compartment no longer opens Blizzard's macro panel underneath, which could make the game's own windows, such as Edit Mode with the damage meter, raise an error naming this addon. Thanks to carlramrod for the report.
+- With the controller interface on, the icon picker's filter menu no longer causes blocked-action errors naming Macro Assist Forever.
+- The icon picker reads the icon list straight from the game, so it no longer changes state that Blizzard's own icon pickers use.
+
 ## [0.8.20] - 2026-11-27
 
 <!-- forever-core-sync -->

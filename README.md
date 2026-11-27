@@ -84,7 +84,7 @@ Put the `MacroAssistForever` folder in `World of Warcraft/_forever_/Interface/Ad
 
 ## Usage
 
-Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` opens it too, and so does the addon compartment. Close it with the X or Escape. The General tab holds account macros and the character tab holds this character's macros.
+Open the macro window as you always do: `/macro`, `/m`, the game menu, or your keybind. `/macroassist` and the addon compartment open the same window on its own. Close it with the X or Escape. With a controller, open it from the game menu or `/m`. The General tab holds account macros and the character tab holds this character's macros.
 
 Click a macro to edit it, or type in the search box to narrow the list. New creates a macro and opens the icon picker with its name ready to type. Import checks pasted text and opens the same picker. Characters copies a macro from another character into the open tab. Recipes browses the general and class macros, and Import creates the one selected. Plain words such as `pet` or `heal mouseover` offer checked recipes in the completion list, which Enter turns into a whole macro. While grouped, the same list offers the other members' names inside a `/raid`, `/party` or other chat message, after `@` and `target=`, and as the first argument of `/invite`, `/target`, `/tell` and the other player commands. In chat messages, choose a name with Tab or the arrow keys before pressing Enter, or click the name. Rename opens the picker; Back to code returns to the editor. Cancel restores the saved text, Save writes immediately, and History restores an earlier version. Closing the window saves your text out of combat.
 

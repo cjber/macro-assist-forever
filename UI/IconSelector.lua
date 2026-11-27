@@ -6,7 +6,7 @@ end
 
 -- Our icon picker: a grid in the code surface's rectangle, not Blizzard's popup. Clicking the header icon or Rename
 -- swaps the editor for it. The grid is one ScrollBox of rows: a section heading then the icons that belong to it.
--- Every frame and field here is ours; the icon data comes from the client's provider, created and released per open.
+-- Every frame and field here is ours; the icon list comes from the engine, filled into our own table.
 
 local L = ns.L
 local Icons = ns.Icons
@@ -81,7 +81,7 @@ local SLOT_LABELS = {
 
 ---@class MacroAssistFilterDropdown : Button
 ---@field Text FontString
----@field SetupMenu fun(self: MacroAssistFilterDropdown, generator: function)
+---@field OpenMenu fun(self: MacroAssistFilterDropdown)
 ---@field SetText fun(self: MacroAssistFilterDropdown, text: string)
 
 ---@class MacroAssistIconRow : Frame
@@ -151,9 +151,13 @@ function Picker.Create(parent, surface, editor)
 	frame.dropdown.Text:ClearAllPoints()
 	frame.dropdown.Text:SetPoint("TOP", frame.dropdown, "TOP", 0, 1)
 	frame.dropdown.Text:SetJustifyH("CENTER")
-	frame.dropdown:SetupMenu(function(_, root)
-		frame:BuildMenu(root)
-	end)
+	-- The client's button, ForeverCore's menu: Blizzard's menu showing an addon's entries hands the controller
+	-- interface's focus its state under our taint (#330).
+	function dropdown:OpenMenu()
+		ForeverCore.ContextMenu(self, function(_, root)
+			frame:BuildMenu(root)
+		end)
+	end
 
 	local scrollBox = CreateFrame("Frame", nil, frame, "WowScrollBoxList") --[[@as MacroAssistScrollBox]]
 	scrollBox:SetPoint("TOPLEFT", frame, "TOPLEFT", PICKER_PADDING, -(PICKER_PADDING + SEARCH_HEIGHT + ROW_TOP_GAP))
@@ -300,19 +304,20 @@ function Picker.ShowTooltip(_, button)
 	GameTooltip:Show()
 end
 
--- The client's entire icon list. The provider is created and released here, so no menu is left holding its tables.
+-- The client's entire icon list, spell icons then item icons, filled by the engine into our own table. Blizzard's
+-- icon data provider is not used: it writes file state its own pickers read, under our taint (#331).
 ---@return table[]
 function Picker:AllIcons()
 	if not self.allIcons then
+		local files = {}
+		GetLooseMacroIcons(files)
+		GetMacroIcons(files)
+		GetLooseMacroItemIcons(files)
+		GetMacroItemIcons(files)
 		self.allIcons = {}
-		local provider = CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.None)
-		for index = 2, provider:GetNumIcons() do
-			local icon = provider:GetIconByIndex(index)
-			if icon ~= nil then
-				self.allIcons[#self.allIcons + 1] = { icon = icon }
-			end
+		for index, file in ipairs(files) do
+			self.allIcons[index] = { icon = tonumber(file) or ([[INTERFACE\ICONS\]] .. file) }
 		end
-		provider:Release()
 	end
 	return self.allIcons
 end

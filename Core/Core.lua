@@ -5,9 +5,9 @@ if ns.broken then
 end
 
 -- Our window builds and opens without Blizzard_MacroUI; this file never loads that addon. When Blizzard_MacroUI
--- loads, by the player's /macro, the game menu or a keybind, Attach re-anchors our window to MacroFrame and hooks its
--- show and hide. Nothing in here runs Blizzard's Lua on its frame: HookScript and the engine's own reads and alpha
--- call are the only contact, as WFA-38 allows.
+-- loads, by the player's /macro, the game menu or a keybind, Attach hooks MacroFrame's show and hide, and each show
+-- moves our window over it. Nothing in here runs Blizzard's Lua on its frame: HookScript and the engine's own reads
+-- and alpha call are the only contact, as WFA-38 allows.
 
 -- ForeverCore's report window reads these when the player opens it: the macro counts, the history kept, and whether
 -- our window has been built, which is where a macro bug usually starts. English throughout, like the report's field
@@ -53,21 +53,24 @@ ns.DEFAULTS = {
 	history = {},
 }
 
+-- Blizzard's panel is open: our window goes over it, and the panel's own X stands in for ours.
+local function Cover(frame)
+	ns.MacroWindow.AttachToMacroFrame()
+	frame:SetAlpha(0)
+	local window = ns.MacroWindow.frame
+	window.CloseButton:Hide()
+	window:Show()
+end
+
 local attached = false
 local function Attach()
 	if not MacroFrame then
 		return
 	end
 	ns.MacroWindow.Create()
-	ns.MacroWindow.AttachToMacroFrame()
 	if not attached then
 		attached = true
-		MacroFrame:HookScript("OnShow", function(frame)
-			local window = ns.MacroWindow.frame
-			frame:SetAlpha(0)
-			window.CloseButton:Hide()
-			window:Show()
-		end)
+		MacroFrame:HookScript("OnShow", Cover)
 		MacroFrame:HookScript("OnHide", function(frame)
 			local window = ns.MacroWindow.frame
 			if window then
@@ -78,28 +81,19 @@ local function Attach()
 		end)
 	end
 	if MacroFrame:IsShown() then
-		MacroFrame:SetAlpha(0)
-		local window = ns.MacroWindow.frame
-		window.CloseButton:Hide()
-		window:Show()
+		Cover(MacroFrame)
 	end
 end
 
--- Every way in (/macroassist and the addon compartment) opens the same window and closes it again only while it
--- stands alone. ShowMacroFrame is called only once Blizzard_MacroUI is loaded and the panel manager can take it: that
--- is the function Blizzard's own /macro handler calls (Blizzard_ChatFrameBase/Shared/SlashCommands.lua), so
--- Blizzard's panel sits at alpha 0 underneath. A paired panel is left open here, because hiding it from addon code
--- would run the panel manager under our taint; the player closes it with the X or Escape. Otherwise open the
--- standalone window. Nothing here loads Blizzard_MacroUI.
+-- /macroassist and the addon compartment toggle our window, and close it again only while it stands alone. Neither
+-- opens Blizzard's panel: ShowMacroFrame calls ShowUIPanel, which from addon code runs the panel manager under our
+-- taint, so Blizzard's own panels fail later and the error names this addon. /macro, /m, the game menu and the keybind
+-- open Blizzard's panel in Blizzard's own context, and our window covers it at alpha 0. A paired panel is left open
+-- here, because hiding it is the same call; the player closes it with the X or Escape.
 function ns.Toggle()
-	local panel = MacroFrame
 	local window = ns.MacroWindow.frame
-	local panelShown = panel ~= nil and panel:IsShown()
-	local windowShown = window ~= nil and window:IsShown()
-	if panelShown or windowShown then
+	if (MacroFrame and MacroFrame:IsShown()) or (window and window:IsShown()) then
 		ns.MacroWindow.ClosePanel()
-	elseif panel and ns.MacroWindow.CanManagePanel() and ShowMacroFrame then
-		ShowMacroFrame()
 	else
 		ns.MacroWindow.Create()
 		ns.MacroWindow.frame:Show()
@@ -130,7 +124,6 @@ addon:SetScript("OnEvent", function(_, event, name)
 			end
 		end
 		ns.History.Initialize(MacroAssistForeverDB)
-		-- Blizzard_MacroUI_Bootstrap.lua defines ShowMacroFrame at startup, before the load-on-demand UI itself.
 		Attach() -- Blizzard_MacroUI may already be loaded by another addon
 		-- The journal and the log are ForeverCore's, kept under `errors` and `log` in this table, the same keys the
 		-- vendored files used, so a /reload keeps earlier sessions' errors.

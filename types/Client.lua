@@ -5,6 +5,13 @@
 ---@type string[]
 UISpecialFrames = {}
 
+-- The annotations declare these two with no argument. Like GetMacroIcons, each appends file names to the table
+-- it is given, as Blizzard's IconDataProvider calls them.
+---@param files (string|number)[]
+function GetLooseMacroIcons(files) end
+---@param files (string|number)[]
+function GetLooseMacroItemIcons(files) end
+
 -- The input style API that tells us whether the gamepad interface is up.
 C_InputInterfaceStyle = nil
 

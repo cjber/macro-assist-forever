@@ -18,7 +18,6 @@ _G.CreateFrame = function(kind)
 	return frame
 end
 _G.hooksecurefunc = function() end
-_G.ShowMacroFrame = function() end
 _G.GetNumMacros = function()
 	return 2, 3
 end

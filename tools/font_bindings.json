@@ -9,7 +9,7 @@
     },
     {
       "source": "UI/MacroWindow.lua",
-      "sha256": "2f2330b7530dff4feaff24e16aa247da58627feea5145c791a93e029b8604fb6",
+      "sha256": "e2642849ce51fc881fe29d7f8ebf1f91252f10677d3f808b18533f8611564814",
       "review": "Pinned client b401e0332adfbf0460d319b06d8ea29279a941f1: Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml ButtonFrameTemplate inherits ButtonFrameBaseTemplate then PortraitFrameBaseTemplate, whose TitleContainer.TitleText inherits GameFontNormal. Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml SharedButtonSmallTemplate declares GameFontNormal/GameFontHighlight/GameFontDisable for normal/highlight/disabled states. Read BuildHeader, BuildExplainPanel, Build, character copy callbacks, InitializeRow, BarText, RefreshHeader, UpdateButtons and Notice caller. Explicit header name/nameEdit use GameFontNormalLarge; meta, count, empty, explanation rows and copy status use GameFontHighlightSmall; explanation title uses GameFontNormalSmall. MacroAssistRowTemplate Summary inherits GameFontHighlightSmall in MacroWindow.xml. SearchBoxTemplate inherits InputBoxInstructionsTemplate in Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml: Instructions is GameFontDisableSmall. Only colour changes follow these assignments. Tooltips, tab tooltips, dynamic names/summaries/source buttons, explanation output and placeholder values are excluded. Copy diff and measurements use MacroAssistMono, a font-file contract excluded here. Notice goes to Editor.lua problem, explicitly GameFontHighlightSmall.",
       "bindings": [
         {
@@ -753,8 +753,8 @@
     },
     {
       "source": "UI/IconSelector.lua",
-      "sha256": "b19692cf1f7dc5a75450a22139a3cf4779948353b311f9596e62802c82133741",
-      "review": "Read Create, InitializeRow, BuildRows, UpdateStatus, FilterText, KindLabel, SetupMenu and MacroWindow.lua callers. keep/statusText explicitly use GameFontHighlightSmall. MacroAssistIconTemplate Label inherits NumberFontNormal; MacroAssistIconRowTemplate Title/Note inherit GameFontNormal/GameFontHighlightSmall in MacroWindow.xml; no later overrides. SearchBoxTemplate inherits InputBoxInstructionsTemplate in pinned Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml (client b401e0332adfbf0460d319b06d8ea29279a941f1): Instructions inherits GameFontDisableSmall. Dropdown/menu text, tooltip text, dynamic icon/spell/item names, section notes containing helper results and placeholder values are excluded.",
+      "sha256": "a27221774d05f2c5a8bdc735ae1966635429d7264d699bd769cec5ab412df95e",
+      "review": "Read Create, InitializeRow, BuildRows, UpdateStatus, FilterText, KindLabel, OpenMenu and MacroWindow.lua callers. keep/statusText explicitly use GameFontHighlightSmall. MacroAssistIconTemplate Label inherits NumberFontNormal; MacroAssistIconRowTemplate Title/Note inherit GameFontNormal/GameFontHighlightSmall in MacroWindow.xml; no later overrides. SearchBoxTemplate inherits InputBoxInstructionsTemplate in pinned Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml (client b401e0332adfbf0460d319b06d8ea29279a941f1): Instructions inherits GameFontDisableSmall. Dropdown/menu text, tooltip text, dynamic icon/spell/item names, section notes containing helper results and placeholder values are excluded.",
       "bindings": [
         {
           "font": "GameFontDisableSmall",

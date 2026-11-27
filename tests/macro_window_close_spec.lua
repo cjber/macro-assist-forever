@@ -1,4 +1,4 @@
-local function runClose(panelShown, gamepadUI, combat)
+local function runClose(panelShown)
 	local windowHidden = false
 	local panel = {
 		IsShown = function()
@@ -7,14 +7,6 @@ local function runClose(panelShown, gamepadUI, combat)
 	}
 	local env = setmetatable({
 		MacroFrame = panel,
-		InputUtil = {
-			IsGamepadUIEnabled = function()
-				return gamepadUI
-			end,
-		},
-		InCombatLockdown = function()
-			return combat
-		end,
 		HideUIPanel = function()
 			error("ClosePanel ran the panel manager from addon code (ADDON_ACTION_FORBIDDEN under the gamepad UI)")
 		end,
@@ -33,9 +25,7 @@ local function runClose(panelShown, gamepadUI, combat)
 	assert(windowHidden ~= panelShown, "only the standalone overlay closes directly")
 end
 
-runClose(true, true, false)
-runClose(true, false, true)
-runClose(true, false, false)
-runClose(false, true, true)
+runClose(true)
+runClose(false)
 
 print("macro_window_close_spec: ok")
