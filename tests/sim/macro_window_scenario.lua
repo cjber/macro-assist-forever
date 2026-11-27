@@ -1842,6 +1842,34 @@ scenario("the picker's filter menu filters on the controller interface without b
 	sim:expectNoGamepadTaint(ADDON)
 end)
 
+scenario("the picker lists the engine's four icon lists in the client's order", function(sim)
+	world.install(sim)
+	for name, file in pairs({
+		GetLooseMacroIcons = "loose_spell",
+		GetMacroIcons = "132204",
+		GetLooseMacroItemIcons = "loose_item",
+		GetMacroItemIcons = "132208",
+	}) do
+		sim.G[name] = function(into)
+			into[#into + 1] = file
+		end
+	end
+	sim:login()
+	local window = open(sim)
+	sim:click(window.header.iconButton)
+	sim:advance(0.2)
+	local listed = {}
+	for _, entry in ipairs(window.picker:AllIcons()) do
+		listed[#listed + 1] = tostring(entry.icon)
+	end
+	equal(
+		table.concat(listed, " "),
+		[[INTERFACE\ICONS\loose_spell 132204 INTERFACE\ICONS\loose_item 132208]],
+		"the icon list is not the client's"
+	)
+	equal(type(window.picker:AllIcons()[2].icon), "number", "a numeric file name is not a file ID")
+end)
+
 scenario("history keeps a snapshot before a save and restores it", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)

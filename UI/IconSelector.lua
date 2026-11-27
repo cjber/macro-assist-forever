@@ -6,7 +6,7 @@ end
 
 -- Our icon picker: a grid in the code surface's rectangle, not Blizzard's popup. Clicking the header icon or Rename
 -- swaps the editor for it. The grid is one ScrollBox of rows: a section heading then the icons that belong to it.
--- Every frame and field here is ours; the icon data comes from the client's provider, created and released per open.
+-- Every frame and field here is ours; the icon list comes from the engine, filled into our own table.
 
 local L = ns.L
 local Icons = ns.Icons
