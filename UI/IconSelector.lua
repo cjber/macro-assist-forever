@@ -316,7 +316,7 @@ function Picker:AllIcons()
 		GetMacroItemIcons(files)
 		self.allIcons = {}
 		for index, file in ipairs(files) do
-			self.allIcons[index] = { icon = tonumber(file) or [[INTERFACE\ICONS\]] .. file }
+			self.allIcons[index] = { icon = tonumber(file) or ([[INTERFACE\ICONS\]] .. file) }
 		end
 	end
 	return self.allIcons

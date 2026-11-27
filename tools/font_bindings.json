@@ -753,7 +753,7 @@
     },
     {
       "source": "UI/IconSelector.lua",
-      "sha256": "d36698dcf2621264aa0d0d6a053f66878867b26cd99f356c83599b27d80f57d9",
+      "sha256": "a27221774d05f2c5a8bdc735ae1966635429d7264d699bd769cec5ab412df95e",
       "review": "Read Create, InitializeRow, BuildRows, UpdateStatus, FilterText, KindLabel, OpenMenu and MacroWindow.lua callers. keep/statusText explicitly use GameFontHighlightSmall. MacroAssistIconTemplate Label inherits NumberFontNormal; MacroAssistIconRowTemplate Title/Note inherit GameFontNormal/GameFontHighlightSmall in MacroWindow.xml; no later overrides. SearchBoxTemplate inherits InputBoxInstructionsTemplate in pinned Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml (client b401e0332adfbf0460d319b06d8ea29279a941f1): Instructions inherits GameFontDisableSmall. Dropdown/menu text, tooltip text, dynamic icon/spell/item names, section notes containing helper results and placeholder values are excluded.",
       "bindings": [
         {
