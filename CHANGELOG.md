@@ -9,6 +9,10 @@ All notable changes to Macro Assist Forever are documented here. The format is b
 
 - Ships with the same shared code as your other Forever addons, so they keep working together.
 
+### Changed
+
+- **The Thanks page lists more players.** More of the people whose reports and ideas shipped are now thanked by name in game.
+
 ## [0.8.19] - 2026-11-26
 
 ### Fixed
