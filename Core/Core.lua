@@ -5,9 +5,9 @@ if ns.broken then
 end
 
 -- Our window builds and opens without Blizzard_MacroUI; this file never loads that addon. When Blizzard_MacroUI
--- loads, by the player's /macro, the game menu or a keybind, Attach re-anchors our window to MacroFrame and hooks its
--- show and hide. Nothing in here runs Blizzard's Lua on its frame: HookScript and the engine's own reads and alpha
--- call are the only contact, as WFA-38 allows.
+-- loads, by the player's /macro, the game menu or a keybind, Attach hooks MacroFrame's show and hide, and each show
+-- moves our window over it. Nothing in here runs Blizzard's Lua on its frame: HookScript and the engine's own reads
+-- and alpha call are the only contact, as WFA-38 allows.
 
 -- ForeverCore's report window reads these when the player opens it: the macro counts, the history kept, and whether
 -- our window has been built, which is where a macro bug usually starts. English throughout, like the report's field

@@ -4,9 +4,9 @@ if ns.broken then
 	return
 end
 
--- Our macro window. Blizzard's MacroFrame still opens and closes through every path the game has; once
--- Blizzard_MacroUI loads, its OnShow and OnHide hooks show and hide this frame and MacroFrame is drawn at alpha 0
--- underneath. Until then the window stands on its own at the panel manager's left-panel spot. Nothing here calls a
+-- Our macro window. Blizzard's MacroFrame still opens and closes through every path the game has; its OnShow and
+-- OnHide hooks show and hide this frame, with MacroFrame drawn at alpha 0 underneath. While MacroFrame is hidden the
+-- window stands on its own at the panel manager's left-panel spot. Nothing here calls a
 -- Lua method on MacroFrame, writes one of its fields or hooks one of its methods: the only contact is the engine's
 -- own reads and calls (shown, alpha, frame level, points) and the two HookScripts in Core/Core.lua.
 
@@ -400,6 +400,8 @@ function Window.Create()
 	local frame = CreateFrame("Frame", "MacroAssistForeverFrame", UIParent, template) --[[@as MacroAssistFrame]]
 	frame:Hide()
 	Window.frame = frame
+	-- Escape closes it when it stands alone; over Blizzard's panel, the panel's own close has already hidden it.
+	table.insert(UISpecialFrames, "MacroAssistForeverFrame")
 	frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 	frame:SetFrameStrata("HIGH")
 	Place(frame)

@@ -2357,11 +2357,35 @@ scenario("/macroassist and the addon compartment toggle the window in combat and
 	sim:expectNoGamepadTaint(ADDON)
 end)
 
+for _, gamepad in ipairs({ false, true }) do
+	local name = "Escape closes the window /macroassist opened, gamepad " .. (gamepad and "on" or "off")
+	scenario(name, function(sim)
+		world.install(sim)
+		sim:login()
+		sim:setGamepad(gamepad)
+		local function openAlone()
+			sim:slash("/macroassist")
+			sim:advance(0.2)
+			check(sim.G[PLAYER]:IsShown(), "/macroassist did not open our window")
+			sim:pressEscape()
+			check(not sim.G[PLAYER]:IsShown(), "Escape left the window open")
+			check(not sim.G.GameMenuFrame:IsShown(), "Escape opened the game menu with the window up")
+		end
+		openAlone()
+		check(sim.G.MacroFrame == nil, "/macroassist created Blizzard's MacroFrame")
+		pressMacroCommand(sim)
+		pressEscape(sim)
+		openAlone()
+		sim:expectNoErrors(ADDON)
+		sim:expectNoGamepadTaint(ADDON)
+	end)
+end
+
 scenario("/macro and /m open, close and reopen the window, and combat keeps it open", function(sim)
 	world.install(sim)
 	sim:login()
 
-	-- /macro stays Blizzard's command (WFA-38): the addon hooks ShowMacroFrame instead of writing its handler.
+	-- /macro stays Blizzard's command (WFA-38): the addon hooks MacroFrame's OnShow instead of writing its handler.
 	local handler = sim.taint.slotInfo(sim.G.SlashCmdList, "MACRO")
 	check(handler == nil or handler.addon ~= ADDON, "the addon wrote Blizzard's /macro handler")
 

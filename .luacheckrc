@@ -8,7 +8,7 @@ globals = { "MacroAssistForever", "MacroAssistForeverDB", "SlashCmdList" }
 read_globals = {
 	"C_AddOns", "CreateFrame", "ChatFontNormal", "GetLocale",
 	"date", "InCombatLockdown",
-	"UIParent",
+	"UIParent", "UISpecialFrames",
 	-- The macro window and editor.
 	"canaccessvalue", "Constants", "CreateAndInitFromMixin", "CreateDataProvider", "CreateFont",
 	"CreateMacro", "CreateScrollBoxListLinearView", "C_Container", "C_Item", "C_Macro", "C_Spell", "C_SpellBook",
