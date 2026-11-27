@@ -8,6 +8,7 @@ ns.Credits = {
 		{ name = "Kal66", what = "Insert item and spell names in macros" },
 		{ name = "Kal66", what = "Reported long pasted macros running past the editor" },
 		{ name = "Pinnnnnnnnnn", what = "Asked for raid member names in the editor" },
+		{ name = "carlramrod", what = "Closing the macro window keeps controller interactions" },
 	},
 	inspired = {},
 }
