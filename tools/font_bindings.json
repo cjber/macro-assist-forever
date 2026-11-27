@@ -753,8 +753,8 @@
     },
     {
       "source": "UI/IconSelector.lua",
-      "sha256": "b19692cf1f7dc5a75450a22139a3cf4779948353b311f9596e62802c82133741",
-      "review": "Read Create, InitializeRow, BuildRows, UpdateStatus, FilterText, KindLabel, SetupMenu and MacroWindow.lua callers. keep/statusText explicitly use GameFontHighlightSmall. MacroAssistIconTemplate Label inherits NumberFontNormal; MacroAssistIconRowTemplate Title/Note inherit GameFontNormal/GameFontHighlightSmall in MacroWindow.xml; no later overrides. SearchBoxTemplate inherits InputBoxInstructionsTemplate in pinned Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml (client b401e0332adfbf0460d319b06d8ea29279a941f1): Instructions inherits GameFontDisableSmall. Dropdown/menu text, tooltip text, dynamic icon/spell/item names, section notes containing helper results and placeholder values are excluded.",
+      "sha256": "5581a80e55aa24c053dc4e6ad4ba039d78c4a6e3bec5cec696d44049d5dd2642",
+      "review": "Read Create, InitializeRow, BuildRows, UpdateStatus, FilterText, KindLabel, OpenMenu and MacroWindow.lua callers. keep/statusText explicitly use GameFontHighlightSmall. MacroAssistIconTemplate Label inherits NumberFontNormal; MacroAssistIconRowTemplate Title/Note inherit GameFontNormal/GameFontHighlightSmall in MacroWindow.xml; no later overrides. SearchBoxTemplate inherits InputBoxInstructionsTemplate in pinned Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml (client b401e0332adfbf0460d319b06d8ea29279a941f1): Instructions inherits GameFontDisableSmall. Dropdown/menu text, tooltip text, dynamic icon/spell/item names, section notes containing helper results and placeholder values are excluded.",
       "bindings": [
         {
           "font": "GameFontDisableSmall",

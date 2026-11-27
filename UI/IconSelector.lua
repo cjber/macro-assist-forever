@@ -304,19 +304,20 @@ function Picker.ShowTooltip(_, button)
 	GameTooltip:Show()
 end
 
--- The client's entire icon list. The provider is created and released here, so no menu is left holding its tables.
+-- The client's entire icon list, spell icons then item icons, filled by the engine into our own table. Blizzard's
+-- icon data provider is not used: it writes file state its own pickers read, under our taint (#331).
 ---@return table[]
 function Picker:AllIcons()
 	if not self.allIcons then
+		local files = {}
+		GetLooseMacroIcons(files)
+		GetMacroIcons(files)
+		GetLooseMacroItemIcons(files)
+		GetMacroItemIcons(files)
 		self.allIcons = {}
-		local provider = CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.None)
-		for index = 2, provider:GetNumIcons() do
-			local icon = provider:GetIconByIndex(index)
-			if icon ~= nil then
-				self.allIcons[#self.allIcons + 1] = { icon = icon }
-			end
+		for index, file in ipairs(files) do
+			self.allIcons[index] = { icon = tonumber(file) or [[INTERFACE\ICONS\]] .. file }
 		end
-		provider:Release()
 	end
 	return self.allIcons
 end
