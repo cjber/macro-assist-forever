@@ -1810,6 +1810,38 @@ scenario("a question mark macro keeps its stored icon through save, rename and r
 	sim:advance(0.1)
 end)
 
+scenario("the picker's filter menu filters on the controller interface without blocked calls", function(sim)
+	world.install(sim)
+	sim:login()
+	sim:setGamepad(true)
+	local window = open(sim)
+	sim:click(window.header.iconButton)
+	sim:advance(0.2)
+	sim:input(function()
+		window.picker.dropdown:OnMouseDown_Intrinsic()
+	end)
+	sim:advance(0.2)
+	local menu = sim.G.ForeverCoreContextMenu
+	check(menu and menu:IsShown(), "the filter did not open the suite's menu")
+	local choice
+	for _, row in ipairs(menu.rows) do
+		if row:IsShown() and row:GetText() == "Spellbook" then
+			choice = row
+		end
+	end
+	check(choice, "the menu does not offer Spellbook")
+	sim:input(function()
+		choice:GetScript("OnClick")(choice)
+	end)
+	sim:advance(0.2)
+	equal(window.picker.show, "spellbook", "choosing Spellbook did not filter the picker")
+	clickWindowClose(sim, window)
+	sim:advance(0.2)
+	sim:gamepadNavigate()
+	sim:bindingSetChange()
+	sim:expectNoGamepadTaint(ADDON)
+end)
+
 scenario("history keeps a snapshot before a save and restores it", function(sim)
 	local window = openNamed(sim)
 	characterTab(sim, window)

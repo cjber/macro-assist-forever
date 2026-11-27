@@ -81,7 +81,7 @@ local SLOT_LABELS = {
 
 ---@class MacroAssistFilterDropdown : Button
 ---@field Text FontString
----@field SetupMenu fun(self: MacroAssistFilterDropdown, generator: function)
+---@field OpenMenu fun(self: MacroAssistFilterDropdown)
 ---@field SetText fun(self: MacroAssistFilterDropdown, text: string)
 
 ---@class MacroAssistIconRow : Frame
@@ -151,9 +151,13 @@ function Picker.Create(parent, surface, editor)
 	frame.dropdown.Text:ClearAllPoints()
 	frame.dropdown.Text:SetPoint("TOP", frame.dropdown, "TOP", 0, 1)
 	frame.dropdown.Text:SetJustifyH("CENTER")
-	frame.dropdown:SetupMenu(function(_, root)
-		frame:BuildMenu(root)
-	end)
+	-- The client's button, ForeverCore's menu: Blizzard's menu showing an addon's entries hands the controller
+	-- interface's focus its state under our taint (#330).
+	function dropdown:OpenMenu()
+		ForeverCore.ContextMenu(self, function(_, root)
+			frame:BuildMenu(root)
+		end)
+	end
 
 	local scrollBox = CreateFrame("Frame", nil, frame, "WowScrollBoxList") --[[@as MacroAssistScrollBox]]
 	scrollBox:SetPoint("TOPLEFT", frame, "TOPLEFT", PICKER_PADDING, -(PICKER_PADDING + SEARCH_HEIGHT + ROW_TOP_GAP))
